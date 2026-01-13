@@ -188,9 +188,22 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 		return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 	}
 
-	// TODO: Send email with reset link
-	// For now, just log
+	// Generate reset token
+	token := uuid.New().String()
+	expiration := time.Now().Add(1 * time.Hour)
+
+	user.ResetToken = &token
+	user.ResetTokenExpiresAt = &expiration
+	h.DB.Save(&user)
+
+	// Mock Email Sending - Print to console for testing
 	// In production, integrate with SMTP
+	println("==========================================")
+	println("📧 MOCK EMAIL: Password Reset Requested")
+	println("To: " + user.Email)
+	println("Token: " + token)
+	println("Link: http://localhost:3000/reset-password?token=" + token)
+	println("==========================================")
 
 	return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 }
@@ -208,8 +221,28 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// TODO: Validate reset token
-	// For now, return success message
+	if req.Token == "" || req.NewPassword == "" {
+		return BadRequest(c, "Token e nova senha são obrigatórios")
+	}
+
+	// Find user with valid token
+	var user models.User
+	if err := h.DB.Where("reset_token = ? AND reset_token_expires_at > ?", req.Token, time.Now()).First(&user).Error; err != nil {
+		return BadRequest(c, "Token inválido ou expirado")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	// Update user
+	user.PasswordHash = string(hashedPassword)
+	user.ResetToken = nil
+	user.ResetTokenExpiresAt = nil
+	user.UpdatedAt = time.Now()
+	h.DB.Save(&user)
 
 	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
 }

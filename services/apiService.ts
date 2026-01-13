@@ -1,7 +1,7 @@
 // API Service for INOVAR Backend
 // Replaces localStorage with real API calls
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 interface AuthResponse {
   success: boolean;

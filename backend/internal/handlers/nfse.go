@@ -120,7 +120,7 @@ func (h *Handler) IssueNFSe(c *fiber.Ctx) error {
 	}
 
 	// Validations
-	if solicitacao.Status != models.StatusConcluida {
+	if solicitacao.Status != models.StatusFinalizada {
 		return BadRequest(c, "Solicitação deve estar CONCLUÍDA para emitir NFSe")
 	}
 	if solicitacao.ValorOrcamento <= 0 {
