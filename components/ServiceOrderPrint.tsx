@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { ServiceRequest } from '../types';
+import { QRCodeSVG } from 'qrcode.react';
+import { Pix } from '../utils/pix';
 
 export const ServiceOrderPrint: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -102,6 +104,30 @@ export const ServiceOrderPrint: React.FC = () => {
                     Espaço reservado para preenchimento técnico manual
                 </div>
             </div>
+
+            {/* Payment & PIX */}
+            {company?.pixKey && (
+                <div className="mb-6 border border-black rounded p-4 flex items-center gap-4 break-inside-avoid">
+                    <div className="bg-white p-2">
+                        {/* @ts-ignore */}
+                        <QRCodeSVG
+                            value={new Pix(
+                                company.razaoSocial || company.name || 'Prestador',
+                                company.endereco?.city || 'Cidade',
+                                company.pixKey,
+                                undefined, // No amount for OS
+                                request.numero ? request.numero.toString() : request.id.slice(0, 4)
+                            ).getPayload()}
+                            size={80}
+                        />
+                    </div>
+                    <div>
+                        <h3 className="font-bold uppercase text-sm mb-1">Pagamento via PIX</h3>
+                        <p className="text-xs text-gray-600 mb-1">Chave ({company.pixKeyType || 'PIX'}):</p>
+                        <p className="font-mono font-bold text-sm">{company.pixKey}</p>
+                    </div>
+                </div>
+            )}
 
             {/* Signatures */}
             <div className="mt-12 grid grid-cols-2 gap-12">

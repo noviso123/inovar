@@ -41,23 +41,6 @@ export interface Company {
   id: string;
   userId: string;
   razaoSocial: string;
-  nomeFantasia: string;
-  cnpj: string;
-  email: string;
-  phone: string;
-  address?: string;
-  endereco?: Address;
-  logoUrl?: string;
-  bankDetails?: string;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  phone?: string;
-  active: boolean;
   companyId?: string;
   createdAt?: string;
   avatarUrl?: string;

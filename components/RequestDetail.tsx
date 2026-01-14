@@ -484,6 +484,61 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               </div>
             </section>
 
+            {/* Documents Section */}
+            <section>
+              <h4 className="font-black text-slate-800 text-sm mb-3">Documentos</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button
+                  onClick={() => window.open(`/print/os/${request.id}`, '_blank')}
+                  className="p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl flex items-center gap-4 hover:bg-blue-100 hover:border-blue-200 transition-all text-left group shadow-sm hover:shadow-md"
+                >
+                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-black text-blue-900 text-sm">Ordem de Serviço</p>
+                    <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Visualizar PDF</p>
+                  </div>
+                </button>
+
+                {totalOrcamento > 0 && (
+                  <button
+                    onClick={() => window.open(`/print/budget/${request.id}`, '_blank')}
+                    className="p-4 bg-emerald-50 border-2 border-emerald-100 rounded-2xl flex items-center gap-4 hover:bg-emerald-100 hover:border-emerald-200 transition-all text-left group shadow-sm hover:shadow-md"
+                  >
+                    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-black text-emerald-900 text-sm">Orçamento</p>
+                      <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">Visualizar PDF</p>
+                    </div>
+                  </button>
+                )}
+
+                {nfse && (
+                  <button
+                    onClick={() => setActiveTab('nfse')}
+                    className="p-4 bg-amber-50 border-2 border-amber-100 rounded-2xl flex items-center gap-4 hover:bg-amber-100 hover:border-amber-200 transition-all text-left group shadow-sm hover:shadow-md"
+                  >
+                    <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-sm group-hover:scale-110 transition-transform">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-black text-amber-900 text-sm">Nota Fiscal</p>
+                      <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">{nfse.status}</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </section>
+
             {/* Action Buttons (Accept/Refuse) - Only for Technicians/Providers and if status is appropriate */}
             {(currentUser.role === UserRole.TECNICO || currentUser.role === UserRole.PRESTADOR) &&
               (request.status === RequestStatus.PENDENTE || request.status === RequestStatus.ATRIBUIDA) && (

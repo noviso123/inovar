@@ -237,6 +237,8 @@ type UpdateCompanyRequest struct {
 	Phone        string `json:"phone"`
 	Address      string `json:"address"`
 	BankDetails  string `json:"bankDetails"`
+	PixKey       string `json:"pixKey"`
+	PixKeyType   string `json:"pixKeyType"`
 	LogoURL      string `json:"logoUrl"`
 }
 
@@ -264,6 +266,8 @@ func (h *Handler) UpdateCompany(c *fiber.Ctx) error {
 			Phone:        req.Phone,
 			Address:      req.Address,
 			BankDetails:  req.BankDetails,
+			PixKey:       req.PixKey,
+			PixKeyType:   req.PixKeyType,
 			LogoURL:      req.LogoURL,
 			CreatedAt:    time.Now(),
 		}
@@ -282,6 +286,8 @@ func (h *Handler) UpdateCompany(c *fiber.Ctx) error {
 		company.Phone = req.Phone
 		company.Address = req.Address
 		company.BankDetails = req.BankDetails
+		company.PixKey = req.PixKey
+		company.PixKeyType = req.PixKeyType
 		if req.LogoURL != "" {
 			company.LogoURL = req.LogoURL
 		}

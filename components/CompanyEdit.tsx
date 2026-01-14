@@ -25,6 +25,8 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
         phone: '',
         address: '',
         logoUrl: '',
+        pixKey: '',
+        pixKeyType: '',
         endereco: {
             zipCode: '',
             street: '',
@@ -52,6 +54,8 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                     phone: data.phone || '',
                     address: data.address || '',
                     logoUrl: data.logoUrl || '',
+                    pixKey: data.pixKey || '',
+                    pixKeyType: data.pixKeyType as any || '',
                     endereco: data.endereco || {
                         zipCode: '',
                         street: '',
@@ -114,6 +118,8 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                 phone: formData.phone,
                 address: formData.address,
                 logoUrl: formData.logoUrl,
+                pixKey: formData.pixKey,
+                pixKeyType: formData.pixKeyType,
                 endereco: formData.endereco
             });
 
@@ -259,6 +265,38 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                             />
                         </div>
                     </div>
+
+
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Dados Bancários & PIX</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Tipo de Chave PIX</label>
+                                <select
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.pixKeyType || ''}
+                                    onChange={e => setFormData({ ...formData, pixKeyType: e.target.value as any })}
+                                >
+                                    <option value="">Selecione...</option>
+                                    <option value="CPF">CPF</option>
+                                    <option value="CNPJ">CNPJ</option>
+                                    <option value="EMAIL">E-mail</option>
+                                    <option value="PHONE">Telefone</option>
+                                    <option value="RANDOM">Chave Aleatória</option>
+                                </select>
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Chave PIX</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.pixKey || ''}
+                                    onChange={e => setFormData({ ...formData, pixKey: e.target.value })}
+                                    placeholder="Chave PIX para recebimento"
+                                />
+                            </div>
+                        </div>
+                    </div>
                     <div className="space-y-4 pt-4 border-t border-slate-100">
                         <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Endereço</h3>
 
@@ -350,7 +388,7 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };

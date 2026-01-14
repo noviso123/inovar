@@ -15,6 +15,8 @@ type Prestador struct {
 	EnderecoID   *string   `gorm:"size:36" json:"enderecoId,omitempty"`
 	LogoURL      string    `gorm:"size:500" json:"logoUrl,omitempty"`
 	BankDetails  string    `gorm:"type:text" json:"bankDetails,omitempty"`
+	PixKey       string    `gorm:"size:255" json:"pixKey,omitempty"`
+	PixKeyType   string    `gorm:"size:50" json:"pixKeyType,omitempty"`
 	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 
