@@ -6,7 +6,7 @@ import { UserRole, User } from '../types';
 interface LayoutProps {
   user: User;
   onLogout: () => void;
-  notifications?: Array<{id: string, title: string, message: string, severity: 'info' | 'warning' | 'success'}>;
+  notifications?: Array<{ id: string, title: string, message: string, severity: 'info' | 'warning' | 'success' }>;
   rolePrefix?: string;
 }
 
@@ -16,30 +16,52 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
+  // Combine WebSocket notifications with default notifications
+  const defaultNotifications = [
+    { id: 'welcome', title: 'Bem-vindo ao Sistema', message: 'Acesse seu perfil para completar seus dados.', severity: 'info' as const },
+    { id: 'security', title: 'Dica de Segurança', message: 'Troque sua senha periodicamente.', severity: 'info' as const },
+  ];
+  const allNotifications = [...notifications, ...defaultNotifications];
+
   // Helper to get full path with role prefix
   const getPath = (path: string) => `/${rolePrefix}${path === '/' ? '' : path}`;
 
   // Navigation items for bottom bar
   const navItems = [
-    { path: '', label: 'Início', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-    )},
-    { path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-    )},
-    { path: '/maquinas', label: 'Máquinas', roles: [UserRole.CLIENTE, UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <rect x="2" y="6" width="20" height="10" rx="2" strokeWidth="2" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 11h2M10 11h2M14 11h2" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16v3M12 16v4M17 16v3" />
-      </svg>
-    )},
-    { path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-    )},
-    { path: '/perfil', label: 'Perfil', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-    )},
+    {
+      path: '', label: 'Início', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+      )
+    },
+    {
+      path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+        </svg>
+      )
+    },
+    {
+      path: '/maquinas', label: 'Máquinas', roles: [UserRole.CLIENTE, UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="2" y="4" width="20" height="14" rx="2" strokeWidth="2" />
+          <circle cx="9" cy="11" r="4" strokeWidth="2" />
+          <circle cx="9" cy="11" r="1.5" strokeWidth="1" />
+          <path strokeLinecap="round" strokeWidth="1.5" d="M9 7v8M5 11h8M6.2 8.2l5.6 5.6M11.8 8.2l-5.6 5.6" />
+          <path strokeLinecap="round" strokeWidth="2" d="M16 8h3M16 11h3M16 14h3" />
+          <path strokeWidth="2" d="M5 18v2M19 18v2" />
+        </svg>
+      )
+    },
+    {
+      path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+      )
+    },
+    {
+      path: '/perfil', label: 'Perfil', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+      )
+    },
   ];
 
   // Menu items for full screen menu
@@ -90,16 +112,16 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
             <div className="relative">
               <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 active:scale-95 shadow-sm relative">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                {notifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>}
+                {allNotifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>}
               </button>
               {isNotifOpen && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-[100] animate-in fade-in zoom-in duration-200">
                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Notificações</h4>
                   <div className="space-y-4 max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
+                    {allNotifications.length === 0 ? (
                       <p className="text-[10px] text-center text-slate-300 font-bold uppercase tracking-widest py-4">Sem novas notificações</p>
                     ) : (
-                      notifications.map((n) => (
+                      allNotifications.map((n) => (
                         <div key={n.id} className="flex gap-4 p-4 rounded-2xl border bg-slate-50 border-slate-100">
                           <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-blue-500"></div>
                           <div className="text-left">
@@ -147,9 +169,8 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
               <NavLink
                 key={item.path}
                 to={fullPath}
-                className={`flex flex-col items-center gap-1 transition-all duration-300 relative ${
-                  isActive ? 'text-cyan-400 -translate-y-1' : 'text-slate-500 hover:text-white'
-                }`}
+                className={`flex flex-col items-center gap-1 transition-all duration-300 relative ${isActive ? 'text-cyan-400 -translate-y-1' : 'text-slate-500 hover:text-white'
+                  }`}
               >
                 <div className={`p-2 rounded-2xl ${isActive ? 'bg-cyan-600/20' : ''}`}>
                   {item.icon}
@@ -192,11 +213,10 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
                       key={item.path}
                       to={item.path}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`p-6 rounded-[2rem] text-left transition-all group flex flex-col gap-4 ${
-                        isActive
-                          ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40'
-                          : 'bg-white/5 text-slate-400 hover:bg-white/10'
-                      }`}
+                      className={`p-6 rounded-[2rem] text-left transition-all group flex flex-col gap-4 ${isActive
+                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40'
+                        : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                        }`}
                     >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-white/5'}`}>
                         <div className="w-4 h-4 bg-current rounded-full"></div>
@@ -252,26 +272,29 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
                       key={item.path}
                       to={fullPath}
                       onClick={() => setIsSidebarOpen(false)}
-                      className={`flex items-center gap-4 px-6 py-4 transition-all ${
-                        isActive
-                          ? 'bg-cyan-50 text-cyan-600 border-r-4 border-cyan-600'
-                          : 'text-slate-600 hover:bg-slate-50'
-                      }`}
+                      className={`flex items-center gap-4 px-6 py-4 transition-all ${isActive
+                        ? 'bg-cyan-50 text-cyan-600 border-r-4 border-cyan-600'
+                        : 'text-slate-600 hover:bg-slate-50'
+                        }`}
                     >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        isActive ? 'bg-cyan-100' : 'bg-slate-100'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-cyan-100' : 'bg-slate-100'
+                        }`}>
                         {item.path === '' && (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                         )}
                         {item.path === '/chamados' && (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+                          </svg>
                         )}
                         {item.path === '/maquinas' && (
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <rect x="2" y="6" width="20" height="10" rx="2" strokeWidth="2" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 11h2M10 11h2M14 11h2" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16v3M12 16v4M17 16v3" />
+                            <rect x="2" y="4" width="20" height="14" rx="2" strokeWidth="2" />
+                            <circle cx="9" cy="11" r="4" strokeWidth="2" />
+                            <circle cx="9" cy="11" r="1.5" strokeWidth="1" />
+                            <path strokeLinecap="round" strokeWidth="1.5" d="M9 7v8M5 11h8M6.2 8.2l5.6 5.6M11.8 8.2l-5.6 5.6" />
+                            <path strokeLinecap="round" strokeWidth="2" d="M16 8h3M16 11h3M16 14h3" />
+                            <path strokeWidth="2" d="M5 18v2M19 18v2" />
                           </svg>
                         )}
                         {item.path === '/agenda' && (

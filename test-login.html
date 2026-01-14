@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Login API</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a2e; color: white; }
+        .container { max-width: 400px; margin: 0 auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
+        button { width: 100%; padding: 15px; background: #00d4aa; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #result { margin-top: 20px; padding: 15px; background: #2a2a4a; border-radius: 10px; white-space: pre-wrap; word-break: break-all; }
+        .success { border-left: 4px solid #00d4aa; }
+        .error { border-left: 4px solid #ff4757; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Teste de Login API</h1>
+        <p>Este teste verifica se o navegador consegue se comunicar com o backend.</p>
+        
+        <input type="email" id="email" value="admin@inovar.com" placeholder="Email">
+        <input type="password" id="password" value="123456" placeholder="Senha">
+        <button onclick="testLogin()">Testar Login</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = '';
+            resultDiv.innerHTML = '⏳ Testando...';
+            
+            const apiUrl = 'http://localhost:8080/api/auth/login';
+            console.log('🔐 Testing API:', apiUrl);
+            console.log('📧 Email:', email);
+            console.log('🔑 Password length:', password.length);
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                console.log('📡 Response status:', response.status);
+                const data = await response.json();
+                console.log('📦 Response data:', data);
+                
+                if (data.success) {
+                    resultDiv.className = 'success';
+                    resultDiv.innerHTML = `✅ LOGIN FUNCIONOU!\n\nUsuário: ${data.data.user.name}\nRole: ${data.data.user.role}\nToken: ${data.data.accessToken.substring(0, 50)}...`;
+                } else {
+                    resultDiv.className = 'error';
+                    resultDiv.innerHTML = `❌ Login falhou!\n\nStatus: ${response.status}\nMensagem: ${data.message || JSON.stringify(data)}`;
+                }
+            } catch (error) {
+                console.error('🚨 Error:', error);
+                resultDiv.className = 'error';
+                resultDiv.innerHTML = `🚨 ERRO DE CONEXÃO!\n\n${error.message}\n\nIsso pode indicar:\n- CORS bloqueando a requisição\n- Backend não está rodando\n- URL incorreta`;
+            }
+        }
+    </script>
+</body>
+</html>

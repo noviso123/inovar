@@ -70,7 +70,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
             onClick={() => onNavigate('financeiro')}
             className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all active:scale-95"
           >
-            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">💵</div>
+            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
             <div>
               <p className="text-lg font-black text-slate-800 tracking-tight">{earnings}</p>
               <p className="text-[10px] text-slate-400 font-bold uppercase">A Receber</p>
@@ -81,7 +83,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
             onClick={() => onNavigate('chamados')}
             className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-cyan-200 transition-all active:scale-95"
           >
-            <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center text-xl">📋</div>
+            <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+            </div>
             <div>
               <p className="text-3xl font-black text-slate-800">{openRequests + inProgressRequests}</p>
               <p className="text-[10px] text-slate-400 font-bold uppercase">Meus Chamados</p>
@@ -94,7 +98,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
           onClick={() => onNavigate('chamados')}
           className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-orange-200 transition-all active:scale-95"
         >
-          <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-xl">📍</div>
+          <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
+          </div>
           <div>
             <p className="text-3xl font-black text-slate-800">{openRequests}</p>
             <p className="text-[10px] text-slate-400 font-bold uppercase">{isClient ? 'Em Aberto' : 'Disponíveis'}</p>
@@ -106,7 +112,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
           onClick={() => onNavigate(isTech || isProvider ? 'agenda' : 'chamados')}
           className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all active:scale-95"
         >
-          <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-xl">📅</div>
+          <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          </div>
           <div>
             <p className="text-3xl font-black text-slate-800">{inProgressRequests}</p>
             <p className="text-[10px] text-slate-400 font-bold uppercase">{isClient ? 'Em Andamento' : 'Agendados'}</p>
@@ -118,7 +126,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
           onClick={() => onNavigate('chamados')}
           className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all active:scale-95"
         >
-          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-xl">✅</div>
+          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
           <div>
             <p className="text-3xl font-black text-slate-800">{completedRequests}</p>
             <p className="text-[10px] text-slate-400 font-bold uppercase">Concluídos</p>
@@ -196,22 +206,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
                 onClick={() => onSelectRequest(r)}
                 className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all"
               >
-                <div className={`w-3 h-3 rounded-full shrink-0 ${
-                  r.status === RequestStatus.ABERTA ? 'bg-blue-500' :
-                  r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-500' :
-                  r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-500' :
-                  'bg-slate-300'
-                }`}></div>
+                <div className={`w-3 h-3 rounded-full shrink-0 ${r.status === RequestStatus.ABERTA ? 'bg-blue-500' :
+                    r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-500' :
+                      r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-500' :
+                        'bg-slate-300'
+                  }`}></div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 text-sm truncate">{r.clientName}</p>
                   <p className="text-[10px] text-slate-400 truncate">{r.description}</p>
                 </div>
-                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase shrink-0 ${
-                  r.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
-                  r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
-                  r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>{r.status}</span>
+                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase shrink-0 ${r.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
+                    r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
+                      r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
+                        'bg-slate-100 text-slate-700'
+                  }`}>{r.status}</span>
               </div>
             ))
           )}

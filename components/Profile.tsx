@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, UserRole } from '../types';
 import { imageUploadService } from '../services/imageUploadService';
 import { apiService } from '../services/apiService';
@@ -7,13 +7,12 @@ import { apiService } from '../services/apiService';
 interface ProfileProps {
   user: User;
   onUpdateUser: (user: User) => void;
+  rolePrefix?: string;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix = 'prestador' }) => {
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -63,7 +62,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
           const updatedUser = { ...user, avatarUrl: newUrl };
           onUpdateUser(updatedUser);
           // Persist to backend
-          await apiService.updateCurrentUser({ avatarUrl: newUrl });
+          await apiService.updateProfile({ avatarUrl: newUrl });
         }
       } catch (err) {
         console.error('Upload failed', err);
@@ -71,35 +70,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       } finally {
         setUploading(false);
       }
-    }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name) {
-      alert('Nome é obrigatório.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await apiService.updateCurrentUser({
-        name: formData.name,
-        phone: formData.phone,
-      });
-
-      const updatedUser: User = {
-        ...user,
-        name: formData.name,
-        phone: formData.phone,
-      };
-      onUpdateUser(updatedUser);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Save failed', err);
-      alert('Erro ao salvar perfil.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -183,10 +153,10 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       {/* Menu List */}
       <div className="mt-8 space-y-3">
         {[
-          { label: 'Editar Perfil', icon: 'edit', action: () => setIsEditing(true) },
-          { label: 'Notificações', icon: 'bell', action: () => alert('Em breve') },
-          { label: 'Privacidade', icon: 'shield', action: () => alert('Em breve') },
-          { label: 'Ajuda', icon: 'help', action: () => alert('Em breve') },
+          { label: 'Editar Perfil', icon: 'edit', action: () => navigate(`/${rolePrefix}/perfil/editar`) },
+          { label: 'Notificações', icon: 'bell', action: () => navigate(`/${rolePrefix}/notificacoes`) },
+          { label: 'Privacidade', icon: 'shield', action: () => navigate(`/${rolePrefix}/privacidade`) },
+          { label: 'Ajuda', icon: 'help', action: () => navigate(`/${rolePrefix}/ajuda`) },
         ].map((item, i) => (
           <button key={i} onClick={item.action} className="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left group active:scale-[0.98]">
             <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
@@ -204,53 +174,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       <div className="text-center mt-12 text-[10px] font-black text-slate-300 uppercase tracking-widest">
         Versão 7.1.0
       </div>
-
-      {/* Edit Modal */}
-      {isEditing && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl animate-in zoom-in duration-300">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-black text-slate-800">Editar Perfil</h3>
-              <button onClick={() => setIsEditing(false)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200">✕</button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Nome Completo</label>
-                <input
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Telefone</label>
-                <input
-                  className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.phone}
-                  onChange={e => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">E-mail (não editável)</label>
-                <input
-                  className="w-full p-4 bg-slate-100 rounded-2xl font-bold text-slate-400 cursor-not-allowed"
-                  value={formData.email}
-                  disabled
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-slate-900/30 hover:bg-emerald-600 transition-colors disabled:opacity-50"
-              >
-                {saving ? 'Salvando...' : 'Salvar Alterações'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -36,7 +36,63 @@ func Seed(db *gorm.DB) {
 		Active:       true,
 		CreatedAt:    time.Now(),
 	}
-	db.Create(&admin)
+	if err := db.Create(&admin).Error; err != nil {
+		log.Println("❌ Error creating admin:", err)
+	} else {
+		log.Println("✅ Created admin:", admin.Email)
+	}
+
+	// Create demo users IMMEDIATELY after admin (before complex entities)
+	// These are the main demo accounts with @inovar.com emails
+	demoPrestadorUser := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Prestador Demo",
+		Email:        "prestador@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RolePrestador,
+		Phone:        "(11) 91111-2222",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	if err := db.Create(&demoPrestadorUser).Error; err != nil {
+		log.Println("❌ Error creating prestador@inovar.com:", err)
+	} else {
+		log.Println("✅ Created prestador@inovar.com")
+	}
+
+	demoTecnicoUser := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Técnico Demo",
+		Email:        "tecnico@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleTecnico,
+		Phone:        "(11) 93333-4444",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	if err := db.Create(&demoTecnicoUser).Error; err != nil {
+		log.Println("❌ Error creating tecnico@inovar.com:", err)
+	} else {
+		log.Println("✅ Created tecnico@inovar.com")
+	}
+
+	demoClienteUser := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Cliente Demo",
+		Email:        "cliente@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleCliente,
+		Phone:        "(11) 95555-6666",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	if err := db.Create(&demoClienteUser).Error; err != nil {
+		log.Println("❌ Error creating cliente@inovar.com:", err)
+	} else {
+		log.Println("✅ Created cliente@inovar.com")
+	}
+
+	log.Println("🎉 Demo users created successfully!")
 
 	// Create Prestador
 	prestadorUser := models.User{
@@ -52,13 +108,13 @@ func Seed(db *gorm.DB) {
 	db.Create(&prestadorUser)
 
 	prestador := models.Prestador{
-		ID:          uuid.New().String(),
-		UserID:      prestadorUser.ID,
-		RazaoSocial: "Clima Master Serviços de Refrigeração Ltda",
+		ID:           uuid.New().String(),
+		UserID:       prestadorUser.ID,
+		RazaoSocial:  "Clima Master Serviços de Refrigeração Ltda",
 		NomeFantasia: "Clima Master",
-		CNPJ:        "12.345.678/0001-90",
-		Email:       "contato@climamaster.com",
-		Phone:       "(11) 3333-4444",
+		CNPJ:         "12.345.678/0001-90",
+		Email:        "contato@climamaster.com",
+		Phone:        "(11) 3333-4444",
 	}
 	db.Create(&prestador)
 
@@ -150,70 +206,6 @@ func Seed(db *gorm.DB) {
 	for _, s := range settings {
 		db.Create(&s)
 	}
-
-	// Create additional demo users with standard emails
-	// These match the demo buttons in the frontend
-	demoPrestador := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Prestador Demo",
-		Email:        "prestador@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RolePrestador,
-		Phone:        "(11) 91111-2222",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&demoPrestador)
-
-	demoPrestadorCompany := models.Prestador{
-		ID:           uuid.New().String(),
-		UserID:       demoPrestador.ID,
-		RazaoSocial:  "Prestador Demo Ltda",
-		NomeFantasia: "Prestador Demo",
-		CNPJ:         "00.000.000/0001-00",
-		Email:        "prestador@inovar.com",
-		Phone:        "(11) 91111-2222",
-	}
-	db.Create(&demoPrestadorCompany)
-	// Update user with company ID
-	db.Model(&demoPrestador).Update("company_id", demoPrestadorCompany.ID)
-
-	demoTecnico := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Técnico Demo",
-		Email:        "tecnico@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleTecnico,
-		Phone:        "(11) 93333-4444",
-		Active:       true,
-		CompanyID:    &demoPrestadorCompany.ID,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&demoTecnico)
-
-	demoClienteUser := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Cliente Demo",
-		Email:        "cliente@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleCliente,
-		Phone:        "(11) 95555-6666",
-		Active:       true,
-		CompanyID:    &demoPrestadorCompany.ID,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&demoClienteUser)
-
-	demoCliente := models.Cliente{
-		ID:        uuid.New().String(),
-		UserID:    demoClienteUser.ID,
-		Name:      "Cliente Demo",
-		Document:  "000.000.000-00",
-		Email:     "cliente@inovar.com",
-		Phone:     "(11) 95555-6666",
-		CompanyID: demoPrestadorCompany.ID,
-	}
-	db.Create(&demoCliente)
 
 	log.Println("✅ Seed completed")
 }

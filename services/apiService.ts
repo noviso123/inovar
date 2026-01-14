@@ -111,18 +111,46 @@ class ApiService {
 
   // Auth
   async login(email: string, password: string): Promise<AuthResponse> {
-    const data = await this.request<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    // Clear any existing tokens before login attempt
+    // This prevents "Session expired" error from stale tokens
+    this.clearTokens();
 
-    if (data.success) {
-      this.setAccessToken(data.data.accessToken);
-      this.setRefreshToken(data.data.refreshToken);
-      localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+    console.log('🔐 Login attempt:', { email, apiBase: API_BASE });
+
+    try {
+      // Direct fetch for login - don't use this.request() as it tries to refresh old tokens
+      const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      console.log('📡 Login response status:', response.status);
+
+      const data = await response.json();
+      console.log('📦 Login response data:', data);
+
+      if (!response.ok) {
+        console.log('❌ Login failed - response not ok');
+        return {
+          success: false,
+          data: data,
+          message: data.message || 'Credenciais inválidas',
+        } as any;
+      }
+
+      if (data.success) {
+        console.log('✅ Login successful, saving tokens');
+        this.setAccessToken(data.data.accessToken);
+        this.setRefreshToken(data.data.refreshToken);
+        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      }
+
+      return data;
+    } catch (error) {
+      console.error('🚨 Login error:', error);
+      throw error;
     }
-
-    return data;
   }
 
   async logout(): Promise<void> {
@@ -138,7 +166,7 @@ class ApiService {
     return response.data;
   }
 
-  async updateProfile(data: { name: string; phone: string }): Promise<any> {
+  async updateProfile(data: any): Promise<any> {
     const response = await this.request<{ data: any }>('/me', {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -542,6 +570,72 @@ class ApiService {
   getStoredUser(): any | null {
     const user = localStorage.getItem('currentUser');
     return user ? JSON.parse(user) : null;
+  }
+
+  // ============================================
+  // EXTRA ENDPOINTS (Backend-ready)
+  // ============================================
+
+  // Users - Get by ID
+  async getUser(id: string): Promise<any> {
+    const response = await this.request<{ data: any }>(`/users/${id}`);
+    return response.data;
+  }
+
+  // Clients - Get by ID
+  async getClient(id: string): Promise<any> {
+    const response = await this.request<{ data: any }>(`/clients/${id}`);
+    return response.data;
+  }
+
+  // Equipments - Get by ID
+  async getEquipment(id: string): Promise<any> {
+    const response = await this.request<{ data: any }>(`/equipments/${id}`);
+    return response.data;
+  }
+
+  // Auth - Forgot Password (public endpoint)
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    return { success: response.ok, message: data.message || 'E-mail enviado com sucesso' };
+  }
+
+  // Auth - Reset Password (public endpoint)
+  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(`${API_BASE}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, newPassword }),
+    });
+    const data = await response.json();
+    return { success: response.ok, message: data.message || 'Senha alterada com sucesso' };
+  }
+
+  // Fiscal - Upload Certificate A1
+  async uploadCertificate(file: File, password: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('certificate', file);
+    formData.append('password', password);
+
+    const response = await fetch(`${API_BASE}/fiscal/certificate`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${this.accessToken}` },
+      body: formData,
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Erro ao enviar certificado');
+    return data.data;
+  }
+
+  // Finance - List Transactions
+  async getFinanceTransactions(): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>('/finance/transactions');
+    return response.data;
   }
 }
 

@@ -78,6 +78,7 @@ func main() {
 	protected.Put("/me", h.UpdateCurrentUser)
 	protected.Put("/me/password", h.ChangePassword)
 	protected.Post("/auth/logout", h.Logout)
+	protected.Post("/upload", h.UploadFile)
 
 	// Company profile
 	protected.Get("/company", h.GetCompany)

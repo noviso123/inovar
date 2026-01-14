@@ -18,7 +18,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
   const [request, setRequest] = useState<ServiceRequest | null>(hasValidRequest ? propRequest : null);
   const [isLoading, setIsLoading] = useState(!hasValidRequest);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'orcamento' | 'assinatura' | 'nfse'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'orcamento' | 'assinatura' | 'nfse' | 'anexos'>('info');
 
   // Budget state
   const [sugestoes, setSugestoes] = useState<OrcamentoSugestao[]>([]);
@@ -33,6 +33,11 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
   // NFS-e state
   const [nfse, setNfse] = useState<NotaFiscal | null>(null);
   const [isIssuingNF, setIsIssuingNF] = useState(false);
+
+  // Attachments state
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load request from API
   useEffect(() => {
@@ -70,6 +75,15 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
       apiService.getNFSe(request.id)
         .then(data => setNfse(data))
         .catch(() => setNfse(null)); // Ignora 404
+    }
+  }, [request, activeTab]);
+
+  // Load attachments when tab is active
+  useEffect(() => {
+    if (request && activeTab === 'anexos') {
+      apiService.getAttachments(request.id)
+        .then(data => setAttachments(data || []))
+        .catch(err => console.error('Failed to load attachments:', err));
     }
   }, [request, activeTab]);
 
@@ -198,6 +212,54 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
     }
   };
 
+  // Attachment functions
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0 || !request) return;
+
+    setIsUploadingAttachment(true);
+    try {
+      for (const file of Array.from(files)) {
+        await apiService.uploadAttachment(request.id, file);
+      }
+      // Reload attachments
+      const data = await apiService.getAttachments(request.id);
+      setAttachments(data || []);
+      alert('Arquivo(s) enviado(s) com sucesso!');
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Erro ao enviar arquivo');
+    } finally {
+      setIsUploadingAttachment(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const deleteAttachment = async (attachmentId: string) => {
+    if (!request) return;
+    if (!confirm('Deseja remover este anexo?')) return;
+
+    try {
+      await apiService.deleteAttachment(request.id, attachmentId);
+      setAttachments(prev => prev.filter(a => a.id !== attachmentId));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Erro ao excluir anexo');
+    }
+  };
+
+  const isImageFile = (mimeType: string) => {
+    return mimeType?.startsWith('image/');
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -243,12 +305,11 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-black text-slate-800">Chamado #{request.numero || request.id.slice(0, 6)}</h2>
-            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${
-              request.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
+            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${request.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
               request.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
-              request.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
-              'bg-slate-100 text-slate-700'
-            }`}>{request.status}</span>
+                request.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
+                  'bg-slate-100 text-slate-700'
+              }`}>{request.status}</span>
           </div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{request.clientName}</p>
         </div>
@@ -258,35 +319,38 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
       <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
         <button
           onClick={() => setActiveTab('info')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeTab === 'info' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
-          }`}
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'info' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+            }`}
         >
           Informações
         </button>
         <button
           onClick={() => setActiveTab('orcamento')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeTab === 'orcamento' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
-          }`}
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'orcamento' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+            }`}
         >
           Orçamento
         </button>
         <button
           onClick={() => setActiveTab('assinatura')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeTab === 'assinatura' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
-          }`}
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'assinatura' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+            }`}
         >
           Assinatura
         </button>
         <button
           onClick={() => setActiveTab('nfse')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${
-            activeTab === 'nfse' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
-          }`}
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'nfse' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+            }`}
         >
           Nota Fiscal
+        </button>
+        <button
+          onClick={() => setActiveTab('anexos')}
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'anexos' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+            }`}
+        >
+          Anexos
         </button>
       </div>
 
@@ -306,11 +370,10 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-slate-50 p-4 rounded-2xl">
                   <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Prioridade</span>
-                  <p className={`text-sm font-black mt-1 ${
-                    request.priority === 'EMERGENCIAL' ? 'text-rose-600' :
+                  <p className={`text-sm font-black mt-1 ${request.priority === 'EMERGENCIAL' ? 'text-rose-600' :
                     request.priority === 'ALTA' ? 'text-orange-600' :
-                    request.priority === 'MEDIA' ? 'text-amber-600' : 'text-emerald-600'
-                  }`}>{request.priority}</p>
+                      request.priority === 'MEDIA' ? 'text-amber-600' : 'text-emerald-600'
+                    }`}>{request.priority}</p>
                 </div>
                 <div className="bg-slate-50 p-4 rounded-2xl">
                   <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Criado em</span>
@@ -502,17 +565,15 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               <div className="flex gap-2 mb-4">
                 <button
                   onClick={() => setSignatureType('cliente')}
-                  className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase ${
-                    signatureType === 'cliente' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
+                  className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase ${signatureType === 'cliente' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
                 >
                   Cliente
                 </button>
                 <button
                   onClick={() => setSignatureType('tecnico')}
-                  className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase ${
-                    signatureType === 'tecnico' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
+                  className={`flex-1 py-2 rounded-xl font-bold text-xs uppercase ${signatureType === 'tecnico' ? 'bg-cyan-600 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
                 >
                   Técnico
                 </button>
@@ -573,11 +634,10 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                     <button
                       onClick={issueNFSe}
                       disabled={isIssuingNF || request.status !== RequestStatus.CONCLUIDA}
-                      className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${
-                        isIssuingNF || request.status !== RequestStatus.CONCLUIDA
-                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'bg-slate-900 text-white hover:bg-cyan-600 shadow-lg'
-                      }`}
+                      className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${isIssuingNF || request.status !== RequestStatus.CONCLUIDA
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-slate-900 text-white hover:bg-cyan-600 shadow-lg'
+                        }`}
                     >
                       {isIssuingNF ? 'Processando...' : request.status !== RequestStatus.CONCLUIDA ? 'Conclua o chamado primeiro' : 'Emitir NFS-e Agora'}
                     </button>
@@ -585,34 +645,32 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className={`p-4 rounded-xl border ${
-                    nfse.status === 'EMITIDA' ? 'bg-emerald-50 border-emerald-200' :
+                  <div className={`p-4 rounded-xl border ${nfse.status === 'EMITIDA' ? 'bg-emerald-50 border-emerald-200' :
                     nfse.status === 'ERRO' ? 'bg-rose-50 border-rose-200' :
-                    'bg-amber-50 border-amber-200'
-                  }`}>
+                      'bg-amber-50 border-amber-200'
+                    }`}>
                     <span className="text-[10px] uppercase font-black tracking-widest block mb-1">
                       {nfse.status === 'EMITIDA' ? 'Sucesso' : nfse.status === 'ERRO' ? 'Erro' : 'Processando'}
                     </span>
-                    <p className={`text-lg font-black ${
-                      nfse.status === 'EMITIDA' ? 'text-emerald-700' :
+                    <p className={`text-lg font-black ${nfse.status === 'EMITIDA' ? 'text-emerald-700' :
                       nfse.status === 'ERRO' ? 'text-rose-700' :
-                      'text-amber-700'
-                    }`}>
+                        'text-amber-700'
+                      }`}>
                       {nfse.status === 'EMITIDA' ? `Nota Fiscal Nº ${nfse.numero}` :
-                       nfse.status === 'ERRO' ? 'Falha na emissão' : 'Aguardando Sefaz'}
+                        nfse.status === 'ERRO' ? 'Falha na emissão' : 'Aguardando Sefaz'}
                     </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-left">
-                     <div className="bg-white p-3 rounded-xl border border-slate-100">
-                       <span className="text-[10px] text-slate-400 font-bold uppercase">Tomador</span>
-                       <p className="text-xs font-bold text-slate-700 mt-1">{nfse.tomadorNome}</p>
-                       <p className="text-[10px] text-slate-500">{nfse.tomadorDocumento}</p>
-                     </div>
-                     <div className="bg-white p-3 rounded-xl border border-slate-100">
-                       <span className="text-[10px] text-slate-400 font-bold uppercase">Valor</span>
-                       <p className="text-xs font-bold text-slate-700 mt-1">R$ {nfse.valorLiquido.toFixed(2)}</p>
-                     </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Tomador</span>
+                      <p className="text-xs font-bold text-slate-700 mt-1">{nfse.tomadorNome}</p>
+                      <p className="text-[10px] text-slate-500">{nfse.tomadorDocumento}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-xl border border-slate-100">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Valor</span>
+                      <p className="text-xs font-bold text-slate-700 mt-1">R$ {nfse.valorLiquido.toFixed(2)}</p>
+                    </div>
                   </div>
 
                   {nfse.status === 'EMITIDA' && (
@@ -628,6 +686,131 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ANEXOS TAB */}
+        {activeTab === 'anexos' && (
+          <div className="p-6 space-y-6">
+            {/* Upload Section */}
+            <section>
+              <h4 className="font-black text-slate-800 text-sm mb-3">Enviar Arquivos</h4>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-upload"
+              />
+              <label
+                htmlFor="file-upload"
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
+                  isUploadingAttachment
+                    ? 'border-cyan-400 bg-cyan-50'
+                    : 'border-slate-200 hover:border-cyan-500 hover:bg-slate-50'
+                }`}
+              >
+                {isUploadingAttachment ? (
+                  <div className="flex flex-col items-center">
+                    <div className="w-8 h-8 border-4 border-cyan-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <span className="text-sm font-bold text-cyan-600">Enviando...</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <svg className="w-10 h-10 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <span className="text-sm font-bold text-slate-600">Clique para enviar arquivos</span>
+                    <span className="text-xs text-slate-400 mt-1">Imagens, PDF, Word, Excel</span>
+                  </div>
+                )}
+              </label>
+            </section>
+
+            {/* Attachments List */}
+            <section>
+              <h4 className="font-black text-slate-800 text-sm mb-3">Arquivos Anexados ({attachments.length})</h4>
+              {attachments.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="bg-slate-50 p-4 rounded-xl flex items-center gap-3 group">
+                      {/* Thumbnail or Icon */}
+                      <div className="flex-shrink-0">
+                        {isImageFile(attachment.mimeType) ? (
+                          <a href={attachment.filePath || attachment.externalUrl} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={attachment.thumbnailUrl || attachment.filePath || attachment.externalUrl}
+                              alt={attachment.fileName}
+                              className="w-14 h-14 object-cover rounded-lg border border-slate-200 hover:border-cyan-500 transition-colors"
+                            />
+                          </a>
+                        ) : (
+                          <div className="w-14 h-14 bg-slate-200 rounded-lg flex items-center justify-center">
+                            <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={attachment.filePath || attachment.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-bold text-slate-800 truncate block hover:text-cyan-600"
+                        >
+                          {attachment.fileName}
+                        </a>
+                        <p className="text-xs text-slate-500">
+                          {formatFileSize(attachment.fileSize)} • {attachment.uploadedByName || 'Sistema'}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          {new Date(attachment.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <a
+                          href={attachment.filePath || attachment.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-8 h-8 bg-cyan-100 rounded-lg flex items-center justify-center text-cyan-600 hover:bg-cyan-200"
+                          title="Abrir"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                        <button
+                          onClick={() => deleteAttachment(attachment.id)}
+                          className="w-8 h-8 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600 hover:bg-rose-200"
+                          title="Excluir"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 bg-slate-50 rounded-2xl">
+                  <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </div>
+                  <p className="text-slate-500 font-medium">Nenhum anexo neste chamado</p>
+                  <p className="text-xs text-slate-400 mt-1">Envie fotos, documentos ou outros arquivos</p>
+                </div>
+              )}
+            </section>
           </div>
         )}
 

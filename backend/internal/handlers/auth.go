@@ -21,20 +21,28 @@ type LoginRequest struct {
 func (h *Handler) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
+		println("🔴 Login: Body parse error:", err.Error())
 		return BadRequest(c, "Dados inválidos")
 	}
+
+	println("🔐 Login attempt for email:", req.Email)
+	println("🔐 Password length:", len(req.Password))
 
 	// Find user
 	var user models.User
 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		println("🔴 Login: User not found:", req.Email)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
 	}
 
+	println("✅ User found:", user.Email, "Active:", user.Active)
+
 	// Check if active
 	if !user.Active {
+		println("🔴 Login: User blocked:", user.Email)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "user_blocked",
 			"message": "Usuário bloqueado. Contate o administrador.",
@@ -43,11 +51,15 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		println("🔴 Login: Password mismatch for:", user.Email, "Error:", err.Error())
+		println("🔴 Received password:", req.Password)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
 	}
+
+	println("✅ Login successful for:", user.Email)
 
 	// Get company ID
 	companyID := ""

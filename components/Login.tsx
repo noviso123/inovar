@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<any>;
@@ -41,9 +42,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-2xl shadow-cyan-600/30">
             {/* AC Unit Icon */}
             <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <rect x="2" y="6" width="20" height="10" rx="2" strokeWidth="2" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 11h2M10 11h2M14 11h2" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16v3M12 16v4M17 16v3" />
+              <rect x="2" y="4" width="20" height="14" rx="2" strokeWidth="2" />
+              <circle cx="9" cy="11" r="4" strokeWidth="2" />
+              <circle cx="9" cy="11" r="1.5" strokeWidth="1" />
+              <path strokeLinecap="round" strokeWidth="1.5" d="M9 7v8M5 11h8M6.2 8.2l5.6 5.6M11.8 8.2l-5.6 5.6" />
+              <path strokeLinecap="round" strokeWidth="2" d="M16 8h3M16 11h3M16 14h3" />
+              <path strokeWidth="2" d="M5 18v2M19 18v2" />
             </svg>
           </div>
           <h1 className="text-5xl font-black text-white tracking-tighter mb-2">INOVAR</h1>
@@ -102,6 +106,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               'Acessar Sistema'
             )}
           </button>
+
+          {/* Forgot Password Link */}
+          <Link
+            to="/forgot-password"
+            className="block text-center text-sm font-bold text-slate-500 hover:text-cyan-600 transition-colors"
+          >
+            Esqueci minha senha
+          </Link>
 
           {/* Demo buttons */}
           <div className="flex flex-wrap gap-2 justify-center pt-2">

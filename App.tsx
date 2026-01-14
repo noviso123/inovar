@@ -19,10 +19,21 @@ import { AuditPanel } from './components/AuditPanel';
 import { Agenda } from './components/Agenda';
 import { Finance } from './components/Finance';
 import { Profile } from './components/Profile';
+import { ProfileEdit } from './components/ProfileEdit';
 import { CompanyProfile } from './components/CompanyProfile';
+import { CompanyEdit } from './components/CompanyEdit';
+import { ClientForm } from './components/ClientForm';
+import { EquipmentForm } from './components/EquipmentForm';
+import { TechnicianForm } from './components/TechnicianForm';
+import { UserForm } from './components/UserForm';
 import { MarketingQR } from './components/MarketingQR';
 import { NotificationToast } from './components/NotificationToast';
 import { Login } from './components/Login';
+import { NotificationsPage } from './components/NotificationsPage';
+import { PrivacyPage } from './components/PrivacyPage';
+import { HelpPage } from './components/HelpPage';
+import { ForgotPassword } from './components/ForgotPassword';
+import { ResetPassword } from './components/ResetPassword';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -42,28 +53,28 @@ const getRolePrefix = (role: UserRole): string => {
 // ============================================
 const ProtectedRoute: React.FC<{ children: React.ReactNode; user: User | null; allowedRoles?: UserRole[] }> =
   ({ children, user, allowedRoles }) => {
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={`/${getRolePrefix(user.role)}`} replace />;
-  }
-  return <>{children}</>;
-};
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      return <Navigate to={`/${getRolePrefix(user.role)}`} replace />;
+    }
+    return <>{children}</>;
+  };
 
 // ============================================
 // ROLE ROUTE GUARD - Ensures user is on correct role prefix
 // ============================================
 const RoleRouteGuard: React.FC<{ children: React.ReactNode; user: User | null; expectedRole: UserRole }> =
   ({ children, user, expectedRole }) => {
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  if (user.role !== expectedRole) {
-    return <Navigate to={`/${getRolePrefix(user.role)}`} replace />;
-  }
-  return <>{children}</>;
-};
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    if (user.role !== expectedRole) {
+      return <Navigate to={`/${getRolePrefix(user.role)}`} replace />;
+    }
+    return <>{children}</>;
+  };
 
 // ============================================
 // REQUEST LIST PAGE COMPONENT
@@ -116,12 +127,11 @@ const RequestListPage: React.FC<{
                   <h4 className="font-bold text-slate-800 text-sm mt-1">{req.clientName}</h4>
                   <p className="text-xs text-slate-500 mt-1 line-clamp-2">{req.description}</p>
                 </div>
-                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${
-                  req.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
+                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${req.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
                   req.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
-                  req.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
-                  'bg-slate-100 text-slate-700'
-                }`}>{req.status}</span>
+                    req.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-700'
+                  }`}>{req.status}</span>
               </div>
             </div>
           ))
@@ -143,7 +153,7 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<TimelineEvent[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Array<{id: string, title: string, message: string, severity: 'info' | 'warning' | 'success'}>>([]);
+  const [notifications, setNotifications] = useState<Array<{ id: string, title: string, message: string, severity: 'info' | 'warning' | 'success' }>>([]);
 
   // Check auth on mount
   useEffect(() => {
@@ -178,7 +188,7 @@ const App: React.FC = () => {
 
       const unsubCreate = wsService.on('request:created', (data) => {
         setRequests(prev => [data, ...prev]);
-        setNotifications(prev => [{id: Math.random().toString(), title: 'Nova Solicitação', message: `Cliente ${data.clientName} abriu um novo chamado.`, severity: 'warning'}, ...prev]);
+        setNotifications(prev => [{ id: Math.random().toString(), title: 'Nova Solicitação', message: `Cliente ${data.clientName} abriu um novo chamado.`, severity: 'warning' }, ...prev]);
       });
 
       const unsubUpdate = wsService.on('request:updated', (data) => {
@@ -293,54 +303,66 @@ const App: React.FC = () => {
   // ============================================
   // COMMON ROUTES FOR ALL ROLES
   // ============================================
-  const CommonRoutes: React.FC<{ prefix: string; expectedRole: UserRole }> = ({ prefix, expectedRole }) => (
-    <>
-      {/* Dashboard */}
-      <Route index element={
-        <Dashboard
-          requests={filteredRequests}
-          onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
-          currentUser={currentUser!}
-          onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
-        />
-      } />
-
-      {/* Chamados */}
-      <Route path="chamados" element={
-        <RequestListPage
-          requests={filteredRequests}
-          onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
-          onCreateNew={() => navigate(`/${prefix}/chamados/novo`)}
-          rolePrefix={prefix}
-        />
-      } />
-      <Route path="chamados/novo" element={
-        <RequestFlow
-          currentUser={currentUser!}
-          onCancel={() => navigate(`/${prefix}/chamados`)}
-          onComplete={handleCreateRequest}
-        />
-      } />
-      <Route path="chamados/:id" element={
-        <RequestDetail
-          request={selectedRequest!}
-          currentUser={currentUser!}
-          onUpdateStatus={(st) => selectedRequest && handleUpdateStatus(selectedRequest.id, st)}
-          onClose={() => { setSelectedRequest(null); navigate(`/${prefix}/chamados`); }}
-        />
-      } />
-
-      {/* Perfil */}
-      <Route path="perfil" element={
-        <Profile user={currentUser!} onUpdateUser={setCurrentUser} />
-      } />
-
-      {/* Máquinas/Equipamentos */}
-      <Route path="maquinas" element={
-        <EquipmentManager currentUser={currentUser!} />
-      } />
-    </>
-  );
+  // ============================================
+  // COMMON ROUTES FOR ALL ROLES
+  // ============================================
+  const renderCommonRoutes = (prefix: string) => [
+    <Route key="dashboard" index element={
+      <Dashboard
+        requests={filteredRequests}
+        onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
+        currentUser={currentUser!}
+        onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
+      />
+    } />,
+    <Route key="chamados" path="chamados" element={
+      <RequestListPage
+        requests={filteredRequests}
+        onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
+        onCreateNew={() => navigate(`/${prefix}/chamados/novo`)}
+        rolePrefix={prefix}
+      />
+    } />,
+    <Route key="chamados-novo" path="chamados/novo" element={
+      <RequestFlow
+        currentUser={currentUser!}
+        onCancel={() => navigate(`/${prefix}/chamados`)}
+        onComplete={handleCreateRequest}
+      />
+    } />,
+    <Route key="chamados-id" path="chamados/:id" element={
+      <RequestDetail
+        request={selectedRequest!}
+        currentUser={currentUser!}
+        onUpdateStatus={(st) => selectedRequest && handleUpdateStatus(selectedRequest.id, st)}
+        onClose={() => { setSelectedRequest(null); navigate(`/${prefix}/chamados`); }}
+      />
+    } />,
+    <Route key="perfil" path="perfil" element={
+      <Profile user={currentUser!} onUpdateUser={setCurrentUser} rolePrefix={prefix} />
+    } />,
+    <Route key="maquinas" path="maquinas" element={
+      <EquipmentManager currentUser={currentUser!} />
+    } />,
+    <Route key="maquinas-nova" path="maquinas/nova" element={
+      <EquipmentForm currentUser={currentUser!} />
+    } />,
+    <Route key="maquinas-editar" path="maquinas/:id/editar" element={
+      <EquipmentForm currentUser={currentUser!} />
+    } />,
+    <Route key="notificacoes" path="notificacoes" element={
+      <NotificationsPage currentUser={currentUser!} />
+    } />,
+    <Route key="privacidade" path="privacidade" element={
+      <PrivacyPage />
+    } />,
+    <Route key="ajuda" path="ajuda" element={
+      <HelpPage />
+    } />,
+    <Route key="perfil-editar" path="perfil/editar" element={
+      <ProfileEdit user={currentUser!} onUpdateUser={setCurrentUser} />
+    } />
+  ];
 
   // ============================================
   // ROUTES
@@ -356,9 +378,15 @@ const App: React.FC = () => {
       }} />
 
       <Routes>
-        {/* Public Route */}
+        {/* Public Routes */}
         <Route path="/login" element={
           currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Login onLogin={handleLogin} />
+        } />
+        <Route path="/forgot-password" element={
+          currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <ForgotPassword />
+        } />
+        <Route path="/reset-password" element={
+          currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <ResetPassword />
         } />
 
         {/* Default redirect */}
@@ -374,7 +402,7 @@ const App: React.FC = () => {
             <Layout user={currentUser!} onLogout={handleLogout} notifications={notifications} rolePrefix="cliente" />
           </RoleRouteGuard>
         }>
-          <CommonRoutes prefix="cliente" expectedRole={UserRole.CLIENTE} />
+          {renderCommonRoutes('cliente')}
         </Route>
 
         {/* ============================================ */}
@@ -385,7 +413,7 @@ const App: React.FC = () => {
             <Layout user={currentUser!} onLogout={handleLogout} notifications={notifications} rolePrefix="tecnico" />
           </RoleRouteGuard>
         }>
-          <CommonRoutes prefix="tecnico" expectedRole={UserRole.TECNICO} />
+          {renderCommonRoutes('tecnico')}
           <Route path="agenda" element={<Agenda requests={requests} onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/tecnico/chamados/${r.id}`); }} />} />
           <Route path="clientes" element={<ClientManager currentUser={currentUser!} />} />
         </Route>
@@ -398,12 +426,19 @@ const App: React.FC = () => {
             <Layout user={currentUser!} onLogout={handleLogout} notifications={notifications} rolePrefix="prestador" />
           </RoleRouteGuard>
         }>
-          <CommonRoutes prefix="prestador" expectedRole={UserRole.PRESTADOR} />
+          {renderCommonRoutes('prestador')}
           <Route path="agenda" element={<Agenda requests={requests} onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/prestador/chamados/${r.id}`); }} />} />
           <Route path="empresa" element={<CompanyProfile currentUser={currentUser!} />} />
+          <Route path="empresa/editar" element={<CompanyEdit currentUser={currentUser!} />} />
           <Route path="clientes" element={<ClientManager currentUser={currentUser!} />} />
+          <Route path="clientes/novo" element={<ClientForm currentUser={currentUser!} />} />
+          <Route path="clientes/:id/editar" element={<ClientForm currentUser={currentUser!} />} />
           <Route path="tecnicos" element={<TechnicianManager currentUser={currentUser!} />} />
+          <Route path="tecnicos/novo" element={<TechnicianForm currentUser={currentUser!} />} />
+          <Route path="tecnicos/:id/editar" element={<TechnicianForm currentUser={currentUser!} />} />
           <Route path="usuarios" element={<UserManager currentUser={currentUser!} />} />
+          <Route path="usuarios/novo" element={<UserForm currentUser={currentUser!} />} />
+          <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
           <Route path="financeiro" element={<Finance />} />
           <Route path="marketing" element={<MarketingQR currentUser={currentUser!} />} />
         </Route>
@@ -416,12 +451,19 @@ const App: React.FC = () => {
             <Layout user={currentUser!} onLogout={handleLogout} notifications={notifications} rolePrefix="admin" />
           </RoleRouteGuard>
         }>
-          <CommonRoutes prefix="admin" expectedRole={UserRole.ADMIN} />
+          {renderCommonRoutes('admin')}
           <Route path="agenda" element={<Agenda requests={requests} onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/admin/chamados/${r.id}`); }} />} />
           <Route path="empresa" element={<CompanyProfile currentUser={currentUser!} />} />
+          <Route path="empresa/editar" element={<CompanyEdit currentUser={currentUser!} />} />
           <Route path="clientes" element={<ClientManager currentUser={currentUser!} />} />
+          <Route path="clientes/novo" element={<ClientForm currentUser={currentUser!} />} />
+          <Route path="clientes/:id/editar" element={<ClientForm currentUser={currentUser!} />} />
           <Route path="tecnicos" element={<TechnicianManager currentUser={currentUser!} />} />
+          <Route path="tecnicos/novo" element={<TechnicianForm currentUser={currentUser!} />} />
+          <Route path="tecnicos/:id/editar" element={<TechnicianForm currentUser={currentUser!} />} />
           <Route path="usuarios" element={<UserManager currentUser={currentUser!} />} />
+          <Route path="usuarios/novo" element={<UserForm currentUser={currentUser!} />} />
+          <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
           <Route path="financeiro" element={<Finance />} />
           <Route path="marketing" element={<MarketingQR currentUser={currentUser!} />} />
           <Route path="auditoria" element={<AuditPanel currentUser={currentUser!} />} />
@@ -432,7 +474,7 @@ const App: React.FC = () => {
         <Route path="*" element={
           currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Navigate to="/login" replace />
         } />
-      </Routes>
+      </Routes >
     </>
   );
 };

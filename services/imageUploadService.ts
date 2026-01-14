@@ -1,152 +1,140 @@
-// ImgBB Image Upload Service
-// API Key: 8c9e209f4d405c41879dcc76a7bdd1b6
+// Image Upload Service
+// Uses backend /upload endpoint
 
-const IMGBB_API_KEY = '8c9e209f4d405c41879dcc76a7bdd1b6';
-const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
+interface UploadResponse {
+  success: boolean;
+  url: string;
+  filename: string;
+}
+
+// Keep ImgBBResponse for compatibility if needed, but we are switching to backend
 interface ImgBBResponse {
   success: boolean;
-  status: number;
   data: {
-    id: string;
-    title: string;
-    url_viewer: string;
     url: string;
-    display_url: string;
-    width: string;
-    height: string;
-    size: string;
-    time: string;
-    expiration: string;
-    image: {
-      filename: string;
-      name: string;
-      mime: string;
-      extension: string;
-      url: string;
-    };
-    thumb: {
-      filename: string;
-      name: string;
-      mime: string;
-      extension: string;
-      url: string;
-    };
-    medium?: {
-      filename: string;
-      name: string;
-      mime: string;
-      extension: string;
-      url: string;
-    };
-    delete_url: string;
+    [key: string]: any;
   };
 }
 
 class ImageUploadService {
   /**
-   * Upload an image file to ImgBB
+   * Upload an image file to Backend
    * @param file - The file to upload (File object)
-   * @param name - Optional custom name for the image
-   * @param expiration - Optional expiration in seconds (60-15552000)
+   * @param name - Optional custom name (unused in backend for now)
    * @returns Promise with the upload response
    */
-  async uploadFile(file: File, name?: string, expiration?: number): Promise<ImgBBResponse> {
+  async uploadFile(file: File, name?: string): Promise<ImgBBResponse> {
     const formData = new FormData();
-    formData.append('key', IMGBB_API_KEY);
-    formData.append('image', file);
+    formData.append('file', file);
 
-    if (name) {
-      formData.append('name', name);
-    }
+    // Get token from localStorage
+    const token = localStorage.getItem('accessToken');
 
-    if (expiration && expiration >= 60 && expiration <= 15552000) {
-      formData.append('expiration', String(expiration));
-    }
-
-    const response = await fetch(IMGBB_UPLOAD_URL, {
+    const response = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error(`ImgBB upload failed: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Build the full URL correctly
+    // API_BASE is like "http://localhost:8080/api"
+    // We need the base without /api: "http://localhost:8080"
+    // data.url is like "/uploads/filename.jpg"
+    const baseUrl = API_BASE.replace('/api', '');
+    const uploadUrl = data.url.startsWith('/') ? data.url : '/' + data.url;
+    const fullUrl = baseUrl + uploadUrl;
+
+    console.log('📸 Upload successful:', { dataUrl: data.url, fullUrl });
+
+    // Adapt response to match what components expect (ImgBB structure)
+    // Components expect: response.success and response.data.url
+    return {
+      success: true,
+      status: 200,
+      data: {
+        id: data.filename,
+        title: data.filename,
+        url_viewer: fullUrl,
+        url: fullUrl,
+        display_url: fullUrl,
+        width: "0",
+        height: "0",
+        size: "0",
+        time: String(Date.now()),
+        expiration: "0",
+        image: {
+          filename: data.filename,
+          name: data.filename,
+          mime: file.type,
+          extension: file.name.split('.').pop() || '',
+          url: fullUrl,
+        },
+        thumb: {
+          filename: data.filename,
+          name: data.filename,
+          mime: file.type,
+          extension: file.name.split('.').pop() || '',
+          url: fullUrl,
+        },
+        delete_url: ""
+      }
+    } as ImgBBResponse;
   }
 
   /**
    * Upload an image from base64 string
    * @param base64 - Base64 encoded image data
-   * @param name - Optional custom name for the image
-   * @param expiration - Optional expiration in seconds
-   * @returns Promise with the upload response
    */
-  async uploadBase64(base64: string, name?: string, expiration?: number): Promise<ImgBBResponse> {
-    // Remove data URL prefix if present
-    const cleanBase64 = base64.replace(/^data:image\/\w+;base64,/, '');
-
-    const formData = new FormData();
-    formData.append('key', IMGBB_API_KEY);
-    formData.append('image', cleanBase64);
-
-    if (name) {
-      formData.append('name', name);
-    }
-
-    if (expiration && expiration >= 60 && expiration <= 15552000) {
-      formData.append('expiration', String(expiration));
-    }
-
-    const response = await fetch(IMGBB_UPLOAD_URL, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`ImgBB upload failed: ${response.statusText}`);
-    }
-
-    return response.json();
+  async uploadBase64(base64: string, name?: string): Promise<ImgBBResponse> {
+    // Convert base64 to blob/file
+    const res = await fetch(base64);
+    const blob = await res.blob();
+    const file = new File([blob], name || "image.png", { type: blob.type });
+    return this.uploadFile(file, name);
   }
 
   /**
    * Upload an image from URL
    * @param imageUrl - URL of the image to upload
-   * @param name - Optional custom name for the image
-   * @param expiration - Optional expiration in seconds
-   * @returns Promise with the upload response
    */
-  async uploadFromUrl(imageUrl: string, name?: string, expiration?: number): Promise<ImgBBResponse> {
-    const formData = new FormData();
-    formData.append('key', IMGBB_API_KEY);
-    formData.append('image', imageUrl);
-
-    if (name) {
-      formData.append('name', name);
+  async uploadFromUrl(imageUrl: string, name?: string): Promise<ImgBBResponse> {
+    // If it's already a backend URL, just return it
+    if (imageUrl.includes(API_BASE.replace('/api', ''))) {
+      return {
+        success: true,
+        status: 200,
+        data: {
+          url: imageUrl,
+          display_url: imageUrl,
+        }
+      } as any;
     }
 
-    if (expiration && expiration >= 60 && expiration <= 15552000) {
-      formData.append('expiration', String(expiration));
+    // Otherwise try to fetch and upload (might fail due to CORS)
+    try {
+      const res = await fetch(imageUrl);
+      const blob = await res.blob();
+      const file = new File([blob], name || "image.png", { type: blob.type });
+      return this.uploadFile(file, name);
+    } catch (e) {
+      console.error("Failed to fetch URL for upload", e);
+      throw e;
     }
-
-    const response = await fetch(IMGBB_UPLOAD_URL, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`ImgBB upload failed: ${response.statusText}`);
-    }
-
-    return response.json();
   }
 
   /**
    * Convert File to base64 string
-   * @param file - File to convert
-   * @returns Promise with base64 string
    */
   fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -159,8 +147,6 @@ class ImageUploadService {
 
   /**
    * Validate if file is a valid image
-   * @param file - File to validate
-   * @returns boolean
    */
   isValidImage(file: File): boolean {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
@@ -171,8 +157,6 @@ class ImageUploadService {
 
   /**
    * Get file size in human readable format
-   * @param bytes - File size in bytes
-   * @returns Formatted string
    */
   formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
