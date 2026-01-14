@@ -9,17 +9,19 @@ interface AgendaProps {
 
 export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [weekStart, setWeekStart] = useState(new Date());
 
   // Filter requests that are in progress (scheduled)
   const scheduledRequests = requests.filter(r =>
     r.status === RequestStatus.EM_ANDAMENTO ||
-    r.status === RequestStatus.ACEITA
+    r.status === RequestStatus.ACEITA ||
+    r.status === RequestStatus.AGENDADA ||
+    r.status === RequestStatus.ATRIBUIDA
   );
 
-  // Group by date (mock - in real app this would use scheduledDate)
-  const today = new Date();
+  // Generate 7 days based on weekStart
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
+    const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
     return d;
   });
@@ -32,48 +34,57 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
     d1.getMonth() === d2.getMonth() &&
     d1.getFullYear() === d2.getFullYear();
 
+  const nextWeek = () => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + 7);
+    setWeekStart(next);
+  };
+
+  const prevWeek = () => {
+    const prev = new Date(weekStart);
+    prev.setDate(prev.getDate() - 7);
+    setWeekStart(prev);
+  };
+
   return (
     <div className="animate-in fade-in duration-500 pb-8">
-      {/* Back Button + Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => window.history.back()}
-          className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div className="flex-1">
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">Agenda</h2>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-            {monthNames[selectedDate.getMonth()]} {selectedDate.getFullYear()}
-          </p>
+      {/* Header with Navigation */}
+      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
+        <div className="flex items-center justify-between mb-6">
+          <button onClick={prevWeek} className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <div className="text-center">
+            <h2 className="text-lg font-black text-slate-800 tracking-tight">Agenda de atendimentos</h2>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
+              {monthNames[weekStart.getMonth()]} {weekStart.getFullYear()}
+            </p>
+          </div>
+          <button onClick={nextWeek} className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
         </div>
-      </div>
 
-      {/* Calendar Strip */}
-      <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 mb-6">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
+        {/* Calendar Strip */}
+        <div className="flex justify-between">
           {days.map((day, i) => {
             const isSelected = isSameDay(day, selectedDate);
-            const isToday = isSameDay(day, today);
+            const isToday = isSameDay(day, new Date());
             return (
               <button
                 key={i}
                 onClick={() => setSelectedDate(day)}
-                className={`flex flex-col items-center min-w-[52px] p-3 rounded-2xl transition-all ${
-                  isSelected
-                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-500/30'
+                className={`flex flex-col items-center justify-center w-10 h-14 rounded-2xl transition-all ${isSelected
+                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 scale-110'
                     : isToday
-                      ? 'bg-cyan-50 text-cyan-600 border-2 border-cyan-200'
-                      : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                }`}
+                      ? 'bg-cyan-50 text-cyan-600'
+                      : 'text-slate-400 hover:bg-slate-50'
+                  }`}
               >
-                <span className={`text-[10px] font-bold uppercase ${isSelected ? 'text-white/70' : 'text-slate-400'}`}>
+                <span className="text-[9px] font-bold uppercase mb-1">
                   {dayNames[day.getDay()]}
                 </span>
-                <span className="text-xl font-black mt-1">
+                <span className="text-sm font-black">
                   {day.getDate()}
                 </span>
               </button>
@@ -119,11 +130,10 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wide ${
-                      request.status === RequestStatus.EM_ANDAMENTO
+                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wide ${request.status === RequestStatus.EM_ANDAMENTO
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-emerald-100 text-emerald-700'
-                    }`}>
+                      }`}>
                       {request.status}
                     </span>
                   </div>

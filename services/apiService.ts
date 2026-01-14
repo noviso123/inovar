@@ -637,6 +637,19 @@ class ApiService {
     const response = await this.request<{ data: any[] }>('/finance/transactions');
     return response.data;
   }
+
+  // Utils
+  async searchCEP(cep: string): Promise<{ logradouro: string; bairro: string; localidade: string; uf: string; erro?: boolean }> {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length !== 8) throw new Error('CEP inválido');
+
+    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+    const data = await response.json();
+
+    if (data.erro) throw new Error('CEP não encontrado');
+
+    return data;
+  }
 }
 
 export const apiService = new ApiService();

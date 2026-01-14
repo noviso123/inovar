@@ -16,12 +16,31 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
 
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>(() => {
+    const saved = localStorage.getItem('read_notifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('read_notifications', JSON.stringify(readNotificationIds));
+  }, [readNotificationIds]);
+
   // Combine WebSocket notifications with default notifications
   const defaultNotifications = [
     { id: 'welcome', title: 'Bem-vindo ao Sistema', message: 'Acesse seu perfil para completar seus dados.', severity: 'info' as const },
     { id: 'security', title: 'Dica de Segurança', message: 'Troque sua senha periodicamente.', severity: 'info' as const },
   ];
-  const allNotifications = [...notifications, ...defaultNotifications];
+
+  const activeNotifications = [...notifications, ...defaultNotifications].filter(n => !readNotificationIds.includes(n.id));
+
+  const markAsRead = (id: string) => {
+    setReadNotificationIds(prev => [...prev, id]);
+  };
+
+  const markAllAsRead = () => {
+    const allIds = [...notifications, ...defaultNotifications].map(n => n.id);
+    setReadNotificationIds(allIds);
+  };
 
   // Helper to get full path with role prefix
   const getPath = (path: string) => `/${rolePrefix}${path === '/' ? '' : path}`;
@@ -112,22 +131,42 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
             <div className="relative">
               <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 active:scale-95 shadow-sm relative">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-                {allNotifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>}
+                {activeNotifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>}
               </button>
               {isNotifOpen && (
                 <div className="absolute top-12 right-0 w-80 bg-white rounded-[2rem] shadow-2xl border border-slate-100 p-6 z-[100] animate-in fade-in zoom-in duration-200">
-                  <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-4">Notificações</h4>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest">Notificações</h4>
+                    {activeNotifications.length > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase tracking-wide"
+                      >
+                        Ler todas
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-4 max-h-80 overflow-y-auto">
-                    {allNotifications.length === 0 ? (
+                    {activeNotifications.length === 0 ? (
                       <p className="text-[10px] text-center text-slate-300 font-bold uppercase tracking-widest py-4">Sem novas notificações</p>
                     ) : (
-                      allNotifications.map((n) => (
-                        <div key={n.id} className="flex gap-4 p-4 rounded-2xl border bg-slate-50 border-slate-100">
-                          <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 bg-blue-500"></div>
-                          <div className="text-left">
+                      activeNotifications.map((n) => (
+                        <div key={n.id} className="flex gap-4 p-4 rounded-2xl border bg-slate-50 border-slate-100 group relative">
+                          <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.severity === 'warning' ? 'bg-amber-500' :
+                              n.severity === 'success' ? 'bg-emerald-500' :
+                                'bg-blue-500'
+                            }`}></div>
+                          <div className="text-left flex-1">
                             <p className="text-xs font-bold text-slate-800 mb-1">{n.title}</p>
                             <p className="text-[10px] text-slate-500 font-medium leading-tight">{n.message}</p>
                           </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
+                            className="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Marcar como lida"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                          </button>
                         </div>
                       ))
                     )}

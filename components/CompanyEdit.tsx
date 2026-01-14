@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Company } from '../types';
+import { User, Company, Address } from '../types';
 import { apiService } from '../services/apiService';
 import { imageUploadService } from '../services/imageUploadService';
 
@@ -24,7 +24,16 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
         email: '',
         phone: '',
         address: '',
-        logoUrl: ''
+        logoUrl: '',
+        endereco: {
+            zipCode: '',
+            street: '',
+            number: '',
+            complement: '',
+            district: '',
+            city: '',
+            state: ''
+        }
     });
 
     // Load company data
@@ -42,7 +51,16 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                     email: data.email || '',
                     phone: data.phone || '',
                     address: data.address || '',
-                    logoUrl: data.logoUrl || ''
+                    logoUrl: data.logoUrl || '',
+                    endereco: data.endereco || {
+                        zipCode: '',
+                        street: '',
+                        number: '',
+                        complement: '',
+                        district: '',
+                        city: '',
+                        state: ''
+                    }
                 });
             } catch (err: any) {
                 console.error('Failed to load company:', err);
@@ -53,6 +71,31 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
         };
         loadCompany();
     }, []);
+
+    const handleCEPSearch = async (e: React.FocusEvent<HTMLInputElement>) => {
+        const cep = e.target.value.replace(/\D/g, '');
+        if (cep.length === 8) {
+            try {
+                setLoading(true);
+                const address = await apiService.searchCEP(cep);
+                setFormData(prev => ({
+                    ...prev,
+                    endereco: {
+                        ...prev.endereco,
+                        street: address.logradouro,
+                        district: address.bairro,
+                        city: address.localidade,
+                        state: address.uf,
+                        zipCode: cep
+                    }
+                }));
+            } catch (err) {
+                alert('CEP não encontrado');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -70,7 +113,8 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                 email: formData.email,
                 phone: formData.phone,
                 address: formData.address,
-                logoUrl: formData.logoUrl
+                logoUrl: formData.logoUrl,
+                endereco: formData.endereco
             });
 
             alert('Empresa atualizada com sucesso!');
@@ -215,14 +259,78 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                             />
                         </div>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Endereço</label>
-                        <input
-                            className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
-                            value={formData.address}
-                            onChange={e => setFormData({ ...formData, address: e.target.value })}
-                            placeholder="Rua, Número, Bairro, Cidade - UF"
-                        />
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Endereço</h3>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">CEP</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
+                                    value={formData.endereco?.zipCode || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, zipCode: e.target.value } })}
+                                    onBlur={handleCEPSearch}
+                                    placeholder="00000-000"
+                                    maxLength={9}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Estado (UF)</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.endereco?.state || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, state: e.target.value } })}
+                                    maxLength={2}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Cidade</label>
+                            <input
+                                className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                value={formData.endereco?.city || ''}
+                                onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, city: e.target.value } })}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="col-span-2 space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Rua / Logradouro</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.endereco?.street || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, street: e.target.value } })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Número</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.endereco?.number || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, number: e.target.value } })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Bairro</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.endereco?.district || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, district: e.target.value } })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Complemento</label>
+                                <input
+                                    className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
+                                    value={formData.endereco?.complement || ''}
+                                    onChange={e => setFormData({ ...formData, endereco: { ...formData.endereco, complement: e.target.value } })}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex gap-4 pt-4">

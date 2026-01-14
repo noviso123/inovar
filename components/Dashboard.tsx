@@ -148,42 +148,60 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         </div>
       )}
 
-      {/* Próximos Agendamentos - Like FindUp Técnico */}
+      {/* Próximos Agendamentos - Redesigned */}
       {!isClient && (
         <div className="mt-6">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-black text-slate-800">Próximos Agendamentos</h3>
+            <h3 className="text-sm font-black text-slate-800">Próximo Atendimento</h3>
             <button
               onClick={() => onNavigate('agenda')}
               className="text-[10px] font-bold text-blue-600 uppercase tracking-widest"
             >
-              Ver Todos
+              Ver mais
             </button>
           </div>
           <div className="space-y-3">
-            {requests.filter(r => r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA).slice(0, 2).length === 0 ? (
+            {requests.filter(r => r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA).slice(0, 1).length === 0 ? (
               <div className="text-center py-6 text-slate-300 text-xs font-bold uppercase bg-white rounded-2xl border border-slate-100">
                 Nenhum agendamento próximo
               </div>
             ) : (
-              requests.filter(r => r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA).slice(0, 2).map(r => (
+              requests.filter(r => r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA).slice(0, 1).map(r => (
                 <div
                   key={r.id}
                   onClick={() => onSelectRequest(r)}
-                  className="bg-gradient-to-r from-blue-50 to-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all"
+                  className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/50 cursor-pointer hover:border-cyan-200 transition-all active:scale-95"
                 >
-                  <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-black text-lg">
+                        {r.clientName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-slate-800 text-sm">{r.clientName}</h4>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
+                          {r.equipments?.[0]?.equipamento?.location || 'Local não informado'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-black text-slate-300">#{r.numero || r.id.slice(0, 6)}</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-slate-800 text-sm truncate">{r.clientName}</p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      {r.scheduledAt ? new Date(r.scheduledAt).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }) : 'Sem data'}
-                    </p>
+
+                  <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Data do atendimento</p>
+                      <p className="text-sm font-bold text-slate-600">
+                        {r.scheduledAt
+                          ? new Date(r.scheduledAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' às ' + new Date(r.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                          : 'Não agendado'}
+                      </p>
+                    </div>
                   </div>
-                  <span className="px-2 py-1 rounded-lg text-[9px] font-black uppercase bg-blue-100 text-blue-700 shrink-0">{r.status}</span>
                 </div>
               ))
             )}
@@ -207,18 +225,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
                 className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer hover:shadow-md transition-all"
               >
                 <div className={`w-3 h-3 rounded-full shrink-0 ${r.status === RequestStatus.ABERTA ? 'bg-blue-500' :
-                    r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-500' :
-                      r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-500' :
-                        'bg-slate-300'
+                  r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-500' :
+                    r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-500' :
+                      'bg-slate-300'
                   }`}></div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-800 text-sm truncate">{r.clientName}</p>
                   <p className="text-[10px] text-slate-400 truncate">{r.description}</p>
                 </div>
                 <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase shrink-0 ${r.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
-                    r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
-                      r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
-                        'bg-slate-100 text-slate-700'
+                  r.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
+                    r.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
+                      'bg-slate-100 text-slate-700'
                   }`}>{r.status}</span>
               </div>
             ))

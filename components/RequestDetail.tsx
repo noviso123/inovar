@@ -212,6 +212,30 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
     }
   };
 
+  // Action Buttons Handlers
+  const handleAccept = async () => {
+    if (!request) return;
+    try {
+      await apiService.updateRequestStatus(request.id, RequestStatus.ACEITA);
+      await reloadRequest();
+      alert('Chamado aceito com sucesso!');
+    } catch (err) {
+      alert('Erro ao aceitar chamado');
+    }
+  };
+
+  const handleRefuse = async () => {
+    if (!request) return;
+    if (!confirm('Tem certeza que deseja recusar este chamado?')) return;
+    try {
+      await apiService.updateRequestStatus(request.id, RequestStatus.CANCELADA);
+      await reloadRequest();
+      alert('Chamado recusado.');
+    } catch (err) {
+      alert('Erro ao recusar chamado');
+    }
+  };
+
   // Attachment functions
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -410,6 +434,51 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 </div>
               </section>
             )}
+
+            {/* Contacts Section */}
+            <section>
+              <h4 className="font-black text-slate-800 text-sm mb-3">Contatos</h4>
+              <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-4">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-800 shadow-sm">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-800 text-sm">{request.clientName}</p>
+                  <p className="text-xs text-slate-500">Cliente</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Usage Policies */}
+            <section>
+              <div className="border border-slate-200 rounded-2xl p-4">
+                <h4 className="font-black text-slate-800 text-sm mb-2">Políticas de Uso</h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Ao aceitar este chamado, você concorda com os termos de serviço e as políticas de privacidade da plataforma. Certifique-se de cumprir os prazos de SLA estabelecidos.
+                </p>
+              </div>
+            </section>
+
+            {/* Action Buttons (Accept/Refuse) - Only for Technicians/Providers and if status is appropriate */}
+            {(currentUser.role === UserRole.TECNICO || currentUser.role === UserRole.PRESTADOR) &&
+              (request.status === RequestStatus.PENDENTE || request.status === RequestStatus.ATRIBUIDA) && (
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={handleRefuse}
+                    className="flex-1 py-4 bg-rose-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-rose-900/20 hover:bg-rose-700 transition-colors"
+                  >
+                    Recusar Chamado
+                  </button>
+                  <button
+                    onClick={handleAccept}
+                    className="flex-1 py-4 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-900/20 hover:bg-blue-700 transition-colors"
+                  >
+                    Aceitar Chamado
+                  </button>
+                </div>
+              )}
           </div>
         )}
 
@@ -706,11 +775,10 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               />
               <label
                 htmlFor="file-upload"
-                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${
-                  isUploadingAttachment
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${isUploadingAttachment
                     ? 'border-cyan-400 bg-cyan-50'
                     : 'border-slate-200 hover:border-cyan-500 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 {isUploadingAttachment ? (
                   <div className="flex flex-col items-center">
@@ -754,7 +822,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                           </div>
                         )}
                       </div>
-                      
+
                       {/* File Info */}
                       <div className="flex-1 min-w-0">
                         <a
