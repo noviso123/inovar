@@ -147,6 +147,7 @@ func main() {
 
 	// NFS-e
 	requests.Post("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.IssueNFSe)
+	requests.Delete("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.CancelNFSe)
 	requests.Get("/:id/nfse", h.GetNFSe)
 
 	// Fiscal Management

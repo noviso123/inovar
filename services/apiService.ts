@@ -392,6 +392,12 @@ class ApiService {
     return response.data;
   }
 
+  async cancelNFSe(requestId: string): Promise<void> {
+    await this.request(`/requests/${requestId}/nfse`, {
+      method: 'DELETE',
+    });
+  }
+
   async getNFSe(requestId: string): Promise<any> {
     const response = await this.request<{ data: any }>(`/requests/${requestId}/nfse`);
     return response.data;

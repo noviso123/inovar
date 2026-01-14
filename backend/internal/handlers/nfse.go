@@ -173,3 +173,32 @@ func (h *Handler) GetNFSe(c *fiber.Ctx) error {
 
 	return Success(c, nfse)
 }
+
+// CancelNFSe cancels an issued invoice
+func (h *Handler) CancelNFSe(c *fiber.Ctx) error {
+	requestID := c.Params("id")
+	userID := middleware.GetUserID(c)
+
+	var nfse models.NotaFiscal
+	if err := h.DB.First(&nfse, "solicitacao_id = ?", requestID).Error; err != nil {
+		return NotFound(c, "Nota Fiscal não encontrada")
+	}
+
+	if nfse.Status == models.NFSeStatusCancelada {
+		return BadRequest(c, "Nota Fiscal já está cancelada")
+	}
+
+	// In a real scenario, we would call the SEFAZ API here.
+	// For now, we just update the status.
+
+	nfse.Status = models.NFSeStatusCancelada
+	nfse.UpdatedAt = time.Now()
+
+	if err := h.DB.Save(&nfse).Error; err != nil {
+		return ServerError(c, err)
+	}
+
+	h.createHistoryEntry(requestID, userID, "Nota Fiscal cancelada: "+nfse.Numero)
+
+	return Success(c, nfse)
+}

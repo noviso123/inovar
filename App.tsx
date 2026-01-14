@@ -34,6 +34,8 @@ import { PrivacyPage } from './components/PrivacyPage';
 import { HelpPage } from './components/HelpPage';
 import { ForgotPassword } from './components/ForgotPassword';
 import { ResetPassword } from './components/ResetPassword';
+import { ServiceOrderPrint } from './components/ServiceOrderPrint';
+import { BudgetPrint } from './components/BudgetPrint';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -388,6 +390,10 @@ const App: React.FC = () => {
         <Route path="/reset-password" element={
           currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <ResetPassword />
         } />
+
+        {/* Print Routes */}
+        <Route path="/print/os/:id" element={<ServiceOrderPrint />} />
+        <Route path="/print/budget/:id" element={<BudgetPrint />} />
 
         {/* Default redirect */}
         <Route path="/" element={

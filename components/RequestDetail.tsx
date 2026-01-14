@@ -236,6 +236,20 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
     }
   };
 
+  const handleCancelNFSe = async () => {
+    if (!request || !nfse) return;
+    if (!confirm('Tem certeza que deseja cancelar esta Nota Fiscal? Esta ação não pode ser desfeita.')) return;
+
+    try {
+      await apiService.cancelNFSe(request.id);
+      setNfse(prev => prev ? { ...prev, status: 'CANCELADA' } : null);
+      alert('Nota Fiscal cancelada com sucesso!');
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao cancelar NFS-e');
+    }
+  };
+
   // Attachment functions
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -337,6 +351,15 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
           </div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{request.clientName}</p>
         </div>
+        <button
+          onClick={() => window.open(`/print/os/${request.id}`, '_blank')}
+          className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+          title="Imprimir Ordem de Serviço"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+        </button>
       </div>
 
       {/* Tab Navigation */}
@@ -487,13 +510,26 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
           <div className="p-6 space-y-6">
             {/* Budget Total */}
             <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-2xl">
-              <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Valor Total</span>
-              <p className="text-3xl font-black mt-1">R$ {totalOrcamento.toFixed(2)}</p>
-              {request.orcamentoAprovado && (
-                <span className="inline-block mt-2 px-3 py-1 bg-emerald-500 rounded-lg text-[10px] font-black uppercase">
-                  ✓ Aprovado
-                </span>
-              )}
+              <div className="flex justify-between items-start">
+                <div>
+                  <span className="text-[10px] uppercase font-black text-slate-400 tracking-widest">Valor Total</span>
+                  <p className="text-3xl font-black mt-1">R$ {totalOrcamento.toFixed(2)}</p>
+                  {request.orcamentoAprovado && (
+                    <span className="inline-block mt-2 px-3 py-1 bg-emerald-500 rounded-lg text-[10px] font-black uppercase">
+                      ✓ Aprovado
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => window.open(`/print/budget/${request.id}`, '_blank')}
+                  className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+                  title="Imprimir Orçamento"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Budget Items */}
@@ -751,6 +787,15 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                         Baixar PDF
                       </button>
                     </div>
+                  )}
+
+                  {canManageNFSe && nfse.status !== 'CANCELADA' && (
+                    <button
+                      onClick={handleCancelNFSe}
+                      className="w-full mt-4 py-3 bg-rose-100 text-rose-600 rounded-xl font-bold text-xs uppercase hover:bg-rose-200"
+                    >
+                      Cancelar NFS-e
+                    </button>
                   )}
                 </div>
               )}
