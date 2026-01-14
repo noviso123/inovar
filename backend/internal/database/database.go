@@ -2,7 +2,9 @@ package database
 
 import (
 	"log"
+	"strings"
 
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -11,7 +13,17 @@ import (
 )
 
 func Connect(databaseURL string) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(databaseURL), &gorm.Config{
+	var dialector gorm.Dialector
+
+	if strings.HasPrefix(databaseURL, "postgres://") || strings.HasPrefix(databaseURL, "postgresql://") {
+		log.Println("🔌 Connecting to PostgreSQL...")
+		dialector = postgres.Open(databaseURL)
+	} else {
+		log.Println("🔌 Connecting to SQLite...")
+		dialector = sqlite.Open(databaseURL)
+	}
+
+	db, err := gorm.Open(dialector, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
