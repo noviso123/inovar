@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { UserRole, User } from '../types';
 
@@ -153,8 +153,8 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
                       activeNotifications.map((n) => (
                         <div key={n.id} className="flex gap-4 p-4 rounded-2xl border bg-slate-50 border-slate-100 group relative">
                           <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.severity === 'warning' ? 'bg-amber-500' :
-                              n.severity === 'success' ? 'bg-emerald-500' :
-                                'bg-blue-500'
+                            n.severity === 'success' ? 'bg-emerald-500' :
+                              'bg-blue-500'
                             }`}></div>
                           <div className="text-left flex-1">
                             <p className="text-xs font-bold text-slate-800 mb-1">{n.title}</p>
