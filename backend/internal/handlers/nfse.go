@@ -147,7 +147,7 @@ func (h *Handler) IssueNFSe(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	// Mock Async Processing
+	// Simulate Async Processing (SEFAZ integration placeholder)
 	go func() {
 		time.Sleep(2 * time.Second)
 		h.DB.Model(&nfse).Updates(map[string]interface{}{

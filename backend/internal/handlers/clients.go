@@ -37,12 +37,12 @@ func (h *Handler) ListClients(c *fiber.Ctx) error {
 
 // CreateClientRequest represents client creation payload
 type CreateClientRequest struct {
-	Name     string                   `json:"name"`
-	Email    string                   `json:"email"`
-	Password string                   `json:"password"`
-	Phone    string                   `json:"phone"`
-	Document string                   `json:"document"`
-	Endereco *CreateEnderecoRequest   `json:"endereco,omitempty"`
+	Name     string                 `json:"name"`
+	Email    string                 `json:"email"`
+	Password string                 `json:"password"`
+	Phone    string                 `json:"phone"`
+	Document string                 `json:"document"`
+	Endereco *CreateEnderecoRequest `json:"endereco,omitempty"`
 }
 
 // CreateEnderecoRequest represents address creation
@@ -82,7 +82,8 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 	// Hash password
 	password := req.Password
 	if password == "" {
-		password = "123456" // Default for demo
+		// Generate random password if not provided
+		password = uuid.New().String()[:8]
 	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 

@@ -208,10 +208,10 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	user.ResetTokenExpiresAt = &expiration
 	h.DB.Save(&user)
 
-	// Mock Email Sending - Print to console for testing
+	// Simulate Email Sending - Print to console for testing
 	// In production, integrate with SMTP
 	println("==========================================")
-	println("📧 MOCK EMAIL: Password Reset Requested")
+	println("📧 Simulated Email: Password Reset Requested")
 	println("To: " + user.Email)
 	println("Token: " + token)
 	println("Link: http://localhost:3000/reset-password?token=" + token)

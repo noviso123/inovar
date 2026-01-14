@@ -114,38 +114,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           >
             Esqueci minha senha
           </Link>
-
-          {/* Demo buttons */}
-          <div className="flex flex-wrap gap-2 justify-center pt-2">
-            <button
-              type="button"
-              onClick={() => fillDemo('admin@inovar.com', '123456')}
-              className="text-[9px] font-black text-slate-400 hover:text-cyan-600 uppercase tracking-widest p-2 transition-colors"
-            >
-              Admin Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('prestador@inovar.com', '123456')}
-              className="text-[9px] font-black text-slate-400 hover:text-cyan-600 uppercase tracking-widest p-2 transition-colors"
-            >
-              Prestador Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('tecnico@inovar.com', '123456')}
-              className="text-[9px] font-black text-slate-400 hover:text-cyan-600 uppercase tracking-widest p-2 transition-colors"
-            >
-              Técnico Demo
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemo('cliente@inovar.com', '123456')}
-              className="text-[9px] font-black text-slate-400 hover:text-cyan-600 uppercase tracking-widest p-2 transition-colors"
-            >
-              Cliente Demo
-            </button>
-          </div>
         </form>
 
         {/* Footer */}
