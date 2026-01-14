@@ -350,7 +350,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ currentUser }) => {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-slate-900/30 hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                            className="flex-1 py-4 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-emerald-600 transition-colors disabled:opacity-50"
                         >
                             {saving ? 'Salvando...' : 'Salvar'}
                         </button>

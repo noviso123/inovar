@@ -141,7 +141,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         <div className="mt-4">
           <button
             onClick={() => onNavigate('chamados/novo')}
-            className="w-full py-5 bg-slate-900 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-slate-900/30 hover:bg-emerald-600 transition-colors active:scale-95"
+            className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-emerald-600 transition-colors active:scale-95"
           >
             + Abrir Nova Solicitação
           </button>

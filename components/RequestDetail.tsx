@@ -304,7 +304,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
           </svg>
         </div>
         <h3 className="text-lg font-black text-slate-800 mb-2">{error || 'Chamado não encontrado'}</h3>
-        <button onClick={handleBack} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 transition-colors">
+        <button onClick={handleBack} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-600 transition-colors">
           ← Voltar
         </button>
       </div>
@@ -343,35 +343,35 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
       <div className="flex gap-2 mb-6 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
         <button
           onClick={() => setActiveTab('info')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'info' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'info' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
             }`}
         >
           Informações
         </button>
         <button
           onClick={() => setActiveTab('orcamento')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'orcamento' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'orcamento' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
             }`}
         >
           Orçamento
         </button>
         <button
           onClick={() => setActiveTab('assinatura')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'assinatura' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'assinatura' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
             }`}
         >
           Assinatura
         </button>
         <button
           onClick={() => setActiveTab('nfse')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'nfse' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'nfse' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
             }`}
         >
           Nota Fiscal
         </button>
         <button
           onClick={() => setActiveTab('anexos')}
-          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'anexos' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
+          className={`flex-1 py-3 px-4 rounded-xl font-black text-xs uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === 'anexos' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'
             }`}
         >
           Anexos
@@ -581,7 +581,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                   </div>
                   <button
                     onClick={addBudgetItem}
-                    className="w-full py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition-colors"
+                    className="w-full py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition-colors"
                   >
                     + Adicionar Item
                   </button>
@@ -674,7 +674,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 </button>
                 <button
                   onClick={saveSignature}
-                  className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase hover:bg-emerald-600 transition-colors"
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-emerald-600 transition-colors"
                 >
                   Salvar Assinatura
                 </button>
@@ -705,7 +705,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                       disabled={isIssuingNF || request.status !== RequestStatus.CONCLUIDA}
                       className={`px-6 py-3 rounded-xl font-bold text-sm transition-all ${isIssuingNF || request.status !== RequestStatus.CONCLUIDA
                         ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-slate-900 text-white hover:bg-cyan-600 shadow-lg'
+                        : 'bg-blue-600 text-white hover:bg-cyan-600 shadow-lg'
                         }`}
                     >
                       {isIssuingNF ? 'Processando...' : request.status !== RequestStatus.CONCLUIDA ? 'Conclua o chamado primeiro' : 'Emitir NFS-e Agora'}
@@ -744,7 +744,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
 
                   {nfse.status === 'EMITIDA' && (
                     <div className="flex gap-2 mt-4">
-                      <button className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-bold text-xs uppercase hover:bg-slate-800">
+                      <button className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-slate-800">
                         Baixar XML
                       </button>
                       <button className="flex-1 py-3 bg-cyan-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-cyan-700">
@@ -776,8 +776,8 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               <label
                 htmlFor="file-upload"
                 className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-2xl cursor-pointer transition-colors ${isUploadingAttachment
-                    ? 'border-cyan-400 bg-cyan-50'
-                    : 'border-slate-200 hover:border-cyan-500 hover:bg-slate-50'
+                  ? 'border-cyan-400 bg-cyan-50'
+                  : 'border-slate-200 hover:border-cyan-500 hover:bg-slate-50'
                   }`}
               >
                 {isUploadingAttachment ? (

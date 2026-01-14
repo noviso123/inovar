@@ -75,10 +75,10 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                 key={i}
                 onClick={() => setSelectedDate(day)}
                 className={`flex flex-col items-center justify-center w-10 h-14 rounded-2xl transition-all ${isSelected
-                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30 scale-110'
-                    : isToday
-                      ? 'bg-cyan-50 text-cyan-600'
-                      : 'text-slate-400 hover:bg-slate-50'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110'
+                  : isToday
+                    ? 'bg-cyan-50 text-cyan-600'
+                    : 'text-slate-400 hover:bg-slate-50'
                   }`}
               >
                 <span className="text-[9px] font-bold uppercase mb-1">
@@ -131,8 +131,8 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wide ${request.status === RequestStatus.EM_ANDAMENTO
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-emerald-100 text-emerald-700'
                       }`}>
                       {request.status}
                     </span>
