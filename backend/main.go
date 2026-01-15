@@ -159,6 +159,7 @@ func main() {
 	fiscal.Put("/config", h.UpdateFiscalConfig)
 	fiscal.Post("/certificate", h.UploadCertificate)
 	fiscal.Get("/regimes", h.GetTaxRegimes)    // Available tax regimes
+	fiscal.Get("/lookup/:cnpj", h.LookupCNPJ)  // Lookup CNPJ data
 	fiscal.Post("/calcular", h.CalculateTaxes) // Calculate taxes automatically
 
 	// Agenda

@@ -32,6 +32,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
 
   // NFS-e state
   const [nfse, setNfse] = useState<NotaFiscal | null>(null);
+  const [nfseEventos, setNfseEventos] = useState<any[]>([]);
   const [isIssuingNF, setIsIssuingNF] = useState(false);
 
   // Attachments state
@@ -73,7 +74,12 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
   useEffect(() => {
     if (request && activeTab === 'nfse') {
       apiService.getNFSe(request.id)
-        .then(data => setNfse(data))
+        .then(data => {
+          setNfse(data);
+          if (data) {
+            apiService.getNFSeEventos(request.id).then(setNfseEventos).catch(console.error);
+          }
+        })
         .catch(() => setNfse(null)); // Ignora 404
     }
   }, [request, activeTab]);
@@ -812,8 +818,8 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <span className={`text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full ${nfse.status === 'EMITIDA' ? 'bg-emerald-500 text-white' :
-                            nfse.status === 'ERRO' ? 'bg-rose-500 text-white' :
-                              'bg-amber-500 text-white'
+                          nfse.status === 'ERRO' ? 'bg-rose-500 text-white' :
+                            'bg-amber-500 text-white'
                           }`}>
                           {nfse.status === 'EMITIDA' ? 'Emitida' : nfse.status === 'ERRO' ? 'Erro' : 'Processando'}
                         </span>
@@ -883,8 +889,8 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                               <div className="absolute left-2 top-6 bottom-0 w-0.5 bg-slate-100"></div>
                             )}
                             <div className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 z-10 ${evento.tipo === 'EMISSAO' ? 'bg-blue-500' :
-                                evento.tipo === 'CANCELAMENTO' ? 'bg-rose-500' :
-                                  'bg-slate-300'
+                              evento.tipo === 'CANCELAMENTO' ? 'bg-rose-500' :
+                                'bg-slate-300'
                               }`}></div>
                             <div className="flex-1 pb-4">
                               <div className="flex justify-between items-start">

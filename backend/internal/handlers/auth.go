@@ -91,6 +91,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 				"phone":     user.Phone,
 				"active":    user.Active,
 				"companyId": user.CompanyID,
+				"avatarUrl": user.AvatarURL,
 			},
 			"accessToken":  accessToken,
 			"refreshToken": refreshTokenStr,

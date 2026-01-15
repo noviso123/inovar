@@ -439,255 +439,239 @@ class ApiService {
   async updateFiscalConfig(data: any): Promise<any> {
     const response = await this.request<{ data: any }>('/fiscal/config', {
       method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
-
-  async getTaxRegimes(): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>('/fiscal/regimes');
-    return response.data;
-  }
-
-  async calculateTaxes(valorServicos: number, valorDeducoes: number = 0): Promise<any> {
-    const response = await this.request<{ data: any }>('/fiscal/calcular', {
-      method: 'POST',
-      body: JSON.stringify({ valorServicos, valorDeducoes }),
-    });
-    return response.data;
-  }
+    }
 
   // Checklists
-  async getChecklists(requestId: string): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>(`/requests/${requestId}/checklists`);
-    return response.data;
-  }
+  async getChecklists(requestId: string): Promise < any[] > {
+      const response = await this.request<{ data: any[] }>(`/requests/${requestId}/checklists`);
+      return response.data;
+    }
 
-  async createChecklist(requestId: string, data: any): Promise<any> {
-    const response = await this.request<{ data: any }>(`/requests/${requestId}/checklists`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
+  async createChecklist(requestId: string, data: any): Promise < any > {
+      const response = await this.request<{ data: any }>(`/requests/${requestId}/checklists`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return response.data;
+    }
 
-  async updateChecklist(requestId: string, id: string, data: any): Promise<any> {
-    const response = await this.request<{ data: any }>(`/requests/${requestId}/checklists/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
+  async updateChecklist(requestId: string, id: string, data: any): Promise < any > {
+      const response = await this.request<{ data: any }>(`/requests/${requestId}/checklists/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      return response.data;
+    }
 
   // Attachments
-  async getAttachments(requestId: string): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>(`/requests/${requestId}/attachments`);
-    return response.data;
-  }
-
-  async uploadAttachment(requestId: string, file: File): Promise<any> {
-    // Upload to backend directly (Local Storage)
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${API_BASE}/requests/${requestId}/attachments`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-      },
-      body: formData,
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao enviar anexo');
+  async getAttachments(requestId: string): Promise < any[] > {
+      const response = await this.request<{ data: any[] }>(`/requests/${requestId}/attachments`);
+      return response.data;
     }
+
+  async uploadAttachment(requestId: string, file: File): Promise < any > {
+      // Upload to backend directly (Local Storage)
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE}/requests/${requestId}/attachments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if(!response.ok) {
+        throw new Error(data.message || 'Erro ao enviar anexo');
+  }
     return data.data;
   }
 
-  async deleteAttachment(requestId: string, id: string): Promise<void> {
-    await this.request(`/requests/${requestId}/attachments/${id}`, { method: 'DELETE' });
-  }
+  async deleteAttachment(requestId: string, id: string): Promise < void> {
+  await this.request(`/requests/${requestId}/attachments/${id}`, { method: 'DELETE' });
+}
 
   // Agenda
-  async getAgenda(filters?: { start?: string; end?: string; technicianId?: string }): Promise<any[]> {
-    const params = new URLSearchParams();
-    if (filters?.start) params.append('start', filters.start);
-    if (filters?.end) params.append('end', filters.end);
-    if (filters?.technicianId) params.append('technicianId', filters.technicianId);
+  async getAgenda(filters ?: { start?: string; end?: string; technicianId?: string }): Promise < any[] > {
+  const params = new URLSearchParams();
+  if(filters?.start) params.append('start', filters.start);
+  if(filters?.end) params.append('end', filters.end);
+  if(filters?.technicianId) params.append('technicianId', filters.technicianId);
 
-    const response = await this.request<{ data: any[] }>(`/agenda?${params}`);
-    return response.data;
-  }
+  const response = await this.request<{ data: any[] }>(`/agenda?${params}`);
+  return response.data;
+}
 
-  async createAgendaEntry(data: any): Promise<any> {
-    const response = await this.request<{ data: any }>('/agenda', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
+  async createAgendaEntry(data: any): Promise < any > {
+  const response = await this.request<{ data: any }>('/agenda', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
 
-  async updateAgendaEntry(id: string, data: any): Promise<any> {
-    const response = await this.request<{ data: any }>(`/agenda/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
+  async updateAgendaEntry(id: string, data: any): Promise < any > {
+  const response = await this.request<{ data: any }>(`/agenda/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
 
-  async deleteAgendaEntry(id: string): Promise<void> {
-    await this.request(`/agenda/${id}`, { method: 'DELETE' });
-  }
+  async deleteAgendaEntry(id: string): Promise < void> {
+  await this.request(`/agenda/${id}`, { method: 'DELETE' });
+}
 
   // Finance
-  async getFinanceSummary(): Promise<any> {
-    const response = await this.request<{ data: any }>('/finance/summary');
-    return response.data;
-  }
+  async getFinanceSummary(): Promise < any > {
+  const response = await this.request<{ data: any }>('/finance/summary');
+  return response.data;
+}
 
   // Audit
-  async getAuditLogs(filters?: { entity?: string; userId?: string; limit?: number }): Promise<any[]> {
-    const params = new URLSearchParams();
-    if (filters?.entity) params.append('entity', filters.entity);
-    if (filters?.userId) params.append('userId', filters.userId);
-    if (filters?.limit) params.append('limit', String(filters.limit));
+  async getAuditLogs(filters ?: { entity?: string; userId?: string; limit?: number }): Promise < any[] > {
+  const params = new URLSearchParams();
+  if(filters?.entity) params.append('entity', filters.entity);
+  if(filters?.userId) params.append('userId', filters.userId);
+  if(filters?.limit) params.append('limit', String(filters.limit));
 
-    const response = await this.request<{ data: any[] }>(`/audit?${params}`);
-    return response.data;
-  }
+  const response = await this.request<{ data: any[] }>(`/audit?${params}`);
+  return response.data;
+}
 
   // Settings
-  async getSettings(): Promise<Record<string, string>> {
-    const response = await this.request<{ data: Record<string, string> }>('/settings');
-    return response.data;
-  }
+  async getSettings(): Promise < Record < string, string >> {
+  const response = await this.request<{ data: Record<string, string> }>('/settings');
+  return response.data;
+}
 
-  async updateSettings(settings: Record<string, string>): Promise<void> {
-    await this.request('/settings', {
-      method: 'PUT',
-      body: JSON.stringify({ settings }),
-    });
-  }
+  async updateSettings(settings: Record<string, string>): Promise < void> {
+  await this.request('/settings', {
+    method: 'PUT',
+    body: JSON.stringify({ settings }),
+  });
+}
 
   // Company (Prestador)
-  async getCompany(): Promise<any> {
-    const response = await this.request<{ data: any }>('/company');
-    return response.data;
-  }
+  async getCompany(): Promise < any > {
+  const response = await this.request<{ data: any }>('/company');
+  return response.data;
+}
 
-  async updateCompany(data: any): Promise<any> {
-    const response = await this.request<{ data: any }>('/company', {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-    return response.data;
-  }
+  async updateCompany(data: any): Promise < any > {
+  const response = await this.request<{ data: any }>('/company', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+}
 
-  // Check if authenticated
-  isAuthenticated(): boolean {
-    return !!this.accessToken;
-  }
+// Check if authenticated
+isAuthenticated(): boolean {
+  return !!this.accessToken;
+}
 
-  // Get stored user
-  getStoredUser(): any | null {
-    const user = localStorage.getItem('currentUser');
-    return user ? JSON.parse(user) : null;
-  }
+// Get stored user
+getStoredUser(): any | null {
+  const user = localStorage.getItem('currentUser');
+  return user ? JSON.parse(user) : null;
+}
 
   // ============================================
   // EXTRA ENDPOINTS (Backend-ready)
   // ============================================
 
   // Users - Get by ID
-  async getUser(id: string): Promise<any> {
-    const response = await this.request<{ data: any }>(`/users/${id}`);
-    return response.data;
-  }
+  async getUser(id: string): Promise < any > {
+  const response = await this.request<{ data: any }>(`/users/${id}`);
+  return response.data;
+}
 
   // Clients - Get by ID
-  async getClient(id: string): Promise<any> {
-    const response = await this.request<{ data: any }>(`/clients/${id}`);
-    return response.data;
-  }
+  async getClient(id: string): Promise < any > {
+  const response = await this.request<{ data: any }>(`/clients/${id}`);
+  return response.data;
+}
 
   // Equipments - Get by ID
-  async getEquipment(id: string): Promise<any> {
-    const response = await this.request<{ data: any }>(`/equipments/${id}`);
-    return response.data;
-  }
+  async getEquipment(id: string): Promise < any > {
+  const response = await this.request<{ data: any }>(`/equipments/${id}`);
+  return response.data;
+}
 
   // Auth - Forgot Password (public endpoint)
-  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE}/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
-    });
-    const data = await response.json();
-    return { success: response.ok, message: data.message || 'E-mail enviado com sucesso' };
-  }
+  async forgotPassword(email: string): Promise < { success: boolean; message: string } > {
+  const response = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await response.json();
+  return { success: response.ok, message: data.message || 'E-mail enviado com sucesso' };
+}
 
   // Auth - Reset Password (public endpoint)
-  async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE}/auth/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, newPassword }),
-    });
-    const data = await response.json();
-    return { success: response.ok, message: data.message || 'Senha alterada com sucesso' };
-  }
+  async resetPassword(token: string, newPassword: string): Promise < { success: boolean; message: string } > {
+  const response = await fetch(`${API_BASE}/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  });
+  const data = await response.json();
+  return { success: response.ok, message: data.message || 'Senha alterada com sucesso' };
+}
 
   // Fiscal - Upload Certificate A1
-  async uploadCertificate(file: File, password: string): Promise<any> {
-    const formData = new FormData();
-    formData.append('certificate', file);
-    formData.append('password', password);
+  async uploadCertificate(file: File, password: string): Promise < any > {
+  const formData = new FormData();
+  formData.append('certificate', file);
+  formData.append('password', password);
 
-    const response = await fetch(`${API_BASE}/fiscal/certificate`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${this.accessToken}` },
-      body: formData,
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Erro ao enviar certificado');
-    return data.data;
-  }
+  const response = await fetch(`${API_BASE}/fiscal/certificate`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${this.accessToken}` },
+    body: formData,
+  });
+  const data = await response.json();
+  if(!response.ok) throw new Error(data.message || 'Erro ao enviar certificado');
+  return data.data;
+}
 
   // Finance - List Transactions
-  async getFinanceTransactions(): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>('/finance/transactions');
-    return response.data;
-  }
+  async getFinanceTransactions(): Promise < any[] > {
+  const response = await this.request<{ data: any[] }>('/finance/transactions');
+  return response.data;
+}
 
   // Utils
-  async searchCEP(cep: string): Promise<{ logradouro: string; bairro: string; localidade: string; uf: string; erro?: boolean }> {
-    const cleanCep = cep.replace(/\D/g, '');
-    if (cleanCep.length !== 8) throw new Error('CEP inválido');
+  async searchCEP(cep: string): Promise < { logradouro: string; bairro: string; localidade: string; uf: string; erro?: boolean } > {
+  const cleanCep = cep.replace(/\D/g, '');
+  if(cleanCep.length !== 8) throw new Error('CEP inválido');
 
-    const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
-    const data = await response.json();
+  const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+  const data = await response.json();
 
-    if (data.erro) throw new Error('CEP não encontrado');
+  if(data.erro) throw new Error('CEP não encontrado');
 
-    return data;
-  }
+  return data;
+}
   // System Visibility
-  async getSystemRoutes(): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>('/system/routes');
-    return response.data;
-  }
+  async getSystemRoutes(): Promise < any[] > {
+  const response = await this.request<{ data: any[] }>('/system/routes');
+  return response.data;
+}
 
-  async getSystemTables(): Promise<string[]> {
-    const response = await this.request<{ data: string[] }>('/system/tables');
-    return response.data;
-  }
+  async getSystemTables(): Promise < string[] > {
+  const response = await this.request<{ data: string[] }>('/system/tables');
+  return response.data;
+}
 
-  async getSystemTableData(tableName: string): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>(`/system/tables/${tableName}`);
-    return response.data;
-  }
+  async getSystemTableData(tableName: string): Promise < any[] > {
+  const response = await this.request<{ data: any[] }>(`/system/tables/${tableName}`);
+  return response.data;
+}
 }
 
 export const apiService = new ApiService();

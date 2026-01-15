@@ -566,3 +566,19 @@ func (h *Handler) GetTaxRegimes(c *fiber.Ctx) error {
 		"motivosCancelamento": motivosCancelamento,
 	})
 }
+
+// LookupCNPJ looks up company data by CNPJ
+func (h *Handler) LookupCNPJ(c *fiber.Ctx) error {
+	cnpj := c.Params("cnpj")
+	if cnpj == "" {
+		return BadRequest(c, "CNPJ é obrigatório")
+	}
+
+	taxService := services.NewTaxCalculationService()
+	data, err := taxService.LookupCNPJ(cnpj)
+	if err != nil {
+		return BadRequest(c, err.Error())
+	}
+
+	return Success(c, data)
+}

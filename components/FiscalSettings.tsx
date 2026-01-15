@@ -10,13 +10,9 @@ interface FiscalSettingsProps {
 
 export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) => {
     const navigate = useNavigate();
-    const [config, setConfig] = useState<ConfiguracaoFiscal | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [certPassword, setCertPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [regimes, setRegimes] = useState<any[]>([]);
+    const [company, setCompany] = useState<any>(null);
+    const [cnpjInput, setCnpjInput] = useState('');
+    const [searching, setSearching] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -25,17 +21,52 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
     const loadData = async () => {
         try {
             setLoading(true);
-            const [configData, regimesData] = await Promise.all([
+            const [configData, regimesData, companyData] = await Promise.all([
                 apiService.getFiscalConfig(),
-                apiService.getTaxRegimes()
+                apiService.getTaxRegimes(),
+                apiService.getCompany()
             ]);
             setConfig(configData);
             setRegimes(regimesData);
+            setCompany(companyData);
+            if (companyData?.cnpj) {
+                setCnpjInput(companyData.cnpj);
+            }
         } catch (err: any) {
             console.error('Failed to load fiscal data:', err);
             setError(err.message || 'Erro ao carregar configurações fiscais');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleLookupCNPJ = async () => {
+        if (!cnpjInput) return;
+        setSearching(true);
+        try {
+            const data = await apiService.lookupCNPJ(cnpjInput);
+
+            // Auto-fill config based on returned data
+            setConfig(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    regimeTributario: data.regime_tributario || prev.regimeTributario,
+                    tipoCNPJ: data.opcao_pelo_mei ? 'MEI' : (data.opcao_pelo_simples ? 'EPP' : 'OUTROS'), // Simple heuristic
+                    // Reset rates if Simples/MEI
+                    aliquotaISSPadrao: data.regime_tributario === 'MEI' ? 0 : prev.aliquotaISSPadrao,
+                    aliquotaPIS: data.regime_tributario === 'SIMPLES_NACIONAL' || data.regime_tributario === 'MEI' ? 0 : 0.65,
+                    aliquotaCOFINS: data.regime_tributario === 'SIMPLES_NACIONAL' || data.regime_tributario === 'MEI' ? 0 : 3.0,
+                    aliquotaCSLL: data.regime_tributario === 'SIMPLES_NACIONAL' || data.regime_tributario === 'MEI' ? 0 : 9.0,
+                    aliquotaIRPJ: data.regime_tributario === 'SIMPLES_NACIONAL' || data.regime_tributario === 'MEI' ? 0 : 15.0,
+                };
+            });
+
+            alert(`Dados encontrados: ${data.razao_social}\nRegime sugerido: ${data.regime_tributario}`);
+        } catch (err: any) {
+            alert('Erro ao buscar CNPJ: ' + err.message);
+        } finally {
+            setSearching(false);
         }
     };
 
@@ -108,6 +139,33 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                         </h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">CNPJ da Empresa</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        className="flex-1 p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-transparent focus:bg-white"
+                                        value={cnpjInput}
+                                        onChange={e => setCnpjInput(e.target.value)}
+                                        placeholder="00.000.000/0000-00"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleLookupCNPJ}
+                                        disabled={searching || !cnpjInput}
+                                        className="px-6 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {searching ? (
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        ) : (
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                        )}
+                                        Buscar
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400 ml-2">Busque pelo CNPJ para preencher automaticamente.</p>
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Tipo de CNPJ</label>
                                 <select

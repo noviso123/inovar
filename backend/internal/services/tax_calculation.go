@@ -1,7 +1,9 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/inovar/backend/internal/models"
 )
@@ -299,20 +301,76 @@ func (s *TaxCalculationService) getFaixaDescricao(faixa string) string {
 	}
 }
 
-// DetectRegimeFromCNPJ attempts to detect regime from CNPJ characteristics
-// Note: In production, you'd integrate with Receita Federal API
-func (s *TaxCalculationService) DetectRegimeFromCNPJ(cnpj string) string {
-	// MEI CNPJs typically have specific patterns
-	// This is a simplified detection - real implementation would query Receita Federal
+// CNPJData represents data returned from CNPJ lookup
+type CNPJData struct {
+	CNPJ             string `json:"cnpj"`
+	RazaoSocial      string `json:"razao_social"`
+	NomeFantasia     string `json:"nome_fantasia"`
+	CNAE             string `json:"cnae_fiscal"`
+	CNAEDescricao    string `json:"cnae_fiscal_descricao"`
+	Logradouro       string `json:"logradouro"`
+	Numero           string `json:"numero"`
+	Complemento      string `json:"complemento"`
+	Bairro           string `json:"bairro"`
+	CEP              string `json:"cep"`
+	Municipio        string `json:"municipio"`
+	UF               string `json:"uf"`
+	RegimeTributario string `json:"regime_tributario"` // Inferred
+	Simples          *bool  `json:"opcao_pelo_simples"`
+	MEI              *bool  `json:"opcao_pelo_mei"`
+}
 
-	// For demo purposes, return based on CNPJ length (real detection needs API)
-	if len(cnpj) == 14 {
-		// In production: query Receita Federal CNPJ API
-		// Return detected regime
+// LookupCNPJ fetches company data from BrasilAPI
+func (s *TaxCalculationService) LookupCNPJ(cnpj string) (*CNPJData, error) {
+	// Remove non-digits
+	cleanCNPJ := ""
+	for _, c := range cnpj {
+		if c >= '0' && c <= '9' {
+			cleanCNPJ += string(c)
+		}
 	}
 
-	// Default to Simples Nacional (most common for small businesses)
-	return models.RegimeSimplesNac
+	if len(cleanCNPJ) != 14 {
+		return nil, fmt.Errorf("CNPJ inválido")
+	}
+
+	// Call BrasilAPI
+	resp, err := http.Get("https://brasilapi.com.br/api/cnpj/v1/" + cleanCNPJ)
+	if err != nil {
+		return nil, fmt.Errorf("erro ao consultar CNPJ: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("CNPJ não encontrado ou erro na API")
+	}
+
+	var data CNPJData
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, fmt.Errorf("erro ao decodificar resposta: %v", err)
+	}
+
+	// Infer regime
+	if data.MEI != nil && *data.MEI {
+		data.RegimeTributario = models.RegimeMEI
+	} else if data.Simples != nil && *data.Simples {
+		data.RegimeTributario = models.RegimeSimplesNac
+	} else {
+		// Default to Presumido if not Simples/MEI (common for services)
+		// User can change later
+		data.RegimeTributario = models.RegimeLucroPresumido
+	}
+
+	return &data, nil
+}
+
+// DetectRegimeFromCNPJ attempts to detect regime from CNPJ characteristics
+func (s *TaxCalculationService) DetectRegimeFromCNPJ(cnpj string) string {
+	data, err := s.LookupCNPJ(cnpj)
+	if err != nil {
+		return models.RegimeSimplesNac // Default
+	}
+	return data.RegimeTributario
 }
 
 // CalculateFaixaSimplesNacional determines the Simples Nacional bracket based on revenue
