@@ -171,7 +171,14 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.data;
+
+    // Sync updated user to localStorage so it persists on reload
+    const updatedUser = response.data;
+    if (updatedUser) {
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
+
+    return updatedUser;
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
@@ -403,6 +410,27 @@ class ApiService {
     return response.data;
   }
 
+  async getDANFSe(requestId: string): Promise<string> {
+    const response = await fetch(`${API_BASE}/requests/${requestId}/nfse/danfse`, {
+      headers: { 'Authorization': `Bearer ${this.accessToken}` }
+    });
+    if (!response.ok) throw new Error('Falha ao obter DANFS-e');
+    return response.text();
+  }
+
+  async getNFSeEventos(requestId: string): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>(`/requests/${requestId}/nfse/eventos`);
+    return response.data;
+  }
+
+  async cancelNFSeWithMotivo(requestId: string, motivo: number, justificativa?: string): Promise<any> {
+    const response = await this.request<{ data: any }>(`/requests/${requestId}/nfse/cancelar`, {
+      method: 'POST',
+      body: JSON.stringify({ motivo, justificativa }),
+    });
+    return response.data;
+  }
+
   async getFiscalConfig(): Promise<any> {
     const response = await this.request<{ data: any }>('/fiscal/config');
     return response.data;
@@ -412,6 +440,19 @@ class ApiService {
     const response = await this.request<{ data: any }>('/fiscal/config', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async getTaxRegimes(): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>('/fiscal/regimes');
+    return response.data;
+  }
+
+  async calculateTaxes(valorServicos: number, valorDeducoes: number = 0): Promise<any> {
+    const response = await this.request<{ data: any }>('/fiscal/calcular', {
+      method: 'POST',
+      body: JSON.stringify({ valorServicos, valorDeducoes }),
     });
     return response.data;
   }
@@ -445,34 +486,7 @@ class ApiService {
   }
 
   async uploadAttachment(requestId: string, file: File): Promise<any> {
-    // Check if file is an image - use ImgBB for images
-    const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
-
-    if (imageTypes.includes(file.type)) {
-      // Upload to ImgBB
-      const { imageUploadService } = await import('./imageUploadService');
-      const imgbbResponse = await imageUploadService.uploadFile(file);
-
-      if (imgbbResponse.success) {
-        // Save reference to our backend
-        const response = await this.request<{ data: any }>(`/requests/${requestId}/attachments`, {
-          method: 'POST',
-          body: JSON.stringify({
-            fileName: file.name,
-            filePath: imgbbResponse.data.url,
-            mimeType: file.type,
-            fileSize: file.size,
-            externalUrl: imgbbResponse.data.url,
-            thumbnailUrl: imgbbResponse.data.thumb?.url,
-            deleteUrl: imgbbResponse.data.delete_url,
-          }),
-        });
-        return response.data;
-      }
-      throw new Error('Failed to upload image to ImgBB');
-    }
-
-    // For non-images, upload to backend directly
+    // Upload to backend directly (Local Storage)
     const formData = new FormData();
     formData.append('file', file);
 
@@ -485,6 +499,9 @@ class ApiService {
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Erro ao enviar anexo');
+    }
     return data.data;
   }
 
@@ -655,6 +672,21 @@ class ApiService {
     if (data.erro) throw new Error('CEP não encontrado');
 
     return data;
+  }
+  // System Visibility
+  async getSystemRoutes(): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>('/system/routes');
+    return response.data;
+  }
+
+  async getSystemTables(): Promise<string[]> {
+    const response = await this.request<{ data: string[] }>('/system/tables');
+    return response.data;
+  }
+
+  async getSystemTableData(tableName: string): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>(`/system/tables/${tableName}`);
+    return response.data;
   }
 }
 

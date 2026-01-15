@@ -9,6 +9,7 @@ import (
 
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/models"
+	"github.com/inovar/backend/internal/utils"
 )
 
 // SLA hours by priority
@@ -168,6 +169,7 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 
 	return Created(c, solicitacao)
 }
+
 // GetRequest returns a specific request (supports both UUID and sequential number)
 func (h *Handler) GetRequest(c *fiber.Ctx) error {
 	id := c.Params("id")
@@ -613,11 +615,10 @@ func (h *Handler) UploadAttachment(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx "+strconv.FormatInt(h.Config.MaxUploadSize/1024/1024, 10)+"MB)")
 	}
 
-	// Save file
-	filename := uuid.New().String() + "_" + file.Filename
-	filepath := h.Config.UploadDir + "/" + filename
-
-	if err := c.SaveFile(file, filepath); err != nil {
+	// Save file using structured storage
+	// Category: anexos, Subfolder: requestID
+	url, err := utils.SaveFile(c, file, "anexos", requestID)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
@@ -629,7 +630,7 @@ func (h *Handler) UploadAttachment(c *fiber.Ctx) error {
 		ID:             uuid.New().String(),
 		SolicitacaoID:  requestID,
 		FileName:       file.Filename,
-		FilePath:       "/uploads/" + filename,
+		FilePath:       url,
 		MimeType:       file.Header.Get("Content-Type"),
 		FileSize:       file.Size,
 		UploadedByID:   userID,

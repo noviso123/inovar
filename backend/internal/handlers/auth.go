@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -21,28 +22,20 @@ type LoginRequest struct {
 func (h *Handler) Login(c *fiber.Ctx) error {
 	var req LoginRequest
 	if err := c.BodyParser(&req); err != nil {
-		println("🔴 Login: Body parse error:", err.Error())
 		return BadRequest(c, "Dados inválidos")
 	}
-
-	println("🔐 Login attempt for email:", req.Email)
-	println("🔐 Password length:", len(req.Password))
 
 	// Find user
 	var user models.User
 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		println("🔴 Login: User not found:", req.Email)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
 	}
 
-	println("✅ User found:", user.Email, "Active:", user.Active)
-
 	// Check if active
 	if !user.Active {
-		println("🔴 Login: User blocked:", user.Email)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "user_blocked",
 			"message": "Usuário bloqueado. Contate o administrador.",
@@ -51,15 +44,11 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		println("🔴 Login: Password mismatch for:", user.Email, "Error:", err.Error())
-		println("🔴 Received password:", req.Password)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
 	}
-
-	println("✅ Login successful for:", user.Email)
 
 	// Get company ID
 	companyID := ""
@@ -208,14 +197,15 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	user.ResetTokenExpiresAt = &expiration
 	h.DB.Save(&user)
 
-	// Simulate Email Sending - Print to console for testing
-	// In production, integrate with SMTP
-	println("==========================================")
-	println("📧 Simulated Email: Password Reset Requested")
-	println("To: " + user.Email)
-	println("Token: " + token)
-	println("Link: http://localhost:3000/reset-password?token=" + token)
-	println("==========================================")
+	// Send email using EmailService
+	if h.EmailService != nil {
+		go func() {
+			if err := h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name); err != nil {
+				// Log error but don't expose to user
+				log.Printf("Erro ao enviar email de recuperação: %v", err)
+			}
+		}()
+	}
 
 	return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 }
@@ -273,9 +263,9 @@ func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 
 // UpdateCurrentUserRequest represents profile update payload
 type UpdateCurrentUserRequest struct {
-	Name      string `json:"name"`
-	Phone     string `json:"phone"`
-	AvatarURL string `json:"avatarUrl"`
+	Name      *string `json:"name"`
+	Phone     *string `json:"phone"`
+	AvatarURL *string `json:"avatarUrl"`
 }
 
 // UpdateCurrentUser updates the authenticated user's profile
@@ -292,10 +282,14 @@ func (h *Handler) UpdateCurrentUser(c *fiber.Ctx) error {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	user.Name = req.Name
-	user.Phone = req.Phone
-	if req.AvatarURL != "" {
-		user.AvatarURL = req.AvatarURL
+	if req.Name != nil {
+		user.Name = *req.Name
+	}
+	if req.Phone != nil {
+		user.Phone = *req.Phone
+	}
+	if req.AvatarURL != nil {
+		user.AvatarURL = *req.AvatarURL
 	}
 	user.UpdatedAt = time.Now()
 

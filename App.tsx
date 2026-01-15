@@ -36,6 +36,8 @@ import { ForgotPassword } from './components/ForgotPassword';
 import { ResetPassword } from './components/ResetPassword';
 import { ServiceOrderPrint } from './components/ServiceOrderPrint';
 import { BudgetPrint } from './components/BudgetPrint';
+import SystemStatus from './components/SystemStatus';
+import { FiscalSettings } from './components/FiscalSettings';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -309,61 +311,85 @@ const App: React.FC = () => {
   // COMMON ROUTES FOR ALL ROLES
   // ============================================
   const renderCommonRoutes = (prefix: string) => [
-    <Route key="dashboard" index element={
-      <Dashboard
-        requests={filteredRequests}
-        onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
-        currentUser={currentUser!}
-        onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
-      />
-    } />,
-    <Route key="chamados" path="chamados" element={
-      <RequestListPage
-        requests={filteredRequests}
-        onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
-        onCreateNew={() => navigate(`/${prefix}/chamados/novo`)}
-        rolePrefix={prefix}
-      />
-    } />,
-    <Route key="chamados-novo" path="chamados/novo" element={
-      <RequestFlow
-        currentUser={currentUser!}
-        onCancel={() => navigate(`/${prefix}/chamados`)}
-        onComplete={handleCreateRequest}
-      />
-    } />,
-    <Route key="chamados-id" path="chamados/:id" element={
-      <RequestDetail
-        request={selectedRequest!}
-        currentUser={currentUser!}
-        onUpdateStatus={(st) => selectedRequest && handleUpdateStatus(selectedRequest.id, st)}
-        onClose={() => { setSelectedRequest(null); navigate(`/${prefix}/chamados`); }}
-      />
-    } />,
-    <Route key="perfil" path="perfil" element={
-      <Profile user={currentUser!} onUpdateUser={setCurrentUser} rolePrefix={prefix} />
-    } />,
-    <Route key="maquinas" path="maquinas" element={
-      <EquipmentManager currentUser={currentUser!} />
-    } />,
-    <Route key="maquinas-nova" path="maquinas/nova" element={
-      <EquipmentForm currentUser={currentUser!} />
-    } />,
-    <Route key="maquinas-editar" path="maquinas/:id/editar" element={
-      <EquipmentForm currentUser={currentUser!} />
-    } />,
-    <Route key="notificacoes" path="notificacoes" element={
-      <NotificationsPage currentUser={currentUser!} />
-    } />,
-    <Route key="privacidade" path="privacidade" element={
-      <PrivacyPage />
-    } />,
-    <Route key="ajuda" path="ajuda" element={
-      <HelpPage />
-    } />,
-    <Route key="perfil-editar" path="perfil/editar" element={
-      <ProfileEdit user={currentUser!} onUpdateUser={setCurrentUser} />
-    } />
+    <React.Fragment key="dashboard">
+      <Route index element={
+        <Dashboard
+          requests={filteredRequests}
+          onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
+          currentUser={currentUser!}
+          onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
+        />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="chamados">
+      <Route path="chamados" element={
+        <RequestListPage
+          requests={filteredRequests}
+          onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
+          onCreateNew={() => navigate(`/${prefix}/chamados/novo`)}
+          rolePrefix={prefix}
+        />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="chamados-novo">
+      <Route path="chamados/novo" element={
+        <RequestFlow
+          currentUser={currentUser!}
+          onCancel={() => navigate(`/${prefix}/chamados`)}
+          onComplete={handleCreateRequest}
+        />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="chamados-id">
+      <Route path="chamados/:id" element={
+        <RequestDetail
+          request={selectedRequest!}
+          currentUser={currentUser!}
+          onUpdateStatus={(st) => selectedRequest && handleUpdateStatus(selectedRequest.id, st)}
+          onClose={() => { setSelectedRequest(null); navigate(`/${prefix}/chamados`); }}
+        />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="perfil">
+      <Route path="perfil" element={
+        <Profile user={currentUser!} onUpdateUser={setCurrentUser} rolePrefix={prefix} />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="maquinas">
+      <Route path="maquinas" element={
+        <EquipmentManager currentUser={currentUser!} />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="maquinas-nova">
+      <Route path="maquinas/nova" element={
+        <EquipmentForm currentUser={currentUser!} />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="maquinas-editar">
+      <Route path="maquinas/:id/editar" element={
+        <EquipmentForm currentUser={currentUser!} />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="notificacoes">
+      <Route path="notificacoes" element={
+        <NotificationsPage currentUser={currentUser!} />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="privacidade">
+      <Route path="privacidade" element={
+        <PrivacyPage />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="ajuda">
+      <Route path="ajuda" element={
+        <HelpPage />
+      } />
+    </React.Fragment>,
+    <React.Fragment key="perfil-editar">
+      <Route path="perfil/editar" element={
+        <ProfileEdit user={currentUser!} onUpdateUser={setCurrentUser} />
+      } />
+    </React.Fragment>
   ];
 
   // ============================================
@@ -446,6 +472,7 @@ const App: React.FC = () => {
           <Route path="usuarios/novo" element={<UserForm currentUser={currentUser!} />} />
           <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
           <Route path="financeiro" element={<Finance />} />
+          <Route path="fiscal" element={<FiscalSettings currentUser={currentUser!} />} />
           <Route path="marketing" element={<MarketingQR currentUser={currentUser!} />} />
         </Route>
 
@@ -471,9 +498,11 @@ const App: React.FC = () => {
           <Route path="usuarios/novo" element={<UserForm currentUser={currentUser!} />} />
           <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
           <Route path="financeiro" element={<Finance />} />
+          <Route path="fiscal" element={<FiscalSettings currentUser={currentUser!} />} />
           <Route path="marketing" element={<MarketingQR currentUser={currentUser!} />} />
           <Route path="auditoria" element={<AuditPanel currentUser={currentUser!} />} />
           <Route path="configuracoes" element={<SystemSettings />} />
+          <Route path="system" element={<SystemStatus />} />
         </Route>
 
         {/* Catch-all redirect */}

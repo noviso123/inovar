@@ -804,53 +804,123 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                   )}
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className={`p-4 rounded-xl border ${nfse.status === 'EMITIDA' ? 'bg-emerald-50 border-emerald-200' :
-                    nfse.status === 'ERRO' ? 'bg-rose-50 border-rose-200' :
-                      'bg-amber-50 border-amber-200'
+                <div className="space-y-6">
+                  <div className={`p-6 rounded-[2rem] border-2 ${nfse.status === 'EMITIDA' ? 'bg-emerald-50 border-emerald-100' :
+                    nfse.status === 'ERRO' ? 'bg-rose-50 border-rose-100' :
+                      'bg-amber-50 border-amber-100'
                     }`}>
-                    <span className="text-[10px] uppercase font-black tracking-widest block mb-1">
-                      {nfse.status === 'EMITIDA' ? 'Sucesso' : nfse.status === 'ERRO' ? 'Erro' : 'Processando'}
-                    </span>
-                    <p className={`text-lg font-black ${nfse.status === 'EMITIDA' ? 'text-emerald-700' :
-                      nfse.status === 'ERRO' ? 'text-rose-700' :
-                        'text-amber-700'
-                      }`}>
-                      {nfse.status === 'EMITIDA' ? `Nota Fiscal Nº ${nfse.numero}` :
-                        nfse.status === 'ERRO' ? 'Falha na emissão' : 'Aguardando Sefaz'}
-                    </p>
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <span className={`text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full ${nfse.status === 'EMITIDA' ? 'bg-emerald-500 text-white' :
+                            nfse.status === 'ERRO' ? 'bg-rose-500 text-white' :
+                              'bg-amber-500 text-white'
+                          }`}>
+                          {nfse.status === 'EMITIDA' ? 'Emitida' : nfse.status === 'ERRO' ? 'Erro' : 'Processando'}
+                        </span>
+                        <p className={`text-2xl font-black mt-2 ${nfse.status === 'EMITIDA' ? 'text-emerald-800' :
+                          nfse.status === 'ERRO' ? 'text-rose-800' :
+                            'text-amber-800'
+                          }`}>
+                          {nfse.status === 'EMITIDA' ? `NFS-e #${nfse.numero}` :
+                            nfse.status === 'ERRO' ? 'Falha na emissão' : 'Processando via GOV.BR'}
+                        </p>
+                      </div>
+                      {nfse.status === 'EMITIDA' && (
+                        <div className="text-right">
+                          <p className="text-[10px] text-slate-400 font-black uppercase">Código Verificação</p>
+                          <p className="text-xs font-mono font-bold text-slate-600">{nfse.codigoVerificacao || '---'}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/40">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Tomador</span>
+                        <p className="text-sm font-black text-slate-800 mt-1">{nfse.tomadorNome}</p>
+                        <p className="text-xs font-bold text-slate-500">{nfse.tomadorDocumento}</p>
+                      </div>
+                      <div className="bg-white/60 backdrop-blur-sm p-4 rounded-2xl border border-white/40">
+                        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Resumo Financeiro</span>
+                        <div className="flex justify-between items-end mt-1">
+                          <div>
+                            <p className="text-[10px] text-slate-400 font-bold">Valor Bruto</p>
+                            <p className="text-sm font-black text-slate-800">R$ {nfse.valorServicos.toFixed(2)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-emerald-600 font-bold">Valor Líquido</p>
+                            <p className="text-lg font-black text-emerald-700">R$ {nfse.valorLiquido.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {nfse.status === 'EMITIDA' && (
+                      <div className="flex gap-3 mt-6">
+                        <button
+                          onClick={() => window.open(`/api/requests/${request.id}/nfse/danfse`, '_blank')}
+                          className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-600/30 hover:bg-blue-700 transition-all active:scale-95"
+                        >
+                          Visualizar DANFS-e
+                        </button>
+                        <button
+                          onClick={() => window.open(`/api/requests/${request.id}/nfse`, '_blank')}
+                          className="flex-1 py-4 bg-slate-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-slate-800/30 hover:bg-slate-900 transition-all active:scale-95"
+                        >
+                          Baixar XML
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Tomador</span>
-                      <p className="text-xs font-bold text-slate-700 mt-1">{nfse.tomadorNome}</p>
-                      <p className="text-[10px] text-slate-500">{nfse.tomadorDocumento}</p>
-                    </div>
-                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase">Valor</span>
-                      <p className="text-xs font-bold text-slate-700 mt-1">R$ {nfse.valorLiquido.toFixed(2)}</p>
-                    </div>
-                  </div>
-
-                  {nfse.status === 'EMITIDA' && (
-                    <div className="flex gap-2 mt-4">
-                      <button className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-slate-800">
-                        Baixar XML
-                      </button>
-                      <button className="flex-1 py-3 bg-cyan-600 text-white rounded-xl font-bold text-xs uppercase hover:bg-cyan-700">
-                        Baixar PDF
-                      </button>
+                  {/* Event History */}
+                  {nfseEventos.length > 0 && (
+                    <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm">
+                      <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Histórico de Eventos</h5>
+                      <div className="space-y-4">
+                        {nfseEventos.map((evento, idx) => (
+                          <div key={evento.id} className="flex gap-4 relative">
+                            {idx < nfseEventos.length - 1 && (
+                              <div className="absolute left-2 top-6 bottom-0 w-0.5 bg-slate-100"></div>
+                            )}
+                            <div className={`w-4 h-4 rounded-full mt-1 flex-shrink-0 z-10 ${evento.tipo === 'EMISSAO' ? 'bg-blue-500' :
+                                evento.tipo === 'CANCELAMENTO' ? 'bg-rose-500' :
+                                  'bg-slate-300'
+                              }`}></div>
+                            <div className="flex-1 pb-4">
+                              <div className="flex justify-between items-start">
+                                <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{evento.tipo}</p>
+                                <span className="text-[9px] font-bold text-slate-400">{new Date(evento.createdAt).toLocaleString()}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed">{evento.mensagem}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {canManageNFSe && nfse.status !== 'CANCELADA' && (
-                    <button
-                      onClick={handleCancelNFSe}
-                      className="w-full mt-4 py-3 bg-rose-100 text-rose-600 rounded-xl font-bold text-xs uppercase hover:bg-rose-200"
-                    >
-                      Cancelar NFS-e
-                    </button>
+                    <div className="pt-4">
+                      <button
+                        onClick={() => {
+                          const motivo = prompt("Motivo do cancelamento:\n1 - Erro na Emissão\n2 - Serviço não Prestado\n3 - Duplicidade\n4 - Erro de Preenchimento", "1");
+                          if (motivo) {
+                            const justificativa = prompt("Justificativa (opcional):");
+                            apiService.cancelNFSeWithMotivo(request.id, parseInt(motivo), justificativa || undefined)
+                              .then(() => {
+                                alert('Cancelamento solicitado com sucesso!');
+                                // Trigger reload
+                                apiService.getNFSe(request.id).then(setNfse);
+                                apiService.getNFSeEventos(request.id).then(setNfseEventos);
+                              })
+                              .catch(err => alert('Erro ao cancelar: ' + err.message));
+                          }
+                        }}
+                        className="w-full py-4 bg-rose-50 text-rose-600 rounded-2xl font-black text-xs uppercase tracking-widest border-2 border-rose-100 hover:bg-rose-100 transition-all"
+                      >
+                        Cancelar NFS-e Nacional
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

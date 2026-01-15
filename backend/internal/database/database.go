@@ -57,6 +57,7 @@ func Migrate(db *gorm.DB) error {
 		&models.NotaFiscal{},
 		&models.CertificadoDigital{},
 		&models.ConfiguracaoFiscal{},
+		&models.NFSeEvento{}, // NFS-e authorization/cancellation events
 	)
 
 	if err != nil {

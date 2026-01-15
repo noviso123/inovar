@@ -149,12 +149,17 @@ func main() {
 	requests.Post("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.IssueNFSe)
 	requests.Delete("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.CancelNFSe)
 	requests.Get("/:id/nfse", h.GetNFSe)
+	requests.Get("/:id/nfse/danfse", h.GetDANFSe)                                                                      // DANFS-e - Documento Auxiliar
+	requests.Get("/:id/nfse/eventos", h.GetNFSeEventos)                                                                // Event history
+	requests.Post("/:id/nfse/cancelar", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.CancelNFSeWithMotivo) // Cancel with reason
 
 	// Fiscal Management
 	fiscal := protected.Group("/fiscal", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"))
 	fiscal.Get("/config", h.GetFiscalConfig)
 	fiscal.Put("/config", h.UpdateFiscalConfig)
 	fiscal.Post("/certificate", h.UploadCertificate)
+	fiscal.Get("/regimes", h.GetTaxRegimes)    // Available tax regimes
+	fiscal.Post("/calcular", h.CalculateTaxes) // Calculate taxes automatically
 
 	// Agenda
 	agenda := protected.Group("/agenda", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"))
@@ -177,8 +182,19 @@ func main() {
 	settings.Get("/", h.GetSettings)
 	settings.Put("/", h.UpdateSettings)
 
-	// Serve static files (attachments)
-	app.Static("/uploads", "./uploads")
+	// System Visibility (Admin only)
+	system := protected.Group("/system", middleware.RolesAllowed("ADMIN_SISTEMA"))
+	system.Get("/routes", h.ListRoutes)
+	system.Get("/tables", h.ListTables)
+	system.Get("/tables/:name", h.GetTableData)
+
+	// Serve static files (storage)
+	// Ensure directory exists
+	os.MkdirAll("./storage", 0755)
+	app.Static("/storage", "./storage")
+	// Keep /uploads for backward compatibility if needed, or remove it.
+	// The new helper uses /storage, so let's serve that.
+	// app.Static("/uploads", cfg.UploadDir) // Legacy
 
 	// WebSocket for real-time updates
 	app.Get("/ws", websocket.Upgrade(), websocket.Handler(h.Hub))

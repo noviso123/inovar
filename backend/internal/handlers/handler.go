@@ -5,14 +5,16 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/inovar/backend/internal/config"
+	"github.com/inovar/backend/internal/services"
 	"github.com/inovar/backend/internal/websocket"
 )
 
 // Handler contains all HTTP handlers
 type Handler struct {
-	DB     *gorm.DB
-	Config *config.Config
-	Hub    *websocket.Hub
+	DB           *gorm.DB
+	Config       *config.Config
+	Hub          *websocket.Hub
+	EmailService *services.EmailService
 }
 
 // New creates a new Handler instance
@@ -20,10 +22,13 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 	hub := websocket.NewHub()
 	go hub.Run()
 
+	emailService := services.NewEmailService(cfg)
+
 	return &Handler{
-		DB:     db,
-		Config: cfg,
-		Hub:    hub,
+		DB:           db,
+		Config:       cfg,
+		Hub:          hub,
+		EmailService: emailService,
 	}
 }
 

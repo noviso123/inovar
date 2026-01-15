@@ -6,6 +6,17 @@ export enum UserRole {
   CLIENTE = 'CLIENTE'
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId?: string;
+  avatarUrl?: string;
+  active: boolean;
+  createdAt?: string;
+}
+
 export enum RequestStatus {
   ABERTA = 'ABERTA',
   PENDENTE = 'PENDENTE',
@@ -138,10 +149,32 @@ export interface NotaFiscal {
 
 export interface ConfiguracaoFiscal {
   id?: string;
-  inscricaoMunicipal?: string;
-  cnae?: string;
+  prestadorId?: string;
+  tipoCNPJ: 'MEI' | 'ME' | 'EPP' | 'OUTROS';
   regimeTributario: string;
+  faixaSimplesNac?: string;
+  aliquotaSimplesNac?: number;
+  aliquotaISSPadrao?: number;
+  issRetido?: boolean;
+  codigoServico?: string;
+  aliquotaPIS?: number;
+  aliquotaCOFINS?: number;
+  aliquotaCSLL?: number;
+  aliquotaIRPJ?: number;
+  aliquotaINSS?: number;
   ambiente: 'PRODUCAO' | 'HOMOLOGACAO';
+}
+
+export interface NFSeEvento {
+  id: string;
+  nfseId: string;
+  tipo: string;
+  status: string;
+  mensagem: string;
+  codigoRetorno?: string;
+  xmlRetorno?: string;
+  userId?: string;
+  createdAt: string;
 }
 
 export interface TimelineEvent {

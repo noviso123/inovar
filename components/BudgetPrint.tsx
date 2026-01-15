@@ -110,50 +110,50 @@ export const BudgetPrint: React.FC = () => {
                 </table>
             </div>
 
-        </div>
 
-            {/* Payment & PIX */ }
-    <div className="mb-6 grid grid-cols-2 gap-8">
-        <div className="text-sm">
-            <h3 className="font-bold uppercase text-sm mb-2">Condições</h3>
-            <ul className="list-disc list-inside text-gray-600 space-y-1">
-                <li>Validade deste orçamento: 15 dias.</li>
-                <li>Pagamento: A combinar.</li>
-                <li>Garantia dos serviços: 90 dias.</li>
-            </ul>
-        </div>
-        {company?.pixKey && pixPayload && (
-            <div className="border border-black rounded p-4 flex items-center gap-4">
-                <div className="bg-white p-2">
-                    {/* @ts-ignore */}
-                    <QRCodeSVG value={pixPayload} size={80} />
+
+            {/* Payment & PIX */}
+            <div className="mb-6 grid grid-cols-2 gap-8">
+                <div className="text-sm">
+                    <h3 className="font-bold uppercase text-sm mb-2">Condições</h3>
+                    <ul className="list-disc list-inside text-gray-600 space-y-1">
+                        <li>Validade deste orçamento: 15 dias.</li>
+                        <li>Pagamento: A combinar.</li>
+                        <li>Garantia dos serviços: 90 dias.</li>
+                    </ul>
                 </div>
-                <div>
-                    <h3 className="font-bold uppercase text-sm mb-1">Pague com PIX</h3>
-                    <p className="text-xs text-gray-600 mb-1">Chave ({company.pixKeyType || 'PIX'}):</p>
-                    <p className="font-mono font-bold text-sm">{company.pixKey}</p>
-                    <p className="text-[10px] text-gray-500 mt-1">Escaneie para pagar R$ {total.toFixed(2)}</p>
+                {company?.pixKey && pixPayload && (
+                    <div className="border border-black rounded p-4 flex items-center gap-4">
+                        <div className="bg-white p-2">
+                            {/* @ts-ignore */}
+                            <QRCodeSVG value={pixPayload} size={80} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold uppercase text-sm mb-1">Pague com PIX</h3>
+                            <p className="text-xs text-gray-600 mb-1">Chave ({company.pixKeyType || 'PIX'}):</p>
+                            <p className="font-mono font-bold text-sm">{company.pixKey}</p>
+                            <p className="text-[10px] text-gray-500 mt-1">Escaneie para pagar R$ {total.toFixed(2)}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Signatures */}
+            <div className="mt-12 grid grid-cols-2 gap-12">
+                <div className="text-center">
+                    <div className="h-16 border-b border-black mb-2"></div>
+                    <p className="text-sm font-bold">Aprovado por (Cliente)</p>
+                </div>
+                <div className="text-center">
+                    <div className="h-16 border-b border-black mb-2"></div>
+                    <p className="text-sm font-bold">Responsável Técnico</p>
                 </div>
             </div>
-        )}
-    </div>
 
-    {/* Signatures */ }
-    <div className="mt-12 grid grid-cols-2 gap-12">
-        <div className="text-center">
-            <div className="h-16 border-b border-black mb-2"></div>
-            <p className="text-sm font-bold">Aprovado por (Cliente)</p>
-        </div>
-        <div className="text-center">
-            <div className="h-16 border-b border-black mb-2"></div>
-            <p className="text-sm font-bold">Responsável Técnico</p>
-        </div>
-    </div>
-
-    {/* Footer */ }
-    <div className="mt-12 text-center text-xs text-gray-500 border-t pt-4">
-        <p>Gerado em {new Date().toLocaleString()} pelo sistema INOVAR.</p>
-    </div>
+            {/* Footer */}
+            <div className="mt-12 text-center text-xs text-gray-500 border-t pt-4">
+                <p>Gerado em {new Date().toLocaleString()} pelo sistema INOVAR.</p>
+            </div>
         </div >
     );
 };

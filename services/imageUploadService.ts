@@ -5,13 +5,6 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 interface UploadResponse {
   success: boolean;
-  url: string;
-  filename: string;
-}
-
-// Keep ImgBBResponse for compatibility if needed, but we are switching to backend
-interface ImgBBResponse {
-  success: boolean;
   data: {
     url: string;
     [key: string]: any;
@@ -25,7 +18,7 @@ class ImageUploadService {
    * @param name - Optional custom name (unused in backend for now)
    * @returns Promise with the upload response
    */
-  async uploadFile(file: File, name?: string): Promise<ImgBBResponse> {
+  async uploadFile(file: File, name?: string): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
 
@@ -45,7 +38,8 @@ class ImageUploadService {
       throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const responseData = await response.json();
+    const data = responseData.data;
 
     // Build the full URL correctly
     // API_BASE is like "http://localhost:8080/api"
@@ -57,7 +51,7 @@ class ImageUploadService {
 
     console.log('📸 Upload successful:', { dataUrl: data.url, fullUrl });
 
-    // Adapt response to match what components expect (ImgBB structure)
+    // Adapt response to match what components expect
     // Components expect: response.success and response.data.url
     return {
       success: true,
@@ -89,14 +83,14 @@ class ImageUploadService {
         },
         delete_url: ""
       }
-    } as ImgBBResponse;
+    } as UploadResponse;
   }
 
   /**
    * Upload an image from base64 string
    * @param base64 - Base64 encoded image data
    */
-  async uploadBase64(base64: string, name?: string): Promise<ImgBBResponse> {
+  async uploadBase64(base64: string, name?: string): Promise<UploadResponse> {
     // Convert base64 to blob/file
     const res = await fetch(base64);
     const blob = await res.blob();
@@ -108,7 +102,7 @@ class ImageUploadService {
    * Upload an image from URL
    * @param imageUrl - URL of the image to upload
    */
-  async uploadFromUrl(imageUrl: string, name?: string): Promise<ImgBBResponse> {
+  async uploadFromUrl(imageUrl: string, name?: string): Promise<UploadResponse> {
     // If it's already a backend URL, just return it
     if (imageUrl.includes(API_BASE.replace('/api', ''))) {
       return {
@@ -135,6 +129,7 @@ class ImageUploadService {
 
   /**
    * Convert File to base64 string
+   * ... (rest of methods)
    */
   fileToBase64(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -168,4 +163,4 @@ class ImageUploadService {
 }
 
 export const imageUploadService = new ImageUploadService();
-export type { ImgBBResponse };
+export type { UploadResponse };

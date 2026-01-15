@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+	"github.com/inovar/backend/internal/utils"
 )
 
 // UploadFile uploads a generic file and returns the URL
@@ -19,24 +20,28 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx 10MB)")
 	}
 
-	// Generate unique filename
-	ext := filepath.Ext(file.Filename)
-	filename := uuid.New().String() + ext
-	savePath := "./uploads/" + filename
+	// Determine category based on extension or other logic
+	category := "outros"
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
+		category = "imagens"
+	} else if ext == ".pdf" {
+		category = "documentos"
+	}
 
-	// Save file
-	if err := c.SaveFile(file, savePath); err != nil {
+	// Use "temp" or "geral" as subfolder since this is a generic upload endpoint
+	subfolder := "geral"
+
+	// Save using helper
+	url, err := utils.SaveFile(c, file, category, subfolder)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	// Return URL
-	// The server serves /uploads at root via app.Static("/uploads", "./uploads")
-	url := "/uploads/" + filename
-
-	// Return format compatible with what frontend might expect or just a simple object
+	// Return format compatible with what frontend might expect
 	return Success(c, fiber.Map{
 		"url":      url,
-		"filename": filename,
+		"filename": filepath.Base(url),
 		"success":  true,
 	})
 }

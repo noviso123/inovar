@@ -1,6 +1,9 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"log"
 	"os"
 	"strconv"
 )
@@ -20,12 +23,17 @@ type Config struct {
 	MaxUploadSize     int64
 	LockTimeoutSecs   int
 	ConfirmDays       int
+	Environment       string // development, staging, production
 }
 
 func Load() *Config {
+	env := getEnv("ENVIRONMENT", "development")
+	jwtSecret := loadJWTSecret(env)
+
 	return &Config{
+		Environment:       env,
 		DatabaseURL:       getEnv("DATABASE_URL", "./storage/inovar.db"),
-		JWTSecret:         getEnv("JWT_SECRET", "inovar-super-secret-key-change-in-production"),
+		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
 		CorsOrigins:       getEnv("CORS_ORIGINS", "*"),
@@ -39,6 +47,39 @@ func Load() *Config {
 		LockTimeoutSecs:   getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
 		ConfirmDays:       getEnvInt("CONFIRM_DAYS", 7),
 	}
+}
+
+// loadJWTSecret loads JWT secret from environment or generates one for development
+func loadJWTSecret(env string) string {
+	secret := os.Getenv("JWT_SECRET")
+
+	if secret == "" {
+		if env == "production" || env == "staging" {
+			log.Fatal("❌ ERRO FATAL: JWT_SECRET não definido. Esta variável é obrigatória em produção!")
+		}
+
+		// Generate a random secret for development
+		secret = generateRandomSecret()
+		log.Printf("⚠️ AVISO: JWT_SECRET não definido. Usando secret aleatório para desenvolvimento: %s", secret[:8]+"...")
+		log.Println("⚠️ Defina JWT_SECRET em produção via variável de ambiente!")
+	}
+
+	// Validate minimum length
+	if len(secret) < 32 {
+		log.Println("⚠️ AVISO: JWT_SECRET muito curto. Recomendamos pelo menos 32 caracteres.")
+	}
+
+	return secret
+}
+
+// generateRandomSecret generates a cryptographically secure random secret
+func generateRandomSecret() string {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		// Fallback to a default for development only
+		return "inovar-dev-secret-change-in-production-" + hex.EncodeToString(bytes[:8])
+	}
+	return hex.EncodeToString(bytes)
 }
 
 func getEnv(key, defaultValue string) string {

@@ -19,13 +19,27 @@ export const ProfileEdit: React.FC<ProfileEditProps> = ({ currentUser, onUpdateU
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        if (currentUser) {
-            setFormData({
-                name: currentUser.name || '',
-                email: currentUser.email || '',
-                phone: currentUser.phone || '',
-            });
-        }
+        const loadUser = async () => {
+            try {
+                const user = await apiService.getCurrentUser();
+                setFormData({
+                    name: user.name || '',
+                    email: user.email || '',
+                    phone: user.phone || '',
+                });
+            } catch (err) {
+                console.error('Failed to load user profile', err);
+                // Fallback to prop if fetch fails
+                if (currentUser) {
+                    setFormData({
+                        name: currentUser.name || '',
+                        email: currentUser.email || '',
+                        phone: currentUser.phone || '',
+                    });
+                }
+            }
+        };
+        loadUser();
     }, [currentUser]);
 
     const handleSave = async (e: React.FormEvent) => {
