@@ -13,6 +13,13 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
     const [company, setCompany] = useState<any>(null);
     const [cnpjInput, setCnpjInput] = useState('');
     const [searching, setSearching] = useState(false);
+    const [config, setConfig] = useState<ConfiguracaoFiscal | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [certPassword, setCertPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [regimes, setRegimes] = useState<any[]>([]);
 
     useEffect(() => {
         loadData();
