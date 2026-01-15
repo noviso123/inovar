@@ -644,8 +644,12 @@ class ApiService {
 
   // Finance - List Transactions
   async getFinanceTransactions(): Promise<any[]> {
-    const response = await this.request<{ data: any[] }>('/finance/transactions');
-    return response.data;
+    const response = await this.request<{ data: any }>('/finance/transactions');
+    // Backend reuses GetFinanceSummary, so we need to extract transactions if it returns the full object
+    if (response.data && !Array.isArray(response.data) && response.data.transactions) {
+      return response.data.transactions;
+    }
+    return response.data as any[];
   }
 
   // Utils
