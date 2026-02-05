@@ -59,6 +59,11 @@ type DANFSeData struct {
 	AliquotaISS   string
 	ValorISS      string
 	ISSRetido     bool
+	ValorPIS      string
+	ValorCOFINS   string
+	ValorCSLL     string
+	ValorIR       string
+	ValorINSS     string
 
 	// Extras
 	LinkVerificacao   string
@@ -97,6 +102,12 @@ func (s *DANFSeService) Generate(nfse *models.NotaFiscal, prestador *models.Pres
 		ValorLiquido:  formatMoney(nfse.ValorLiquido),
 		AliquotaISS:   fmt.Sprintf("%.2f%%", nfse.AliquotaISS),
 		ValorISS:      formatMoney(nfse.ValorISS),
+		ValorPIS:      formatMoney(nfse.ValorPIS),
+		ValorCOFINS:   formatMoney(nfse.ValorCOFINS),
+		ValorCSLL:     formatMoney(nfse.ValorCSLL),
+		ValorIR:       formatMoney(nfse.ValorIR),
+		ValorINSS:     formatMoney(nfse.ValorINSS),
+		CNAE:          nfse.CNAE,
 
 		Ambiente:        "Produção",
 		LinkVerificacao: fmt.Sprintf("https://nfse.gov.br/consulta?chave=%s", nfse.CodigoVerificacao),
@@ -191,9 +202,9 @@ const danfseTemplate = `<!DOCTYPE html>
     <title>DANFS-e - NFS-e Nº {{.NumeroNFSe}}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            font-size: 11px; 
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 11px;
             line-height: 1.4;
             color: #333;
             padding: 20px;
@@ -451,6 +462,36 @@ const danfseTemplate = `<!DOCTYPE html>
                 <td class="label">Valor do ISS {{if .ISSRetido}}(RETIDO){{end}}</td>
                 <td class="value">{{.ValorISS}}</td>
             </tr>
+            {{if .ValorPIS}}
+            <tr>
+                <td class="label">PIS Retido</td>
+                <td class="value">{{.ValorPIS}}</td>
+            </tr>
+            {{end}}
+            {{if .ValorCOFINS}}
+            <tr>
+                <td class="label">COFINS Retido</td>
+                <td class="value">{{.ValorCOFINS}}</td>
+            </tr>
+            {{end}}
+            {{if .ValorIR}}
+            <tr>
+                <td class="label">IR Retido</td>
+                <td class="value">{{.ValorIR}}</td>
+            </tr>
+            {{end}}
+            {{if .ValorCSLL}}
+            <tr>
+                <td class="label">CSLL Retido</td>
+                <td class="value">{{.ValorCSLL}}</td>
+            </tr>
+            {{end}}
+            {{if .ValorINSS}}
+            <tr>
+                <td class="label">INSS Retido</td>
+                <td class="value">{{.ValorINSS}}</td>
+            </tr>
+            {{end}}
             <tr class="total-row">
                 <td class="label">VALOR LÍQUIDO DA NOTA</td>
                 <td class="value">{{.ValorLiquido}}</td>

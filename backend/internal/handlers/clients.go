@@ -30,7 +30,14 @@ func (h *Handler) ListClients(c *fiber.Ctx) error {
 	}
 	// Admin sees all
 
-	query.Order("name ASC").Find(&clients)
+	// Admin sees all
+
+	query.Preload("User").Order("name ASC").Find(&clients)
+
+	// Populate Active field from User
+	for i := range clients {
+		clients[i].Active = clients[i].User.Active
+	}
 
 	return Success(c, clients)
 }
@@ -82,22 +89,23 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 	// Hash password
 	password := req.Password
 	if password == "" {
-		// Generate random password if not provided
-		password = uuid.New().String()[:8]
+		// Use default password from config
+		password = h.Config.DefaultPassword
 	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	// Create user first
 	user := models.User{
-		ID:           uuid.New().String(),
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleCliente,
-		Phone:        req.Phone,
-		Active:       true,
-		CompanyID:    &companyID,
-		CreatedAt:    time.Now(),
+		ID:                 uuid.New().String(),
+		Name:               req.Name,
+		Email:              req.Email,
+		PasswordHash:       string(hashedPassword),
+		Role:               models.RoleCliente,
+		Phone:              req.Phone,
+		Active:             true,
+		MustChangePassword: true,
+		CompanyID:          &companyID,
+		CreatedAt:          time.Now(),
 	}
 	h.DB.Create(&user)
 
@@ -151,9 +159,11 @@ func (h *Handler) GetClient(c *fiber.Ctx) error {
 		query = query.Where("user_id = ?", userID)
 	}
 
-	if err := query.First(&cliente, "id = ?", id).Error; err != nil {
+	if err := query.Preload("User").First(&cliente, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Cliente não encontrado")
 	}
+
+	cliente.Active = cliente.User.Active
 
 	return Success(c, cliente)
 }

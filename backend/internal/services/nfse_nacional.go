@@ -49,6 +49,7 @@ type InfDPS struct {
 	DCompet   string        `xml:"dCompet" json:"dCompet"`   // Data de competência
 	TpEmit    int           `xml:"tpEmit" json:"tpEmit"`     // Tipo emitente
 	CLocEmi   int           `xml:"cLocEmi" json:"cLocEmi"`   // Código município emissão (IBGE)
+	TpOp      int           `xml:"tpOp" json:"tpOp"`         // 1=Dentro Mun, 2=Fora, 3=Exportação
 	Subst     *Substituicao `xml:"subst,omitempty" json:"subst,omitempty"`
 	Prest     Prestador     `xml:"prest" json:"prest"`     // Prestador
 	Toma      Tomador       `xml:"toma" json:"toma"`       // Tomador (cliente)
@@ -113,6 +114,11 @@ type ValorTribDedCon struct {
 	PAliqTot   float64 `xml:"pAliqAplic" json:"pAliqAplic"` // Alíquota total
 	VISSQNCalc float64 `xml:"vISSQN" json:"vISSQN"`         // Valor ISSQN calculado
 	TISSQN     int     `xml:"tISSQN" json:"tISSQN"`         // Tipo ISSQN (1=Operação normal)
+	VRetPIS    float64 `xml:"vRetPIS,omitempty" json:"vRetPIS,omitempty"`
+	VRetCOFINS float64 `xml:"vRetCOFINS,omitempty" json:"vRetCOFINS,omitempty"`
+	VRetCSLL   float64 `xml:"vRetCSLL,omitempty" json:"vRetCSLL,omitempty"`
+	VRetIR     float64 `xml:"vRetIR,omitempty" json:"vRetIR,omitempty"`
+	VRetINSS   float64 `xml:"vRetINSS,omitempty" json:"vRetINSS,omitempty"`
 }
 
 // NFSeResponse - Response from NFS-e Nacional API
@@ -379,7 +385,6 @@ func DecodeNFSeXML(xmlBase64 string) ([]byte, error) {
 	return xmlData, nil
 }
 
-// BuildDPSFromRequest creates a DPS from request data
 func BuildDPSFromRequest(
 	prestadorCNPJ string,
 	prestadorIM string,
@@ -391,8 +396,16 @@ func BuildDPSFromRequest(
 	valor float64,
 	codMunicipioEmissao int,
 	codMunicipioPrestacao int,
+	naturezaOperacao string,
+	cnae string,
 ) *DPS {
 	now := time.Now()
+
+	// Default Op Type based on nature
+	tpOp := 1 // Dentro muni
+	if naturezaOperacao == "TRIBUTACAO_FORA_MUNICIPIO" {
+		tpOp = 2
+	}
 
 	dps := &DPS{
 		InfDPS: InfDPS{
@@ -404,6 +417,7 @@ func BuildDPSFromRequest(
 			DCompet:   now.Format("2006-01-02"),
 			TpEmit:    1, // Prestador
 			CLocEmi:   codMunicipioEmissao,
+			TpOp:      tpOp,
 			Prest: Prestador{
 				CNPJ: prestadorCNPJ,
 				IM:   prestadorIM,
@@ -416,12 +430,17 @@ func BuildDPSFromRequest(
 				CLocPrestacao: codMunicipioPrestacao,
 				CServ: CServ{
 					CodTribNac: codigoServico,
+					CNAE:       cnae,
 				},
 				DiscriminacaoServ: discriminacao,
 			},
 			Valores: Valores{
 				VServPrest: ValorServPrest{
 					VReceb: valor,
+				},
+				VTDC: &ValorTribDedCon{
+					VBaseCalc: valor,
+					TISSQN:    1, // Normal
 				},
 			},
 		},

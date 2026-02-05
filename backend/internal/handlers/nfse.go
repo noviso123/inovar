@@ -169,9 +169,15 @@ func (h *Handler) IssueNFSe(c *fiber.Ctx) error {
 		ValorLiquido:     taxResult.ValorLiquido,
 		AliquotaISS:      taxResult.AliquotaISS,
 		ValorISS:         taxResult.ValorISS,
+		ValorPIS:         taxResult.ValorPIS,
+		ValorCOFINS:      taxResult.ValorCOFINS,
+		ValorCSLL:        taxResult.ValorCSLL,
+		ValorIR:          taxResult.ValorIRPJ, // Mapping IRPJ to ValorIR
+		ValorINSS:        taxResult.ValorINSS,
 		Status:           models.NFSeStatusProcessando,
 		Discriminacao:    "Serviços de Manutenção de Ar Condicionado - Chamado #" + requestID[:8],
 		CodigoServico:    fiscalConfig.CodigoServico,
+		CNAE:             fiscalConfig.CNAE,
 		DataCompetencia:  time.Now(),
 		CreatedAt:        time.Now(),
 	}
@@ -252,9 +258,9 @@ func (h *Handler) emitirNFSeNacional(
 	}
 
 	// Get municipality code
-	codMunEmissao := services.GetCodigoMunicipioIBGE("SERRA", "ES") // Default Serra-ES
-	if fiscalConfig.InscricaoMunicipal != "" {
-		// Could be derived from fiscal config
+	codMunEmissao := fiscalConfig.CodigoMunicipio
+	if codMunEmissao == 0 {
+		codMunEmissao = services.GetCodigoMunicipioIBGE("SERRA", "ES") // Fallback
 	}
 
 	// Build DPS
@@ -269,7 +275,17 @@ func (h *Handler) emitirNFSeNacional(
 		nfse.ValorServicos,
 		codMunEmissao,
 		tomadorEnd.CMun,
+		fiscalConfig.NaturezaOperacao,
+		fiscalConfig.CNAE,
 	)
+
+	// Map tax values to DPS
+	if dps.InfDPS.Valores.VTDC != nil {
+		dps.InfDPS.Valores.VTDC.PAliqTot = nfse.AliquotaISS
+		dps.InfDPS.Valores.VTDC.VISSQNCalc = nfse.ValorISS
+		// Map withholdings (if any)
+		// These would be calculated in taxService and saved in nfse record if we had those fields
+	}
 
 	// Create NFS-e service
 	ambiente := fiscalConfig.Ambiente

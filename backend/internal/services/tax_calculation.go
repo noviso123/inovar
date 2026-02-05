@@ -303,21 +303,23 @@ func (s *TaxCalculationService) getFaixaDescricao(faixa string) string {
 
 // CNPJData represents data returned from CNPJ lookup
 type CNPJData struct {
-	CNPJ             string `json:"cnpj"`
-	RazaoSocial      string `json:"razao_social"`
-	NomeFantasia     string `json:"nome_fantasia"`
-	CNAE             string `json:"cnae_fiscal"`
-	CNAEDescricao    string `json:"cnae_fiscal_descricao"`
-	Logradouro       string `json:"logradouro"`
-	Numero           string `json:"numero"`
-	Complemento      string `json:"complemento"`
-	Bairro           string `json:"bairro"`
-	CEP              string `json:"cep"`
-	Municipio        string `json:"municipio"`
-	UF               string `json:"uf"`
-	RegimeTributario string `json:"regime_tributario"` // Inferred
-	Simples          *bool  `json:"opcao_pelo_simples"`
-	MEI              *bool  `json:"opcao_pelo_mei"`
+	CNPJ             string                     `json:"cnpj"`
+	RazaoSocial      string                     `json:"razao_social"`
+	NomeFantasia     string                     `json:"nome_fantasia"`
+	CNAE             int                        `json:"cnae_fiscal"`
+	CNAEDescricao    string                     `json:"cnae_fiscal_descricao"`
+	Logradouro       string                     `json:"logradouro"`
+	Numero           string                     `json:"numero"`
+	Complemento      string                     `json:"complemento"`
+	Bairro           string                     `json:"bairro"`
+	CEP              string                     `json:"cep"`
+	Municipio        string                     `json:"municipio"`
+	UF               string                     `json:"uf"`
+	CodigoMunicipio  int                        `json:"codigo_municipio"`
+	RegimeTributario interface{}                `json:"regime_tributario"` // API can return array, so we use interface{} and overwrite later
+	Simples          *bool                      `json:"opcao_pelo_simples"`
+	MEI              *bool                      `json:"opcao_pelo_mei"`
+	SuggestedConfig  *models.ConfiguracaoFiscal `json:"suggestedConfig,omitempty"`
 }
 
 // LookupCNPJ fetches company data from BrasilAPI
@@ -351,15 +353,109 @@ func (s *TaxCalculationService) LookupCNPJ(cnpj string) (*CNPJData, error) {
 	}
 
 	// Infer regime
+	// Infer regime
+	var regime string
 	if data.MEI != nil && *data.MEI {
-		data.RegimeTributario = models.RegimeMEI
+		regime = models.RegimeMEI
 	} else if data.Simples != nil && *data.Simples {
-		data.RegimeTributario = models.RegimeSimplesNac
+		regime = models.RegimeSimplesNac
 	} else {
-		// Default to Presumido if not Simples/MEI (common for services)
-		// User can change later
-		data.RegimeTributario = models.RegimeLucroPresumido
+		regime = models.RegimeLucroPresumido
 	}
+	// We use the inferred regime for our internal logic due to API variability
+	data.RegimeTributario = regime
+
+	// Determine TipoCNPJ for SuggestedConfig
+	var tipoCNPJ string
+	if data.MEI != nil && *data.MEI {
+		tipoCNPJ = "MEI"
+	} else if data.Simples != nil && *data.Simples {
+		tipoCNPJ = "EPP" // Default to EPP for Simples if not specified
+	} else {
+		tipoCNPJ = "OUTROS"
+	}
+
+	// Generate Suggested Config
+	config := &models.ConfiguracaoFiscal{
+		RegimeTributario:   regime,
+		TipoCNPJ:           tipoCNPJ,
+		NaturezaOperacao:   models.NaturezaTributacao,
+		InscricaoMunicipal: "",      // User must fill
+		CodigoServico:      "14.01", // Default for AC maintenance
+		ItemListaServico:   "14.01",
+		Ambiente:           "HOMOLOGACAO", // Standard default
+		LocalPrestacao:     "LOCAL",
+	}
+
+	// Map IBGE code if available
+	if data.CodigoMunicipio != 0 {
+		config.CodigoMunicipio = data.CodigoMunicipio
+	}
+	if data.CNAE != 0 {
+		config.CNAE = fmt.Sprintf("%d", data.CNAE)
+	}
+
+	// Pre-fill fields based on Regime
+	switch regime {
+	case models.RegimeMEI:
+		config.AliquotaISSPadrao = 0
+		config.AliquotaPIS = 0
+		config.AliquotaCOFINS = 0
+		config.AliquotaIRPJ = 0
+		config.AliquotaCSLL = 0
+		config.AliquotaINSS = 0
+		config.OptanteSimplesNac = true
+		config.IsMEI = true
+		config.NaturezaOperacao = models.NaturezaTributacao
+		config.LocalPrestacao = "LOCAL"
+	case models.RegimeSimplesNac:
+		config.FaixaSimplesNac = models.SimplesNacFaixa1
+		config.AliquotaSimplesNac = 6.0
+		config.OptanteSimplesNac = true
+		config.IsMEI = false
+		config.AliquotaISSPadrao = 0 // Included in DAS
+		config.AliquotaPIS = 0       // Included in DAS
+		config.AliquotaCOFINS = 0    // Included in DAS
+		config.AliquotaCSLL = 0      // Included in DAS
+		config.AliquotaIRPJ = 0      // Included in DAS
+		config.RetemPIS = false
+		config.RetemCOFINS = false
+		config.RetemCSLL = false
+		config.RetemIR = false
+		config.RetemINSS = false
+	case models.RegimeLucroPresumido:
+		config.AliquotaISSPadrao = 5.0
+		config.AliquotaPIS = 0.65
+		config.AliquotaCOFINS = 3.0
+		config.AliquotaIRPJ = 15.0
+		config.AliquotaCSLL = 9.0
+		config.AliquotaINSS = 11.0
+		config.ISSRetido = false
+		config.OptanteSimplesNac = false
+		config.IsMEI = false
+		// Standard withholdings for services
+		config.RetemPIS = true
+		config.RetemCOFINS = true
+		config.RetemCSLL = true
+		config.RetemIR = true
+		config.RetemINSS = true
+	case models.RegimeLucroReal:
+		config.AliquotaISSPadrao = 5.0
+		config.AliquotaPIS = 1.65
+		config.AliquotaCOFINS = 7.6
+		config.AliquotaIRPJ = 15.0
+		config.AliquotaCSLL = 9.0
+		config.AliquotaINSS = 11.0
+		config.OptanteSimplesNac = false
+		config.IsMEI = false
+		config.RetemPIS = true
+		config.RetemCOFINS = true
+		config.RetemCSLL = true
+		config.RetemIR = true
+		config.RetemINSS = true
+	}
+
+	data.SuggestedConfig = config
 
 	return &data, nil
 }
@@ -370,7 +466,10 @@ func (s *TaxCalculationService) DetectRegimeFromCNPJ(cnpj string) string {
 	if err != nil {
 		return models.RegimeSimplesNac // Default
 	}
-	return data.RegimeTributario
+	if val, ok := data.RegimeTributario.(string); ok {
+		return val
+	}
+	return models.RegimeSimplesNac
 }
 
 // CalculateFaixaSimplesNacional determines the Simples Nacional bracket based on revenue

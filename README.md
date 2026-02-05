@@ -1,20 +1,46 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Inovar - Maintenance Management System
 
-# Run and deploy your AI Studio app
+## Project Structure
 
-This contains everything you need to run your app locally.
+- **frontend/**: React + TypeScript + Vite application.
+- **backend/**: Go (Golang) API server.
+- **scripts/**: Automation and utility scripts.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Utnf1f9WLkjlu09Shc10pH6WjpBv5Osh
+## Getting Started
 
-## Run Locally
+## Quick Start (Unified)
 
-**Prerequisites:**  Node.js
+### Development
+Starts Frontend + Backend + Database in parallel:
+```bash
+npm run dev
+```
 
+### Audit & Quality
+Runs the autonomous agent suite (Security, Lint, Test, Schema):
+```bash
+npm run audit
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Build
+Builds the entire stack for production:
+```bash
+npm run build
+```
+
+## Credentials (Password for all: `123456`)
+
+| Role | Email |
+|------|-------|
+| **Admin** | `admin@inovar.com` |
+| **Prestador** | `prestador@inovar.com` |
+| **Técnico** | `tecnico@inovar.com` |
+| **Cliente** | `cliente@inovar.com` |
+
+## Architecture
+- **Root**: Orchestration & Config
+- **.agent/**: Autonomous Guardians (Husky + Scripts)
+- **frontend/**: React + Vite
+- **backend/**: Go + Fiber
+- **database/**: Local SQLite Data
+- **storage/**: Local Uploads

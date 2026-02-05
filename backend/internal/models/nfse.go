@@ -22,6 +22,7 @@ type NotaFiscal struct {
 	// Service Description
 	Discriminacao string `gorm:"type:text;not null" json:"discriminacao"`
 	CodigoServico string `gorm:"size:20" json:"codigoServico"`
+	CNAE          string `gorm:"size:20" json:"cnae,omitempty"`
 
 	// Values
 	ValorServicos float64 `json:"valorServicos"`
@@ -31,6 +32,11 @@ type NotaFiscal struct {
 	// Taxes
 	AliquotaISS float64 `json:"aliquotaIss"`
 	ValorISS    float64 `json:"valorIss"`
+	ValorPIS    float64 `json:"valorPis,omitempty"`
+	ValorCOFINS float64 `json:"valorCofins,omitempty"`
+	ValorCSLL   float64 `json:"valorCsll,omitempty"`
+	ValorIR     float64 `json:"valorIr,omitempty"`
+	ValorINSS   float64 `json:"valorInss,omitempty"`
 
 	// Status
 	Status       string `gorm:"size:30;not null;index" json:"status"` // PENDENTE, PROCESSANDO, EMITIDA, CANCELADA, ERRO
@@ -87,7 +93,7 @@ type ConfiguracaoFiscal struct {
 
 	// Tax regime - automatically detected or manually set
 	RegimeTributario string `gorm:"size:50" json:"regimeTributario"` // See RegimeTributario constants
-	TipoCNPJ         string `gorm:"size:30" json:"tipoCnpj"`         // MEI, SIMPLES, LUCRO_PRESUMIDO, LUCRO_REAL
+	TipoCNPJ         string `gorm:"size:30" json:"tipoCNPJ"`         // MEI, SIMPLES, LUCRO_PRESUMIDO, LUCRO_REAL
 
 	// Simples Nacional
 	OptanteSimplesNac  bool    `json:"optanteSimplesNac"`
@@ -101,17 +107,17 @@ type ConfiguracaoFiscal struct {
 	IncentivadorCultural bool `json:"incentivadorCultural"`
 
 	// ISS config
-	AliquotaISSPadrao float64 `json:"aliquotaIssPadrao"`               // % ISS
+	AliquotaISSPadrao float64 `json:"aliquotaISSPadrao"`               // % ISS
 	ISSRetido         bool    `json:"issRetido"`                       // ISS retido pelo tomador
 	LocalPrestacao    string  `gorm:"size:20" json:"localPrestacao"`   // LOCAL, FORA_MUNICIPIO
 	NaturezaOperacao  string  `gorm:"size:50" json:"naturezaOperacao"` // See NaturezaOperacao constants
 
 	// Other taxes (for non-Simples)
-	AliquotaPIS    float64 `json:"aliquotaPis,omitempty"`    // 0.65% or 1.65%
-	AliquotaCOFINS float64 `json:"aliquotaCofins,omitempty"` // 3% or 7.6%
-	AliquotaCSLL   float64 `json:"aliquotaCsll,omitempty"`   // 9%
-	AliquotaIRPJ   float64 `json:"aliquotaIrpj,omitempty"`   // 15%
-	AliquotaINSS   float64 `json:"aliquotaInss,omitempty"`   // 11%
+	AliquotaPIS    float64 `json:"aliquotaPIS,omitempty"`    // 0.65% or 1.65%
+	AliquotaCOFINS float64 `json:"aliquotaCOFINS,omitempty"` // 3% or 7.6%
+	AliquotaCSLL   float64 `json:"aliquotaCSLL,omitempty"`   // 9%
+	AliquotaIRPJ   float64 `json:"aliquotaIRPJ,omitempty"`   // 15%
+	AliquotaINSS   float64 `json:"aliquotaINSS,omitempty"`   // 11%
 
 	// Retenções
 	RetemPIS    bool `json:"retemPis"`

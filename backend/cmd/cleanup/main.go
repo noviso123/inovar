@@ -42,7 +42,8 @@ func main() {
 
 	for _, table := range tables {
 		log.Printf("Cleaning table: %s", table)
-		// Use raw SQL to delete all rows
+		// Security Note: Table names are from a static hardcoded list above.
+		// This script is for internal maintenance and does not accept user input.
 		if err := db.Exec("DELETE FROM " + table).Error; err != nil {
 			// Ignore error if table doesn't exist (e.g. notificacoes)
 			log.Printf("Warning cleaning %s: %v", table, err)

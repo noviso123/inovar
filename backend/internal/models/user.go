@@ -15,6 +15,7 @@ type User struct {
 	Role                string         `gorm:"size:50;not null;index" json:"role"`
 	Phone               string         `gorm:"size:20" json:"phone,omitempty"`
 	Active              bool           `gorm:"default:true;index" json:"active"`
+	MustChangePassword  bool           `gorm:"default:true" json:"mustChangePassword"`
 	CompanyID           *string        `gorm:"size:36;index" json:"companyId,omitempty"`
 	AvatarURL           string         `gorm:"size:500" json:"avatarUrl,omitempty"`
 	ResetToken          *string        `gorm:"size:255;index" json:"-"`

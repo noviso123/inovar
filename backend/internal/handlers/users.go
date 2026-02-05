@@ -77,16 +77,17 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	user := models.User{
-		ID:           uuid.New().String(),
-		Name:         req.Name,
-		Email:        req.Email,
-		PasswordHash: string(hashedPassword),
-		Role:         req.Role,
-		Phone:        req.Phone,
-		Active:       true,
-		CompanyID:    &companyID,
-		AvatarURL:    req.AvatarURL,
-		CreatedAt:    time.Now(),
+		ID:                 uuid.New().String(),
+		Name:               req.Name,
+		Email:              req.Email,
+		PasswordHash:       string(hashedPassword),
+		Role:               req.Role,
+		Phone:              req.Phone,
+		Active:             true,
+		MustChangePassword: true,
+		CompanyID:          &companyID,
+		AvatarURL:          req.AvatarURL,
+		CreatedAt:          time.Now(),
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
@@ -176,10 +177,11 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	}
 
 	// Generate temporary password
-	tempPassword := uuid.New().String()[:8]
+	tempPassword := "123456"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(tempPassword), bcrypt.DefaultCost)
 
 	user.PasswordHash = string(hashedPassword)
+	user.MustChangePassword = true
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
@@ -198,6 +200,14 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	var user models.User
 	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Usuário não encontrado")
+	}
+
+	// Delete related Technician profile if exists
+	h.DB.Unscoped().Where("user_id = ?", id).Delete(&models.Tecnico{})
+
+	// Delete User permantently
+	if err := h.DB.Unscoped().Delete(&user).Error; err != nil {
+		return ServerError(c, err)
 	}
 
 	// Broadcast event

@@ -84,14 +84,15 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		"success": true,
 		"data": fiber.Map{
 			"user": fiber.Map{
-				"id":        user.ID,
-				"name":      user.Name,
-				"email":     user.Email,
-				"role":      user.Role,
-				"phone":     user.Phone,
-				"active":    user.Active,
-				"companyId": user.CompanyID,
-				"avatarUrl": user.AvatarURL,
+				"id":                 user.ID,
+				"name":               user.Name,
+				"email":              user.Email,
+				"role":               user.Role,
+				"phone":              user.Phone,
+				"active":             user.Active,
+				"companyId":          user.CompanyID,
+				"avatarUrl":          user.AvatarURL,
+				"mustChangePassword": user.MustChangePassword,
 			},
 			"accessToken":  accessToken,
 			"refreshToken": refreshTokenStr,
@@ -331,6 +332,7 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 	}
 
 	user.PasswordHash = string(hashedPassword)
+	user.MustChangePassword = false
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 

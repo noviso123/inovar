@@ -111,7 +111,7 @@ func main() {
 	equipments.Put("/:id", h.UpdateEquipment)
 	equipments.Patch("/:id/deactivate", h.DeactivateEquipment)
 	equipments.Patch("/:id/reactivate", h.ReactivateEquipment)
-	equipments.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA"), h.DeleteEquipment)
+	equipments.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.DeleteEquipment)
 
 	// Service Requests
 	requests := protected.Group("/requests")
@@ -120,9 +120,11 @@ func main() {
 	requests.Get("/:id", h.GetRequest)
 	requests.Put("/:id", h.UpdateRequest)
 	requests.Patch("/:id/status", h.UpdateRequestStatus)
+	requests.Patch("/:id/details", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.UpdateRequestDetails)
 	requests.Patch("/:id/assign", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.AssignRequest)
 	requests.Get("/:id/history", h.GetRequestHistory)
 	requests.Post("/:id/confirm", h.ConfirmRequest)
+	requests.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.DeleteRequest)
 
 	// Checklists
 	checklists := protected.Group("/requests/:requestId/checklists")
@@ -205,7 +207,7 @@ func main() {
 		return c.JSON(fiber.Map{
 			"status":       "online",
 			"service":      "INOVAR API",
-			"frontend_url": "http://localhost:3000",
+			"frontend_url": os.Getenv("FRONTEND_URL"),
 		})
 	})
 

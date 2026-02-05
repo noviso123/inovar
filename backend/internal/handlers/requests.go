@@ -50,6 +50,11 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 	// Admin sees all
 
 	// Apply filters
+	// Pagination
+	page, _ := strconv.Atoi(c.Query("page", "1"))
+	limit, _ := strconv.Atoi(c.Query("limit", "20"))
+	offset := (page - 1) * limit
+
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -60,7 +65,7 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 		query = query.Where("client_id = ?", clientID)
 	}
 
-	query.Order("created_at DESC").Find(&requests)
+	query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&requests)
 
 	return Success(c, requests)
 }
@@ -110,8 +115,15 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 	// Parse scheduled date
 	var scheduledAt *time.Time
 	if req.ScheduledAt != "" {
-		t, _ := time.Parse(time.RFC3339, req.ScheduledAt)
+		t, err := time.Parse(time.RFC3339, req.ScheduledAt)
+		if err != nil {
+			return BadRequest(c, "Data de agendamento inválida")
+		}
 		scheduledAt = &t
+	}
+
+	if req.ServiceType == "" {
+		return BadRequest(c, "Tipo de serviço é obrigatório")
 	}
 
 	// Get next sequential number
@@ -250,10 +262,102 @@ func (h *Handler) UpdateRequest(c *fiber.Ctx) error {
 	return Success(c, solicitacao)
 }
 
+// UpdateRequestDetailsRequest represents details update payload
+type UpdateRequestDetailsRequest struct {
+	ResponsibleID   string `json:"responsibleId"`
+	ResponsibleName string `json:"responsibleName"`
+	Priority        string `json:"priority"`
+}
+
+// UpdateRequestDetails updates specific administrative details of a request
+func (h *Handler) UpdateRequestDetails(c *fiber.Ctx) error {
+	id := c.Params("id")
+	userID := middleware.GetUserID(c)
+	role := middleware.GetUserRole(c)
+
+	// Only Admin can update these details
+	if role != models.RoleAdmin && role != models.RolePrestador {
+		return Forbidden(c, "Apenas administradores podem alterar detalhes técnicos")
+	}
+
+	var solicitacao models.Solicitacao
+	if err := h.DB.First(&solicitacao, "id = ?", id).Error; err != nil {
+		return NotFound(c, "Solicitação não encontrada")
+	}
+
+	var req UpdateRequestDetailsRequest
+	if err := c.BodyParser(&req); err != nil {
+		return BadRequest(c, "Dados inválidos")
+	}
+
+	var changes []string
+
+	// Update Responsible
+	// Update Responsible
+	if req.ResponsibleID == "REMOVE" {
+		if solicitacao.ResponsibleID != nil {
+			oldResp := solicitacao.ResponsibleName
+			solicitacao.ResponsibleID = nil
+			solicitacao.ResponsibleName = ""
+			changes = append(changes, "Técnico removido (era '"+oldResp+"')")
+		}
+	} else if req.ResponsibleID != "" && (solicitacao.ResponsibleID == nil || *solicitacao.ResponsibleID != req.ResponsibleID) {
+		oldResp := solicitacao.ResponsibleName
+		solicitacao.ResponsibleID = &req.ResponsibleID
+		solicitacao.ResponsibleName = req.ResponsibleName
+		if solicitacao.Status == models.StatusAberta {
+			solicitacao.Status = models.StatusAtribuida
+		}
+		changes = append(changes, "Técnico alterado de '"+oldResp+"' para '"+req.ResponsibleName+"'")
+	}
+
+	// Update Priority
+	if req.Priority != "" && solicitacao.Priority != req.Priority {
+		oldPriority := solicitacao.Priority
+		solicitacao.Priority = req.Priority
+		// Recalculate SLA based on new priority if still open
+		if solicitacao.Status != models.StatusFinalizada && solicitacao.Status != models.StatusCancelada {
+			sla := slaHours[req.Priority]
+			if sla == 0 {
+				sla = 48
+			}
+			solicitacao.SLALimit = time.Now().Add(time.Duration(sla) * time.Hour)
+		}
+		changes = append(changes, "Prioridade alterada de '"+oldPriority+"' para '"+req.Priority+"'")
+	}
+
+	if len(changes) > 0 {
+		solicitacao.UpdatedAt = time.Now()
+		h.DB.Save(&solicitacao)
+
+		// Create history
+		var user models.User
+		h.DB.First(&user, "id = ?", userID)
+
+		history := models.SolicitacaoHistorico{
+			ID:            uuid.New().String(),
+			SolicitacaoID: solicitacao.ID,
+			UserID:        userID,
+			UserName:      user.Name,
+			Action:        "Atualização Administrativa",
+			Details:       "Alterações: " + changes[0],
+			CreatedAt:     time.Now(),
+		}
+		h.DB.Create(&history)
+
+		h.Hub.Broadcast("request:updated", solicitacao)
+	}
+
+	return Success(c, solicitacao)
+}
+
 // UpdateStatusRequest represents status update payload
 type UpdateStatusRequest struct {
-	Status      string `json:"status"`
-	Observation string `json:"observation,omitempty"`
+	Status            string `json:"status"`
+	Observation       string `json:"observation,omitempty"`
+	MaterialsUsed     string `json:"materialsUsed"`
+	NextMaintenanceAt string `json:"nextMaintenanceAt"`
+	ScheduledAt       string `json:"scheduledAt"`
 }
 
 // UpdateRequestStatus updates request status
@@ -286,6 +390,23 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	solicitacao.Status = req.Status
 	if req.Observation != "" {
 		solicitacao.Observation = req.Observation
+	}
+	if req.MaterialsUsed != "" {
+		solicitacao.MaterialsUsed = req.MaterialsUsed
+	}
+	if req.NextMaintenanceAt != "" {
+		t, err := time.Parse(time.RFC3339, req.NextMaintenanceAt)
+		if err == nil {
+			solicitacao.NextMaintenanceAt = &t
+		}
+	}
+	if req.ScheduledAt == "NULL" {
+		solicitacao.ScheduledAt = nil
+	} else if req.ScheduledAt != "" {
+		t, err := time.Parse(time.RFC3339, req.ScheduledAt)
+		if err == nil {
+			solicitacao.ScheduledAt = &t
+		}
 	}
 	solicitacao.UpdatedAt = time.Now()
 
@@ -343,15 +464,23 @@ func (h *Handler) AssignRequest(c *fiber.Ctx) error {
 	// Auto-assign for technicians
 	responsibleID := req.ResponsibleID
 	responsibleName := req.ResponsibleName
-	if role == models.RoleTecnico && responsibleID == "" {
-		responsibleID = userID
-		var user models.User
-		h.DB.First(&user, "id = ?", userID)
-		responsibleName = user.Name
+
+	var responsibleIDPtr *string
+	if responsibleID == "REMOVE" {
+		responsibleIDPtr = nil
+		responsibleName = ""
+	} else {
+		if role == models.RoleTecnico && responsibleID == "" {
+			responsibleID = userID
+			var user models.User
+			h.DB.First(&user, "id = ?", userID)
+			responsibleName = user.Name
+		}
+		responsibleIDPtr = &responsibleID
 	}
 
 	oldResponsible := solicitacao.ResponsibleName
-	solicitacao.ResponsibleID = &responsibleID
+	solicitacao.ResponsibleID = responsibleIDPtr
 	solicitacao.ResponsibleName = responsibleName
 	if solicitacao.Status == models.StatusAberta {
 		solicitacao.Status = models.StatusAtribuida
@@ -590,6 +719,22 @@ func (h *Handler) UpdateChecklist(c *fiber.Ctx) error {
 	return Success(c, checklist)
 }
 
+// DeleteChecklist deletes a checklist item
+func (h *Handler) DeleteChecklist(c *fiber.Ctx) error {
+	id := c.Params("id")
+
+	var checklist models.Checklist
+	if err := h.DB.First(&checklist, "id = ?", id).Error; err != nil {
+		return NotFound(c, "Checklist não encontrado")
+	}
+
+	h.DB.Delete(&checklist)
+
+	h.Hub.Broadcast("checklist:deleted", fiber.Map{"id": id, "solicitacaoId": checklist.SolicitacaoID})
+
+	return Success(c, fiber.Map{"message": "Checklist removido"})
+}
+
 // ListAttachments returns attachments for a request
 func (h *Handler) ListAttachments(c *fiber.Ctx) error {
 	requestID := c.Params("requestId")
@@ -769,6 +914,11 @@ func (h *Handler) SalvarAssinatura(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
+	// Validate signature size (approx 5MB limit for base64)
+	if len(req.Assinatura) > 7000000 {
+		return BadRequest(c, "Imagem de assinatura muito grande (máx 5MB)")
+	}
+
 	var solicitacao models.Solicitacao
 	if err := h.DB.First(&solicitacao, "id = ?", requestID).Error; err != nil {
 		return NotFound(c, "Solicitação não encontrada")
@@ -806,4 +956,58 @@ func (h *Handler) createHistoryEntry(requestID, userID, description string) {
 		CreatedAt:     time.Now(),
 	}
 	h.DB.Create(&history)
+}
+
+// DeleteRequest deletes a request (Admin/Prestador only)
+func (h *Handler) DeleteRequest(c *fiber.Ctx) error {
+	id := c.Params("id")
+	// userID := middleware.GetUserID(c) // Not needed if we hard delete everything
+
+	var solicitacao models.Solicitacao
+	if err := h.DB.First(&solicitacao, "id = ?", id).Error; err != nil {
+		return NotFound(c, "Solicitação não encontrada")
+	}
+
+	// Use transaction to ensure data integrity
+	tx := h.DB.Begin()
+
+	// 1. Delete Attachments
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.Anexo{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 2. Delete Checklists
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.Checklist{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 3. Delete History
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.SolicitacaoHistorico{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 4. Delete Equipments (Join table)
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.SolicitacaoEquipamento{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 5. Delete Budget Items
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.OrcamentoItem{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 6. Delete the Request itself
+	if err := tx.Delete(&solicitacao).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	tx.Commit()
+
+	return Success(c, fiber.Map{"message": "Chamado e dados relacionados excluídos com sucesso"})
 }

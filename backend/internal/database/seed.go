@@ -42,7 +42,49 @@ func Seed(db *gorm.DB) {
 		log.Println("✅ Created admin:", admin.Email)
 	}
 
-	log.Println("🎉 Initial admin created successfully!")
+	// Create Prestador
+	prestador := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Prestador Exemplo",
+		Email:        "prestador@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RolePrestador,
+		Phone:        "(11) 99999-1111",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	db.Create(&prestador)
+	log.Println("✅ Created provider:", prestador.Email)
+
+	// Create Tecnico
+	tecnico := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Técnico Campo",
+		Email:        "tecnico@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleTecnico,
+		Phone:        "(11) 99999-2222",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	db.Create(&tecnico)
+	log.Println("✅ Created technician:", tecnico.Email)
+
+	// Create Client
+	cliente := models.User{
+		ID:           uuid.New().String(),
+		Name:         "Cliente Cliente",
+		Email:        "cliente@inovar.com",
+		PasswordHash: string(hashedPassword),
+		Role:         models.RoleCliente,
+		Phone:        "(11) 99999-3333",
+		Active:       true,
+		CreatedAt:    time.Now(),
+	}
+	db.Create(&cliente)
+	log.Println("✅ Created client:", cliente.Email)
+
+	log.Println("🎉 All initial users created successfully!")
 
 	// Default settings
 	settings := []models.Setting{

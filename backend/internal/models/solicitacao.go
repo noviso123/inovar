@@ -2,7 +2,6 @@ package models
 
 import (
 	"time"
-
 )
 
 // Status constants
@@ -18,9 +17,9 @@ const (
 
 // Priority constants
 const (
-	PriorityBaixa      = "BAIXA"
-	PriorityMedia      = "MEDIA"
-	PriorityAlta       = "ALTA"
+	PriorityBaixa       = "BAIXA"
+	PriorityMedia       = "MEDIA"
+	PriorityAlta        = "ALTA"
 	PriorityEmergencial = "EMERGENCIAL"
 )
 
@@ -50,16 +49,18 @@ type Solicitacao struct {
 	AssinaturaCliente string     `gorm:"type:text" json:"assinaturaCliente,omitempty"`
 	AssinaturaTecnico string     `gorm:"type:text" json:"assinaturaTecnico,omitempty"`
 	DataAssinatura    *time.Time `json:"dataAssinatura,omitempty"`
+	MaterialsUsed     string     `gorm:"type:text" json:"materialsUsed,omitempty"`
+	NextMaintenanceAt *time.Time `json:"nextMaintenanceAt,omitempty"`
 
-	CreatedAt       time.Time  `json:"createdAt"`
-	UpdatedAt       time.Time  `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 
-	Client      Cliente                  `gorm:"foreignKey:ClientID" json:"-"`
-	Equipments  []SolicitacaoEquipamento `gorm:"foreignKey:SolicitacaoID" json:"equipments,omitempty"`
-	History     []SolicitacaoHistorico   `gorm:"foreignKey:SolicitacaoID" json:"history,omitempty"`
-	Checklists  []Checklist              `gorm:"foreignKey:SolicitacaoID" json:"checklists,omitempty"`
-	Attachments []Anexo                  `gorm:"foreignKey:SolicitacaoID" json:"attachments,omitempty"`
-	OrcamentoItens []OrcamentoItem       `gorm:"foreignKey:SolicitacaoID" json:"orcamentoItens,omitempty"`
+	Client         Cliente                  `gorm:"foreignKey:ClientID" json:"-"`
+	Equipments     []SolicitacaoEquipamento `gorm:"foreignKey:SolicitacaoID" json:"equipments,omitempty"`
+	History        []SolicitacaoHistorico   `gorm:"foreignKey:SolicitacaoID" json:"history,omitempty"`
+	Checklists     []Checklist              `gorm:"foreignKey:SolicitacaoID" json:"checklists,omitempty"`
+	Attachments    []Anexo                  `gorm:"foreignKey:SolicitacaoID" json:"attachments,omitempty"`
+	OrcamentoItens []OrcamentoItem          `gorm:"foreignKey:SolicitacaoID" json:"orcamentoItens,omitempty"`
 }
 
 func (Solicitacao) TableName() string { return "solicitacoes" }

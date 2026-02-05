@@ -1,23 +1,29 @@
 {
-  "name": "inovar---real-time-air-conditioning-maintenance",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "inovar",
+  "version": "1.0.0",
+  "description": "- **frontend/**: React + TypeScript + Vite application.\r - **backend/**: Go (Golang) API server.\r - **scripts/**: Automation and utility scripts.",
+  "main": "index.js",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "concurrently \"cd backend && go run main.go\" \"npm run dev --prefix frontend\"",
+    "build": "echo 'Building Backend...' && cd backend && go build -o ../inovar_api.exe main.go && echo 'Building Frontend...' && npm run build --prefix ../frontend",
+    "test": "python .agent/scripts/checklist.py .",
+    "audit": "python .agent/scripts/checklist.py .",
+    "prepare": "husky install"
   },
-  "dependencies": {
-    "qrcode.react": "^4.2.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noviso123/inovar.git"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/noviso123/inovar/issues"
+  },
+  "homepage": "https://github.com/noviso123/inovar#readme",
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "concurrently": "^9.2.1",
+    "husky": "^9.1.7"
   }
 }

@@ -24,6 +24,7 @@ type Config struct {
 	LockTimeoutSecs   int
 	ConfirmDays       int
 	Environment       string // development, staging, production
+	DefaultPassword   string
 }
 
 func Load() *Config {
@@ -32,7 +33,7 @@ func Load() *Config {
 
 	return &Config{
 		Environment:       env,
-		DatabaseURL:       getEnv("DATABASE_URL", "./storage/inovar.db"),
+		DatabaseURL:       getEnv("DATABASE_URL", "../database/inovar.db"),
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
@@ -42,10 +43,11 @@ func Load() *Config {
 		SMTPUser:          getEnv("SMTP_USER", ""),
 		SMTPPassword:      getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:          getEnv("SMTP_FROM", "noreply@inovar.com"),
-		UploadDir:         getEnv("UPLOAD_DIR", "./storage/uploads"),
+		UploadDir:         getEnv("UPLOAD_DIR", "../storage/uploads"),
 		MaxUploadSize:     int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
 		LockTimeoutSecs:   getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
 		ConfirmDays:       getEnvInt("CONFIRM_DAYS", 7),
+		DefaultPassword:   getEnv("DEFAULT_PASSWORD", "inovar123"),
 	}
 }
 

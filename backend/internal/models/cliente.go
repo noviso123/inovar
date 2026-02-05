@@ -15,6 +15,8 @@ type Cliente struct {
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 
+	Active bool `gorm:"-" json:"active"`
+
 	User     User      `gorm:"foreignKey:UserID" json:"-"`
 	Endereco *Endereco `gorm:"foreignKey:EnderecoID" json:"endereco,omitempty"`
 }
