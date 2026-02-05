@@ -18,29 +18,30 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	var solicitacao models.Solicitacao
-	// Try finding by ID if Numero fails (user said #1, usually implies Numero)
-	if err := db.Where("numero = ?", 1).First(&solicitacao).Error; err != nil {
-		log.Printf("Chamado #1 não encontrado pelo Numero: %v", err)
-		return
-	}
-
-	log.Printf("Found Request #1: ID=%s, Client=%s", solicitacao.ID, solicitacao.ClientName)
+	log.Println("🗑️ Deleting ALL clients from database...")
 
 	tx := db.Begin()
 
-	// Cascade Delete
-	tx.Where("solicitacao_id = ?", solicitacao.ID).Delete(&models.Anexo{})
-	tx.Where("solicitacao_id = ?", solicitacao.ID).Delete(&models.Checklist{})
-	tx.Where("solicitacao_id = ?", solicitacao.ID).Delete(&models.SolicitacaoHistorico{})
-	tx.Where("solicitacao_id = ?", solicitacao.ID).Delete(&models.SolicitacaoEquipamento{})
-	tx.Where("solicitacao_id = ?", solicitacao.ID).Delete(&models.OrcamentoItem{})
+	// Get all clients
+	var clients []models.Cliente
+	db.Find(&clients)
 
-	if err := tx.Delete(&solicitacao).Error; err != nil {
-		tx.Rollback()
-		log.Fatalf("Error deleting: %v", err)
+	log.Printf("Found %d clients to delete", len(clients))
+
+	for _, client := range clients {
+		// Delete the client's user first
+		tx.Unscoped().Where("id = ?", client.UserID).Delete(&models.User{})
+		// Delete the client record
+		tx.Unscoped().Delete(&client)
+		log.Printf("  ✅ Deleted client: %s (ID: %s)", client.Name, client.ID)
 	}
 
-	tx.Commit()
-	log.Println("✅ Chamado #1 excluído com sucesso.")
+	// Also clean up orphan enderecos
+	tx.Exec("DELETE FROM enderecos WHERE id NOT IN (SELECT DISTINCT endereco_id FROM clientes WHERE endereco_id IS NOT NULL)")
+
+	if err := tx.Commit().Error; err != nil {
+		log.Fatalf("Error committing: %v", err)
+	}
+
+	log.Println("✅ All clients deleted successfully!")
 }

@@ -32,6 +32,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ currentUser }) => {
         }
     });
     const [loading, setLoading] = useState(isEditing);
+    const [cepLoading, setCepLoading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -73,23 +74,23 @@ export const ClientForm: React.FC<ClientFormProps> = ({ currentUser }) => {
 
         if (cep.length === 8) {
             try {
-                setLoading(true);
+                setCepLoading(true);
                 const address = await apiService.searchCEP(cep);
                 setFormData(prev => ({
                     ...prev,
                     endereco: {
                         ...prev.endereco,
-                        street: address.logradouro,
-                        district: address.bairro,
-                        city: address.localidade,
-                        state: address.uf,
+                        street: address.logradouro || '',
+                        district: address.bairro || '',
+                        city: address.localidade || '',
+                        state: address.uf || '',
                         zipCode: cep
                     }
                 }));
             } catch (err) {
-                // Silent fail
+                console.error('CEP lookup failed:', err);
             } finally {
-                setLoading(false);
+                setCepLoading(false);
             }
         }
     };
@@ -274,13 +275,13 @@ export const ClientForm: React.FC<ClientFormProps> = ({ currentUser }) => {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">CEP</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">CEP {cepLoading && <span className="text-cyan-500">(buscando...)</span>}</label>
                                 <input
                                     className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
                                     value={formData.endereco?.zipCode || ''}
                                     onChange={handleCEPChange}
                                     maxLength={8}
-                                    placeholder="00000-000"
+                                    placeholder="00000000"
                                 />
                             </div>
                             <div className="space-y-2">
