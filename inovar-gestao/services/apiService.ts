@@ -717,6 +717,12 @@ class ApiService {
     const response = await this.request<{ data: any[] }>(`/system/tables/${tableName}`);
     return response.data;
   }
+
+  // WhatsApp
+  async getWhatsAppStatus(): Promise<{ enabled: boolean; connected: boolean; qrCode: string }> {
+    const response = await this.request<{ data: any }>('/system/whatsapp');
+    return response.data;
+  }
 }
 
 export const apiService = new ApiService();
