@@ -157,7 +157,7 @@ class ApiService {
 
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout', { method: 'POST' });
+      await this.request('/logout', { method: 'POST' });
     } finally {
       this.clearTokens();
     }

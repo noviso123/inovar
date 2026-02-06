@@ -5,18 +5,19 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
-
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/mdp/qrterminal/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 type WhatsAppService struct {
 	client *whatsmeow.Client
+	qrCode string
 }
 
 func NewWhatsAppService() *WhatsAppService {
@@ -38,6 +39,7 @@ func NewWhatsAppService() *WhatsAppService {
 
 	clientLog := waLog.Stdout("Client", "DEBUG", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
+	service := &WhatsAppService{client: client}
 
 	// Message handler (optional, just to see it works)
 	client.AddEventHandler(func(evt interface{}) {
@@ -61,6 +63,7 @@ func NewWhatsAppService() *WhatsAppService {
 		go func() {
 			for evt := range qrChan {
 				if evt.Event == "code" {
+					service.qrCode = evt.Code // Save for API
 					fmt.Println("\n\n📷 ESCANEIE ESTE QR CODE NO SEU WHATSAPP (Aparelhos Conectados):")
 					qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 					fmt.Println("\n(Aguardando conexão...)")
@@ -79,15 +82,28 @@ func NewWhatsAppService() *WhatsAppService {
 		fmt.Println("✅ WhatsApp reconectado com sucesso!")
 	}
 
-	return &WhatsAppService{
-		client: client,
+	return service
+}
+
+// GetStatus returns the connection status and current QR code
+func (s *WhatsAppService) GetStatus() (bool, string) {
+	if s.client == nil {
+		return false, ""
 	}
+	return s.client.IsConnected(), s.qrCode
 }
 
 // SendMessage sends a text message to a phone number
 // phone format: 5511999999999 (Country + Area + Number)
 func (s *WhatsAppService) SendMessage(phone, text string) error {
-	if s.client == nil || !s.client.IsConnected() {
+	if s.client == nil {
+		return fmt.Errorf("whatsapp client not initialized")
+	}
+
+	// Ensure connection
+	if !s.client.IsConnected() {
+		// Try to reconnect?
+		// For now, just fail
 		return fmt.Errorf("whatsapp client not connected")
 	}
 
@@ -98,26 +114,10 @@ func (s *WhatsAppService) SendMessage(phone, text string) error {
 	}
 
 	// Send
-	/*
-		msg := &waProto.Message{
-			Conversation: proto.String(text),
-		}
-	*/
-	// Using helper for simple text
-	_, err = s.client.SendMessage(context.Background(), jid, &whatsmeow.Message{
-		Conversation: &text,
-	}) // Note: Using basic structure, whatsmeow simplifies this in newer versions or requires protobuf
+	msg := &waE2E.Message{
+		Conversation: proto.String(text),
+	}
 
-	// Actually whatsmeow's SendMessage takes *waProto.Message.
-	// We need to import the proto package.
-	// Let's rely on the library helper if available or standard proto construction.
-	// But to avoid complex proto imports here without go mod tidy affecting things,
-	// let's use the simplest approach provided by the lib examples?
-	// The lib signature is: SendMessage(ctx, to, msg *waE2E.Message)
-
-	// Wait, whatsmeow v0.0.0+ changes often.
-	// Let's keep it simple and assume standard text sending.
-
-	// RE-WRITING SendMessage to be safe with common versions:
-	return nil // Placeholder until we fix the proto import in next step
+	_, err = s.client.SendMessage(context.Background(), jid, msg)
+	return err
 }
