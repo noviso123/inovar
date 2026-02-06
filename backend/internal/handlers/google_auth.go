@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,6 +32,9 @@ func (h *Handler) GoogleLogin(c *fiber.Ctx) error {
 	if googleOauthConfig == nil {
 		InitGoogleAuth()
 	}
+	// DEBUG: Print the Redirect URL being used
+	fmt.Printf("DEBUG: Google OAuth Redirect URL: '%s'\n", googleOauthConfig.RedirectURL)
+
 	url := googleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	return c.Redirect(url)
 }
