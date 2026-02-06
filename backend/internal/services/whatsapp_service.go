@@ -24,14 +24,14 @@ func NewWhatsAppService() *WhatsAppService {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 
 	// Create persistent store
-	container, err := sqlstore.New("sqlite3", "file:wadata.db?_foreign_keys=on", dbLog)
+	container, err := sqlstore.New(context.Background(), "sqlite3", "file:wadata.db?_foreign_keys=on", dbLog)
 	if err != nil {
 		fmt.Printf("Falha ao conectar no banco do WhatsApp: %v\n", err)
 		return nil
 	}
 
 	// Get first device
-	deviceStore, err := container.GetFirstDevice()
+	deviceStore, err := container.GetFirstDevice(context.Background())
 	if err != nil {
 		fmt.Printf("Falha ao obter dispositivo: %v\n", err)
 		return nil

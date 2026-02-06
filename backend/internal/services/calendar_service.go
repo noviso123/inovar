@@ -63,15 +63,26 @@ func (s *CalendarService) CreateEvent(user *models.User, request *models.Solicit
 		return fmt.Errorf("failed to create calendar service: %v", err)
 	}
 
+	// Validation
+	if request.ScheduledAt == nil {
+		return fmt.Errorf("request has no scheduled date")
+	}
+
+	// Address formatting
+	location := "Endereço não informado"
+	if request.Client.Endereco != nil {
+		location = fmt.Sprintf("%s, %s - %s", request.Client.Endereco.Street, request.Client.Endereco.Number, request.Client.Endereco.City)
+	}
+
 	event := &calendar.Event{
-		Summary:     fmt.Sprintf("OS #%s - %s", request.Numero, request.ServiceType),
-		Location:    fmt.Sprintf("%s, %s - %s", request.Cliente.Endereco.Rua, request.Cliente.Endereco.Numero, request.Cliente.Endereco.Cidade),
+		Summary:     fmt.Sprintf("OS #%d - %s", request.Numero, request.ServiceType),
+		Location:    location,
 		Description: fmt.Sprintf("Priority: %s\nDetails: %s", request.Priority, request.Description),
 		Start: &calendar.EventDateTime{
-			DateTime: request.Agendamento.Format(time.RFC3339),
+			DateTime: request.ScheduledAt.Format(time.RFC3339),
 		},
 		End: &calendar.EventDateTime{
-			DateTime: request.Agendamento.Add(2 * time.Hour).Format(time.RFC3339), // Default duration 2h
+			DateTime: request.ScheduledAt.Add(2 * time.Hour).Format(time.RFC3339), // Default duration 2h
 		},
 	}
 

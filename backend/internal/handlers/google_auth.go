@@ -97,7 +97,9 @@ func (h *Handler) GoogleCallback(c *fiber.Ctx) error {
 	user.GoogleTokenExpiry = token.Expiry
 
 	if err := h.DB.Save(&user).Error; err != nil {
-		return InternalServerError(c, "Failed to save tokens")
+		if err := h.DB.Save(&user).Error; err != nil {
+			return ServerError(c, fmt.Errorf("failed to save tokens: %w", err))
+		}
 	}
 
 	// Redirect back to frontend profile
