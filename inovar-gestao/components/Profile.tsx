@@ -171,8 +171,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
         </div>
       </div>
 
-      </div>
-
       {/* WhatsApp Integration */}
       <div className="mt-4 px-0">
         <button
