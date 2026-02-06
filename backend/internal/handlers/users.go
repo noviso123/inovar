@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -96,6 +98,20 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 
 	// Broadcast event
 	h.Hub.Broadcast("user:created", user)
+
+	// Send Notifications
+	go func() {
+		// Email
+		if h.EmailService != nil && user.Email != "" {
+			h.EmailService.SendWelcomeEmail(user.Email, user.Name, req.Password)
+		}
+
+		// WhatsApp
+		if h.WhatsAppService != nil && user.Phone != "" {
+			msg := fmt.Sprintf("👋 Bem-vindo(a) ao *Inovar Gestão*, %s!\n\nSeu cadastro foi realizado com sucesso.\n📧 Email: %s\n🔑 Senha: %s\n\nAcesse em: %s", user.Name, user.Email, req.Password, os.Getenv("FRONTEND_URL"))
+			h.WhatsAppService.SendMessage(user.Phone, msg)
+		}
+	}()
 
 	return Created(c, user)
 }

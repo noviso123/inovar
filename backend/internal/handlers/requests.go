@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -179,6 +180,22 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 	h.DB.Preload("Equipments.Equipamento").First(&solicitacao, "id = ?", solicitacao.ID)
 
 	h.Hub.Broadcast("request:created", solicitacao)
+
+	// Send Notifications (Email & WhatsApp)
+	go func() {
+		// Email
+		if h.EmailService != nil && cliente.Email != "" {
+			osNum := strconv.Itoa(solicitacao.Numero)
+			h.EmailService.SendOSCreated(cliente.Email, cliente.Name, osNum, solicitacao.Description)
+		}
+
+		// WhatsApp
+		if h.WhatsAppService != nil && cliente.Phone != "" {
+			osNum := strconv.Itoa(solicitacao.Numero)
+			msg := fmt.Sprintf("🔧 *Inovar Gestão*\n\nOlá %s! 👋\nUma nova Ordem de Serviço foi aberta para você.\n\n*OS #%s*\n📄 %s\n\nAcompanhe o status pelo nosso sistema.", cliente.Name, osNum, solicitacao.Description)
+			h.WhatsAppService.SendMessage(cliente.Phone, msg)
+		}
+	}()
 
 	return Created(c, solicitacao)
 }

@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"log"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -199,15 +200,20 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	user.ResetTokenExpiresAt = &expiration
 	h.DB.Save(&user)
 
-	// Send email using EmailService
-	if h.EmailService != nil {
-		go func() {
-			if err := h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name); err != nil {
-				// Log error but don't expose to user
-				log.Printf("Erro ao enviar email de recuperação: %v", err)
-			}
-		}()
-	}
+	// Send notifications
+	go func() {
+		// Email
+		if h.EmailService != nil {
+			h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name)
+		}
+
+		// WhatsApp
+		if h.WhatsAppService != nil && user.Phone != "" {
+			resetLink := fmt.Sprintf("%s/reset-password?token=%s", os.Getenv("FRONTEND_URL"), token)
+			msg := fmt.Sprintf("🔒 *Recuperação de Senha*\n\nOlá %s,\nRecebemos uma solicitação para redefinir sua senha.\n\nClique no link abaixo:\n%s\n\n(Se não foi você, ignore esta mensagem)", user.Name, resetLink)
+			h.WhatsAppService.SendMessage(user.Phone, msg)
+		}
+	}()
 
 	return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 }
