@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/inovar/backend/internal/config"
 	"gopkg.in/gomail.v2"
 )
 
@@ -13,14 +14,22 @@ type EmailService struct {
 	from   string
 }
 
-func NewEmailService() *EmailService {
-	host := "smtp.gmail.com"
-	port := 587
-	user := os.Getenv("SMTP_USER")
-	pass := os.Getenv("SMTP_PASS")
+func NewEmailService(cfg *config.Config) *EmailService {
+	host := cfg.SMTPHost
+	port := cfg.SMTPPort
+	user := cfg.SMTPUser
+	pass := cfg.SMTPPassword
+
+	// Fallback to env if config is empty (though config loads from env)
+	if host == "" {
+		host = "smtp.gmail.com"
+	}
+	if port == 0 {
+		port = 587
+	}
 
 	d := gomail.NewDialer(host, port, user, pass)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: true} // Necessary for some environments
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	return &EmailService{
 		dialer: d,
@@ -28,7 +37,7 @@ func NewEmailService() *EmailService {
 	}
 }
 
-func (s *EmailService) SendWelcomeEmail(toEmail, userName string) error {
+func (s *EmailService) SendWelcomeEmail(toEmail, userName, password string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.from)
 	m.SetHeader("To", toEmail)
@@ -37,11 +46,16 @@ func (s *EmailService) SendWelcomeEmail(toEmail, userName string) error {
 		<div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
 			<h2 style="color: #2563eb;">Olá, %s!</h2>
 			<p>Seu cadastro no sistema <b>Inovar Gestão</b> foi realizado com sucesso.</p>
-			<p>Agora você pode acompanhar suas ordens de serviço e solicitar atendimentos diretamente pela plataforma.</p>
+			<p>Aqui estão suas credenciais de acesso:</p>
+			<ul>
+				<li><b>Usuário/Email:</b> %s</li>
+				<li><b>Senha:</b> %s</li>
+			</ul>
+			<p>Recomendamos que você altere sua senha após o primeiro acesso.</p>
 			<br>
 			<a href="%s" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Sistema</a>
 		</div>
-	`, userName, os.Getenv("FRONTEND_URL")))
+	`, userName, toEmail, password, os.Getenv("FRONTEND_URL")))
 
 	return s.dialer.DialAndSend(m)
 }
