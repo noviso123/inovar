@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -46,12 +47,14 @@ func (h *Handler) ListEquipments(c *fiber.Ctx) error {
 
 // CreateEquipmentRequest represents equipment creation payload
 type CreateEquipmentRequest struct {
-	ClientID     string `json:"clientId"`
-	Brand        string `json:"brand"`
-	Model        string `json:"model"`
-	BTU          int    `json:"btu"`
-	SerialNumber string `json:"serialNumber"`
-	Location     string `json:"location"`
+	ClientID           string     `json:"clientId"`
+	Brand              string     `json:"brand"`
+	Model              string     `json:"model"`
+	BTU                int        `json:"btu"`
+	SerialNumber       string     `json:"serialNumber"`
+	Location           string     `json:"location"`
+	LastPreventiveDate *time.Time `json:"lastPreventiveDate"`
+	PreventiveInterval int        `json:"preventiveInterval"`
 }
 
 // CreateEquipment creates a new equipment
@@ -76,16 +79,41 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 		return BadRequest(c, "Cliente é obrigatório")
 	}
 
+	if clientID == "" {
+		return BadRequest(c, "Cliente é obrigatório")
+	}
+
+	// Calculate Initial Preventive Date
+	interval := req.PreventiveInterval
+	if interval <= 0 {
+		interval = 90 // Default fallback
+		var s models.Setting
+		if err := h.DB.Where("key = ?", "preventive_interval").First(&s).Error; err == nil && s.Value != "" {
+			if val, err := strconv.Atoi(s.Value); err == nil {
+				interval = val
+			}
+		}
+	}
+
+	baseDate := time.Now()
+	if req.LastPreventiveDate != nil {
+		baseDate = *req.LastPreventiveDate
+	}
+	nextDate := baseDate.AddDate(0, 0, interval)
+
 	equipment := models.Equipamento{
-		ID:           uuid.New().String(),
-		ClientID:     clientID,
-		Brand:        req.Brand,
-		Model:        req.Model,
-		BTU:          req.BTU,
-		SerialNumber: req.SerialNumber,
-		Location:     req.Location,
-		Active:       true,
-		CreatedAt:    time.Now(),
+		ID:                 uuid.New().String(),
+		ClientID:           clientID,
+		Brand:              req.Brand,
+		Model:              req.Model,
+		BTU:                req.BTU,
+		SerialNumber:       req.SerialNumber,
+		Location:           req.Location,
+		Active:             true,
+		CreatedAt:          time.Now(),
+		LastPreventiveDate: req.LastPreventiveDate,
+		NextPreventiveDate: &nextDate,
+		PreventiveInterval: req.PreventiveInterval,
 	}
 
 	if err := h.DB.Create(&equipment).Error; err != nil {
@@ -152,6 +180,31 @@ func (h *Handler) UpdateEquipment(c *fiber.Ctx) error {
 	equipment.BTU = req.BTU
 	equipment.SerialNumber = req.SerialNumber
 	equipment.Location = req.Location
+	equipment.PreventiveInterval = req.PreventiveInterval
+	equipment.LastPreventiveDate = req.LastPreventiveDate
+
+	// Recalculate Next Preventive Date
+	calcInterval := equipment.PreventiveInterval
+	if calcInterval <= 0 {
+		calcInterval = 90
+		var s models.Setting
+		if err := h.DB.Where("key = ?", "preventive_interval").First(&s).Error; err == nil && s.Value != "" {
+			if val, err := strconv.Atoi(s.Value); err == nil {
+				calcInterval = val
+			}
+		}
+	}
+
+	baseUpdateDate := equipment.CreatedAt
+	if equipment.LastPreventiveDate != nil {
+		baseUpdateDate = *equipment.LastPreventiveDate
+	}
+	newNext := baseUpdateDate.AddDate(0, 0, calcInterval)
+
+	// Only update next date if it hasn't passed OR if we want to force reschedule.
+	// User said "SEMPRE REFLETIR". So force update based on rule is safer.
+	equipment.NextPreventiveDate = &newNext
+
 	equipment.UpdatedAt = time.Now()
 
 	h.DB.Save(&equipment)

@@ -145,7 +145,7 @@ func (e *EmailService) SendPasswordResetEmail(toEmail, token, userName string) e
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔧 Inovar Refrigeração</h1>
+            <h1>🔧 Inovar Gestão</h1>
         </div>
         <div class="content">
             <h2>Olá, %s!</h2>
@@ -161,7 +161,7 @@ func (e *EmailService) SendPasswordResetEmail(toEmail, token, userName string) e
             <p style="word-break: break-all; color: #2563eb;">%s</p>
         </div>
         <div class="footer">
-            <p>© 2024 Inovar Refrigeração - Todos os direitos reservados</p>
+            <p>© 2025 Inovar - Todos os direitos reservados</p>
             <p>Este é um email automático, não responda.</p>
         </div>
     </div>
@@ -198,7 +198,7 @@ func (e *EmailService) SendWelcomeEmail(toEmail, userName, tempPassword string) 
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔧 Inovar Refrigeração</h1>
+            <h1>🔧 Inovar Gestão</h1>
         </div>
         <div class="content">
             <h2>Bem-vindo(a), %s! 🎉</h2>
@@ -213,7 +213,7 @@ func (e *EmailService) SendWelcomeEmail(toEmail, userName, tempPassword string) 
             <p>⚠️ Por segurança, altere sua senha no primeiro acesso.</p>
         </div>
         <div class="footer">
-            <p>© 2024 Inovar Refrigeração - Todos os direitos reservados</p>
+            <p>© 2025 Inovar Gestão - Todos os direitos reservados</p>
         </div>
     </div>
 </body>

@@ -25,6 +25,8 @@ type Config struct {
 	ConfirmDays       int
 	Environment       string // development, staging, production
 	DefaultPassword   string
+	SupabaseURL       string
+	SupabaseKey       string
 }
 
 func Load() *Config {
@@ -48,6 +50,8 @@ func Load() *Config {
 		LockTimeoutSecs:   getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
 		ConfirmDays:       getEnvInt("CONFIRM_DAYS", 7),
 		DefaultPassword:   getEnv("DEFAULT_PASSWORD", "inovar123"),
+		SupabaseURL:       getEnv("SUPABASE_URL", ""),
+		SupabaseKey:       getEnv("SUPABASE_KEY", ""),
 	}
 }
 

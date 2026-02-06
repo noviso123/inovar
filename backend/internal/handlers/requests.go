@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -358,6 +359,7 @@ type UpdateStatusRequest struct {
 	MaterialsUsed     string `json:"materialsUsed"`
 	NextMaintenanceAt string `json:"nextMaintenanceAt"`
 	ScheduledAt       string `json:"scheduledAt"`
+	PreventiveDone    bool   `json:"preventiveDone"` // New field
 }
 
 // UpdateRequestStatus updates request status
@@ -367,7 +369,8 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	role := middleware.GetUserRole(c)
 
 	var solicitacao models.Solicitacao
-	if err := h.DB.First(&solicitacao, "id = ?", id).Error; err != nil {
+	// Preload Equipments to update their maintenance date
+	if err := h.DB.Preload("Equipments.Equipamento").First(&solicitacao, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Solicitação não encontrada")
 	}
 
@@ -410,6 +413,38 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	}
 	solicitacao.UpdatedAt = time.Now()
 
+	// AUTOMATED PREVENTIVE MAINTENANCE LOGIC
+	if req.Status == models.StatusFinalizada && req.PreventiveDone {
+		// 1. Get Global Default Interval
+		var setting models.Setting
+		defaultInterval := 90 // Default 90 days
+		if err := h.DB.First(&setting, "key = ?", "preventive_interval").Error; err == nil {
+			if val, err := strconv.Atoi(setting.Value); err == nil {
+				defaultInterval = val
+			}
+		}
+
+		now := time.Now()
+
+		// 2. Update each equipment
+		for _, assoc := range solicitacao.Equipments {
+			equip := assoc.Equipamento
+			interval := equip.PreventiveInterval
+			if interval == 0 {
+				interval = defaultInterval
+			}
+
+			// Calculate next date
+			nextDate := now.AddDate(0, 0, interval)
+
+			// Update equipment
+			h.DB.Model(&equip).Updates(map[string]interface{}{
+				"last_preventive_date": now,
+				"next_preventive_date": nextDate,
+			})
+		}
+	}
+
 	h.DB.Save(&solicitacao)
 
 	// Create history
@@ -426,6 +461,9 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		AfterValue:    req.Status,
 		Details:       req.Observation,
 		CreatedAt:     time.Now(),
+	}
+	if req.PreventiveDone {
+		history.Details += " [Manutenção Preventiva Realizada]"
 	}
 	h.DB.Create(&history)
 
@@ -760,11 +798,15 @@ func (h *Handler) UploadAttachment(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx "+strconv.FormatInt(h.Config.MaxUploadSize/1024/1024, 10)+"MB)")
 	}
 
-	// Save file using structured storage
-	// Category: anexos, Subfolder: requestID
-	url, err := utils.SaveFile(c, file, "anexos", requestID)
+	// Save file using Supabase Storage
+	url, err := h.StorageService.UploadFile(file, "requests/"+requestID)
 	if err != nil {
-		return ServerError(c, err)
+		// Fallback to local if needed or just error
+		log.Printf("Supabase upload failed, falling back to local: %v", err)
+		url, err = utils.SaveFile(c, file, "anexos", requestID)
+		if err != nil {
+			return ServerError(c, err)
+		}
 	}
 
 	// Get user

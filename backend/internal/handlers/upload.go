@@ -32,10 +32,14 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 	// Use "temp" or "geral" as subfolder since this is a generic upload endpoint
 	subfolder := "geral"
 
-	// Save using helper
-	url, err := utils.SaveFile(c, file, category, subfolder)
+	// Save using Supabase Storage
+	url, err := h.StorageService.UploadFile(file, category+"/"+subfolder)
 	if err != nil {
-		return ServerError(c, err)
+		// Fallback to local if needed
+		url, err = utils.SaveFile(c, file, category, subfolder)
+		if err != nil {
+			return ServerError(c, err)
+		}
 	}
 
 	// Return format compatible with what frontend might expect

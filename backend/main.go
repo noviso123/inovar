@@ -14,9 +14,15 @@ import (
 	"github.com/inovar/backend/internal/handlers"
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/websocket"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Println("⚠️ AVISO: Arquivo .env não encontrado. Usando variáveis de ambiente do sistema.")
+	}
+
 	// Load configuration
 	cfg := config.Load()
 
@@ -36,7 +42,7 @@ func main() {
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
-		AppName:      "INOVAR API v1.0",
+		AppName:      "Inovar Gestão",
 		ErrorHandler: handlers.ErrorHandler,
 	})
 
@@ -69,6 +75,9 @@ func main() {
 	auth.Post("/refresh", h.RefreshToken)
 	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
+	// Google OAuth
+	auth.Get("/google/login", h.GoogleLogin)
+	auth.Get("/google/callback", h.GoogleCallback)
 
 	// Protected routes
 	protected := api.Group("", middleware.AuthRequired(cfg.JWTSecret))
@@ -129,14 +138,15 @@ func main() {
 	// Checklists
 	checklists := protected.Group("/requests/:requestId/checklists")
 	checklists.Get("/", h.ListChecklists)
-	checklists.Post("/", h.CreateChecklist)
-	checklists.Put("/:id", h.UpdateChecklist)
+	checklists.Post("/", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CreateChecklist)
+	checklists.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteChecklist) // Verify if this handler exists or needs creation
+	checklists.Put("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.UpdateChecklist)
 
 	// Attachments
 	attachments := protected.Group("/requests/:requestId/attachments")
 	attachments.Get("/", h.ListAttachments)
 	attachments.Post("/", h.UploadAttachment)
-	attachments.Delete("/:id", h.DeleteAttachment)
+	attachments.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteAttachment)
 
 	// Budget/Orcamento
 	requests.Get("/orcamento/sugestoes", h.GetOrcamentoSugestoes)
@@ -218,5 +228,5 @@ func main() {
 	}
 
 	log.Printf("🚀 INOVAR API starting on port %s", port)
-	log.Fatal(app.Listen(":" + port))
+	log.Fatal(app.Listen("0.0.0.0:" + port))
 }

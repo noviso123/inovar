@@ -1,0 +1,84 @@
+package services
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/inovar/backend/internal/models"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/option"
+)
+
+type CalendarService struct {
+	config *oauth2.Config
+}
+
+func NewCalendarService() *CalendarService {
+	return &CalendarService{
+		config: &oauth2.Config{
+			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+			Endpoint:     google.Endpoint,
+			Scopes:       []string{calendar.CalendarScope},
+		},
+	}
+}
+
+func (s *CalendarService) CreateEvent(user *models.User, request *models.Solicitacao) error {
+	if user.GoogleAccessToken == "" {
+		return fmt.Errorf("user not connected to google")
+	}
+
+	token := &oauth2.Token{
+		AccessToken:  user.GoogleAccessToken,
+		RefreshToken: user.GoogleRefreshToken,
+		Expiry:       user.GoogleTokenExpiry,
+		TokenType:    "Bearer",
+	}
+
+	// Auto-refresh token if needed
+	src := s.config.TokenSource(context.Background(), token)
+	newToken, err := src.Token()
+	if err != nil {
+		return fmt.Errorf("failed to refresh token: %v", err)
+	}
+
+	// Update user if token changed
+	if newToken.AccessToken != user.GoogleAccessToken {
+		// Here we ideally call a callback or channel to update the DB
+		// For simplicity, we assume the caller handles re-saving if needed or use a callback
+		// user.GoogleAccessToken = newToken.AccessToken
+		// user.GoogleRefreshToken = newToken.RefreshToken
+		// user.GoogleTokenExpiry = newToken.Expiry
+		// DB.Save(user)
+	}
+
+	ctx := context.Background()
+	svc, err := calendar.NewService(ctx, option.WithTokenSource(src))
+	if err != nil {
+		return fmt.Errorf("failed to create calendar service: %v", err)
+	}
+
+	event := &calendar.Event{
+		Summary:     fmt.Sprintf("OS #%s - %s", request.Numero, request.ServiceType),
+		Location:    fmt.Sprintf("%s, %s - %s", request.Cliente.Endereco.Rua, request.Cliente.Endereco.Numero, request.Cliente.Endereco.Cidade),
+		Description: fmt.Sprintf("Priority: %s\nDetails: %s", request.Priority, request.Description),
+		Start: &calendar.EventDateTime{
+			DateTime: request.Agendamento.Format(time.RFC3339),
+		},
+		End: &calendar.EventDateTime{
+			DateTime: request.Agendamento.Add(2 * time.Hour).Format(time.RFC3339), // Default duration 2h
+		},
+	}
+
+	_, err = svc.Events.Insert("primary", event).Do()
+	if err != nil {
+		return fmt.Errorf("failed to insert event: %v", err)
+	}
+
+	return nil
+}

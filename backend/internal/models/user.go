@@ -20,6 +20,9 @@ type User struct {
 	AvatarURL           string         `gorm:"size:500" json:"avatarUrl,omitempty"`
 	ResetToken          *string        `gorm:"size:255;index" json:"-"`
 	ResetTokenExpiresAt *time.Time     `json:"-"`
+	GoogleAccessToken   string         `gorm:"size:1024" json:"-"`
+	GoogleRefreshToken  string         `gorm:"size:1024" json:"-"`
+	GoogleTokenExpiry   time.Time      `json:"-"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`
