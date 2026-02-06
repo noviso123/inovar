@@ -200,6 +200,7 @@ func main() {
 	system.Get("/routes", h.ListRoutes)
 	system.Get("/tables", h.ListTables)
 	system.Get("/tables/:name", h.GetTableData)
+	system.Get("/whatsapp", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.GetWhatsAppStatus)
 
 	// Serve static files (storage)
 	// Ensure directory exists
