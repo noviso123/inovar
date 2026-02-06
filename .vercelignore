@@ -1,0 +1,13 @@
+backend/
+database/
+storage/
+.env
+.git
+.husky
+GEMINI.md
+README.md
+test_cnpj.go
+inovar-gestao/node_modules
+go.sum
+go.mod
+metadata.json

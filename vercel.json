@@ -1,0 +1,12 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "inovar-gestao/package.json",
+            "use": "@vercel/static-build"
+        }
+    ],
+    "routes": [
+        { "src": "/(.*)", "dest": "inovar-gestao/$1" }
+    ]
+}
