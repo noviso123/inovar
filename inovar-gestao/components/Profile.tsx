@@ -203,7 +203,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
       {/* Google Calendar Integration */}
       <div className="mt-6 px-0">
         <button
-           onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/google/login`}
+           onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/google/login?userId=${user.id}`}
            className="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left group active:scale-[0.98]"
         >
              <div className="w-10 h-10 bg-blue-50/50 rounded-xl flex items-center justify-center text-blue-600">

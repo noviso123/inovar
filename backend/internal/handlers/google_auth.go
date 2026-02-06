@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/inovar/backend/internal/models"
@@ -32,6 +33,22 @@ func (h *Handler) GoogleLogin(c *fiber.Ctx) error {
 	if googleOauthConfig == nil {
 		InitGoogleAuth()
 	}
+
+	userID := c.Query("userId")
+	if userID == "" {
+		return BadRequest(c, "User ID is required")
+	}
+
+	// Set a short-lived cookie to remember who initiated the flow
+	c.Cookie(&fiber.Cookie{
+		Name:     "oauth_user_id",
+		Value:    userID,
+		Expires:  time.Now().Add(10 * time.Minute),
+		HTTPOnly: true,
+		Secure:   true, // Set to true if using HTTPS
+		SameSite: "Lax",
+	})
+
 	// DEBUG: Print the Redirect URL being used
 	fmt.Printf("DEBUG: Google OAuth Redirect URL: '%s'\n", googleOauthConfig.RedirectURL)
 
