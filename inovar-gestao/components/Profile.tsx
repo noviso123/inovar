@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import { User, UserRole } from '../types';
 import { imageUploadService } from '../services/imageUploadService';
 import { apiService } from '../services/apiService';
@@ -21,6 +22,11 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
     avatarUrl: '',
     companyLogoUrl: ''
   });
+
+  // WhatsApp Modal State
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [waLoading, setWaLoading] = useState(false);
+  const [waStatus, setWaStatus] = useState<{ enabled: boolean; connected: boolean; qrCode: string } | null>(null);
 
   // Sync form with user prop
   useEffect(() => {
@@ -45,6 +51,29 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
       });
     }
   }, [user]);
+
+  // Fetch WhatsApp Status when modal opens
+  useEffect(() => {
+    let interval: any;
+    if (waModalOpen) {
+      const fetchStatus = async () => {
+        setWaLoading(true);
+        try {
+          const status = await apiService.getWhatsAppStatus();
+          setWaStatus(status);
+        } catch (error) {
+          console.error("Failed to fetch WhatsApp status", error);
+        } finally {
+          setWaLoading(false);
+        }
+      };
+
+      fetchStatus();
+      // Poll every 3 seconds to check for connection or new QR
+      interval = setInterval(fetchStatus, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [waModalOpen]);
 
   // Defensive check
   if (!user) {
@@ -171,15 +200,27 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
         </div>
       </div>
 
+      {/* Google Calendar Integration */}
+      <div className="mt-6 px-0">
+        <button
+           onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/google/login`}
+           className="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left group active:scale-[0.98]"
+        >
+             <div className="w-10 h-10 bg-blue-50/50 rounded-xl flex items-center justify-center text-blue-600">
+               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 11h2v2H7v-2zm14-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h1V2h2v2h8V2h2v2h1a2 2 0 012 2zM5 8h14V6H5v2zm14 12V10H5v10h14z"/></svg>
+             </div>
+             <div>
+                <span className="font-bold text-slate-700 text-sm block">Conectar Google Calendar</span>
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sincronizar OS Automaticamente</span>
+             </div>
+             <svg className="w-4 h-4 text-slate-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+        </button>
+      </div>
+
       {/* WhatsApp Integration */}
       <div className="mt-4 px-0">
         <button
-           onClick={() => {
-             // In a real implementation, this would open a modal fetching the QR code from /api/system/whatsapp
-             // For now, alerting user to check server terminal as per immediate instruction, but adding UI placeholder
-             alert("Funcionalidade em Beta: Verifique o QR Code no terminal do servidor ou aguarde a atualização da interface.");
-             // Future: setModalOpen(true) -> fetch QR
-           }}
+           onClick={() => setWaModalOpen(true)}
            className="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left group active:scale-[0.98]"
         >
              <div className="w-10 h-10 bg-green-50/50 rounded-xl flex items-center justify-center text-green-600">
@@ -193,12 +234,51 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
         </button>
       </div>
 
-      {/* Company Logo Section - Only for Admins */}
+      {/* WhatsApp Modal */}
+      {waModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-slate-800">Conectar WhatsApp</h3>
+                <button onClick={() => setWaModalOpen(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200 transition-colors">
+                  <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
 
-      {/* Company Logo Section - Only for Admins */}
-
-
-
+              <div className="text-center">
+                 {waLoading && !waStatus ? (
+                    <div className="py-12">
+                      <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                      <p className="mt-4 text-slate-500 font-medium">Conectando ao servidor...</p>
+                    </div>
+                 ) : waStatus?.connected ? (
+                    <div className="py-8 animate-in fade-in slide-in-from-bottom-4">
+                       <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>
+                       </div>
+                       <h4 className="text-lg font-bold text-slate-800 mb-2">Conectado com Sucesso!</h4>
+                       <p className="text-slate-500 text-sm">O sistema já está pronto para enviar notificações automáticas.</p>
+                       <button onClick={() => setWaModalOpen(false)} className="mt-8 w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-colors">
+                          Fechar
+                       </button>
+                    </div>
+                 ) : waStatus?.qrCode ? (
+                    <div className="py-2 animate-in fade-in slide-in-from-bottom-4">
+                       <p className="text-sm text-slate-500 mb-6">Abra o WhatsApp no seu celular, vá em <strong>Aparelhos Conectados</strong> e escaneie o código abaixo:</p>
+                       <div className="bg-white p-4 rounded-xl border-2 border-slate-100 inline-block shadow-sm">
+                          <QRCodeSVG value={waStatus.qrCode} size={220} level="M" />
+                       </div>
+                       <p className="mt-6 text-xs text-slate-400 uppercase tracking-widest font-bold">Atualiza automaticamente</p>
+                    </div>
+                 ) : (
+                    <div className="py-12">
+                       <p className="text-slate-500">Serviço indisponível no momento.</p>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Menu List */}
       <div className="mt-4 space-y-3">
