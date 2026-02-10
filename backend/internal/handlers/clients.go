@@ -289,22 +289,51 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 		// Permanent delete - Start transaction
 		tx := h.DB.Begin()
 
-		// 1. Delete associated Equipments
+		// 1. Find all service requests for this client
+		var requestIDs []string
+		tx.Model(&models.Solicitacao{}).Where("client_id = ?", id).Pluck("id", &requestIDs)
+
+		// 2. Cascadingly delete all requests and their dependencies
+		for _, reqID := range requestIDs {
+			// Delete dependencies of each request
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Anexo{})
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Checklist{})
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoHistorico{})
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoEquipamento{})
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.OrcamentoItem{})
+
+			// Delete NFSe and Events
+			tx.Exec("DELETE FROM nfse_eventos WHERE nfse_id IN (SELECT id FROM notas_fiscais WHERE solicitacao_id = ?)", reqID)
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.NotaFiscal{})
+
+			// Delete from Agenda
+			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Agenda{})
+		}
+
+		// 3. Delete the requests themselves
+		if len(requestIDs) > 0 {
+			if err := tx.Where("client_id = ?", id).Delete(&models.Solicitacao{}).Error; err != nil {
+				tx.Rollback()
+				return ServerError(c, err)
+			}
+		}
+
+		// 4. Delete associated Equipments
 		if err := tx.Unscoped().Where("client_id = ?", id).Delete(&models.Equipamento{}).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
-		// 2. Capture address ID before deleting client
+		// 5. Capture address ID before deleting client
 		var addrID *string = cliente.EnderecoID
 
-		// 3. Delete the Client
+		// 6. Delete the Client
 		if err := tx.Unscoped().Delete(&cliente).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
-		// 4. Delete the Address if it exists
+		// 7. Delete the Address if it exists
 		if addrID != nil && *addrID != "" {
 			if err := tx.Unscoped().Delete(&models.Endereco{}, "id = ?", *addrID).Error; err != nil {
 				tx.Rollback()
@@ -312,7 +341,7 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 			}
 		}
 
-		// 5. Delete the User if it exists (unless it's the admin themselves, but we should check)
+		// 8. Delete the User if it exists (unless it's the admin themselves)
 		if err := tx.Unscoped().Delete(&models.User{}, "id = ?", cliente.UserID).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)

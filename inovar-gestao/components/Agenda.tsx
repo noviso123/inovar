@@ -144,7 +144,7 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                   {request.equipments && request.equipments.length > 0 && (
                     <p className="text-[10px] text-cyan-600 font-bold mt-2">
                       📍 {request.client?.endereco
-                        ? `${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}`
+                        ? `${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state} (CEP: ${request.client.endereco.zipCode})`
                         : (request.equipments[0]?.equipamento?.location || 'Endereço não definido')}
                     </p>
                   )}

@@ -861,15 +861,15 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-800 text-sm leading-tight">
-                        {request.client?.endereco ? (
-                          <>
-                            {request.client.endereco.street}, {request.client.endereco.number}
-                            {request.client.endereco.complement && ` - ${request.client.endereco.complement}`}
-                            <br />
-                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 block">
-                              {request.client.endereco.district} - {request.client.endereco.city}/{request.client.endereco.state}
-                            </span>
-                          </>
+                        {request.client.endereco ? (
+                            <>
+                                {request.client.endereco.street}, {request.client.endereco.number}
+                                {request.client.endereco.complement && ` - ${request.client.endereco.complement}`}
+                                <br />
+                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 block">
+                                  {request.client.endereco.district} - {request.client.endereco.city}/{request.client.endereco.state} - CEP: {request.client.endereco.zipCode}
+                                </span>
+                            </>
                         ) : (
                           request.equipments?.[0]?.equipamento?.location || 'Endereço não cadastrado'
                         )}
