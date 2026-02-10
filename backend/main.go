@@ -155,8 +155,8 @@ func main() {
 	checklists := protected.Group("/requests/:requestId/checklists")
 	checklists.Get("/", h.ListChecklists)
 	checklists.Post("/", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CreateChecklist)
-	checklists.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteChecklist) // Verify if this handler exists or needs creation
-	checklists.Put("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.UpdateChecklist)
+	checklists.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteChecklist)
+	checklists.Patch("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.UpdateChecklist)
 
 	// Attachments
 	attachments := protected.Group("/requests/:requestId/attachments")

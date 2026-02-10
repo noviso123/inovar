@@ -838,38 +838,50 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
 
             {/* Contacts Section */}
             <section>
-              <h4 className="font-black text-slate-800 text-sm mb-3">Contatos & Localização</h4>
+              <h4 className="font-black text-slate-800 text-sm mb-3 uppercase tracking-widest">Contatos & Localização</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-800 shadow-sm">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <div className="bg-slate-50 p-5 rounded-[1.5rem] flex items-center gap-4 border border-slate-100/50">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800 text-sm">{request.clientName}</p>
-                      <p className="text-xs text-slate-500">Cliente Responsável</p>
+                      <p className="font-black text-slate-800 text-sm uppercase tracking-tight">{request.clientName}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{request.client?.phone || 'Telefone não cadastrado'}</p>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-4 rounded-2xl flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-800 shadow-sm">
-                      <svg className="w-5 h-5 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <div className="bg-slate-50 p-5 rounded-[1.5rem] flex items-center gap-4 border border-slate-100/50">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800 text-sm">
-                          {request.client?.endereco ?
-                             `${request.client.endereco.street}, ${request.client.endereco.number} ${request.client.endereco.district ? '- ' + request.client.endereco.district : ''}`
-                             : (request.equipments?.[0]?.equipamento?.location || 'Endereço não cadastrado')}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-slate-800 text-sm leading-tight">
+                        {request.client?.endereco ? (
+                          <>
+                            {request.client.endereco.street}, {request.client.endereco.number}
+                            {request.client.endereco.complement && ` - ${request.client.endereco.complement}`}
+                            <br />
+                            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 block">
+                              {request.client.endereco.district} - {request.client.endereco.city}/{request.client.endereco.state}
+                            </span>
+                          </>
+                        ) : (
+                          request.equipments?.[0]?.equipamento?.location || 'Endereço não cadastrado'
+                        )}
                       </p>
-                      <p className="text-xs text-slate-500">
-                          {request.client?.endereco ?
-                             `${request.client.endereco.city} - ${request.client.endereco.state}`
-                             : 'Localização'}
-                      </p>
+                      {request.equipments?.[0]?.equipamento?.location && (
+                         <div className="mt-2 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+                            <span className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.1em]">
+                               Ambiente: {request.equipments[0].equipamento.location}
+                            </span>
+                         </div>
+                      )}
                     </div>
                   </div>
               </div>
@@ -1127,28 +1139,37 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 )}
 
                 <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Descrição do item"
-                    value={newItem.descricao}
-                    onChange={e => setNewItem({ ...newItem, descricao: e.target.value })}
-                    className="w-full p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
-                  />
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição do Item</label>
+                    <input
+                      type="text"
+                      placeholder="Descrição do item"
+                      value={newItem.descricao}
+                      onChange={e => setNewItem({ ...newItem, descricao: e.target.value })}
+                      className="w-full p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      placeholder="Qtd"
-                      value={newItem.quantidade}
-                      onChange={e => setNewItem({ ...newItem, quantidade: parseFloat(e.target.value) || 1 })}
-                      className="p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Valor Unit R$"
-                      value={newItem.valorUnit || ''}
-                      onChange={e => setNewItem({ ...newItem, valorUnit: parseFloat(e.target.value) || 0 })}
-                      className="p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Quantidade</label>
+                      <input
+                        type="number"
+                        placeholder="Qtd"
+                        value={newItem.quantidade}
+                        onChange={e => setNewItem({ ...newItem, quantidade: parseFloat(e.target.value) || 1 })}
+                        className="w-full p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Valor Unitário R$</label>
+                      <input
+                        type="number"
+                        placeholder="Valor Unit R$"
+                        value={newItem.valorUnit || ''}
+                        onChange={e => setNewItem({ ...newItem, valorUnit: parseFloat(e.target.value) || 0 })}
+                        className="w-full p-4 bg-slate-50 rounded-xl font-medium text-slate-800 outline-none focus:ring-2 focus:ring-cyan-500"
+                      />
+                    </div>
                   </div>
                   <button
                     onClick={addBudgetItem}
@@ -1263,7 +1284,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div>
+                      <div>
                         <h4 className="font-black text-slate-800 text-sm mb-2">Materiais Utilizados</h4>
                         <div className="flex flex-wrap gap-2 mb-3">
                             {["Gás R410A", "Gás R22", "Capacitor 35uF", "Tubulação 1/4", "Tubulação 3/8", "Isolamento", "Cabo PP", "Suporte"].map(item => (
@@ -1277,6 +1298,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                             ))}
                         </div>
                         <div className="relative">
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição dos Materiais</label>
                             <input
                                 type="text"
                                 className="w-full p-4 bg-slate-50 rounded-2xl font-medium text-slate-800 border-none outline-none focus:ring-2 focus:ring-cyan-500 transition-all"
@@ -1287,7 +1309,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                             />
                             {isSaving && <div className="absolute right-3 top-3 text-[10px] text-emerald-500 font-bold animate-pulse">Salvando...</div>}
                         </div>
-                     </div>
+                      </div>
                      <div>
                         <h4 className="font-black text-slate-800 text-sm mb-2">Manutenção Preventiva</h4>
 
@@ -1330,6 +1352,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                                     </button>
                                 ))}
                                 </div>
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Próxima Revisão Recomendada</label>
                                 <input
                                     type="date"
                                     className="w-full p-4 bg-slate-50 rounded-2xl font-medium text-slate-800 border-none outline-none focus:ring-2 focus:ring-cyan-500"
@@ -1354,13 +1377,16 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                             </button>
                         ))}
                     </div>
-                    <textarea
-                        className="w-full p-4 bg-slate-50 rounded-2xl font-medium text-slate-800 min-h-[100px] border-none outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
-                        placeholder="Descreva o serviço realizado..."
-                        value={technicalReport}
-                        onChange={(e) => setTechnicalReport(e.target.value)}
-                        onBlur={() => apiService.updateRequestStatus(request.id, request.status, technicalReport, materialsUsed, nextMaintenanceAt)}
-                    ></textarea>
+                    <div className="relative">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Descrição do Serviço Realizado</label>
+                        <textarea
+                            className="w-full p-4 bg-slate-50 rounded-2xl font-medium text-slate-800 min-h-[100px] border-none outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
+                            placeholder="Descreva o serviço realizado..."
+                            value={technicalReport}
+                            onChange={(e) => setTechnicalReport(e.target.value)}
+                            onBlur={() => apiService.updateRequestStatus(request.id, request.status, technicalReport, materialsUsed, nextMaintenanceAt)}
+                        ></textarea>
+                    </div>
                 </div>
             </section>
 

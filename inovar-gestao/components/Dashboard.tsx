@@ -189,7 +189,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
                       <div>
                         <h4 className="font-black text-slate-800 text-sm">{r.clientName}</h4>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide">
-                          {r.equipments?.[0]?.equipamento?.location || 'Local não informado'}
+                          {r.client?.endereco
+                            ? `${r.client.endereco.street}, ${r.client.endereco.number} - ${r.client.endereco.district}, ${r.client.endereco.city}`
+                            : (r.equipments?.[0]?.equipamento?.location || 'Endereço não informado')}
                         </p>
                       </div>
                     </div>

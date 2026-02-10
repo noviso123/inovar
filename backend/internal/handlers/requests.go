@@ -413,17 +413,30 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		solicitacao.MaterialsUsed = req.MaterialsUsed
 	}
 	if req.NextMaintenanceAt != "" {
+		// Try RFC3339 first (includes time)
 		t, err := time.Parse(time.RFC3339, req.NextMaintenanceAt)
+		if err != nil {
+			// Try Date only format (YYYY-MM-DD)
+			t, err = time.Parse("2006-01-02", req.NextMaintenanceAt)
+		}
 		if err == nil {
 			solicitacao.NextMaintenanceAt = &t
+		} else {
+			fmt.Printf("Error parsing NextMaintenanceAt: %v\n", err)
 		}
 	}
+
 	if req.ScheduledAt == "NULL" {
 		solicitacao.ScheduledAt = nil
 	} else if req.ScheduledAt != "" {
 		t, err := time.Parse(time.RFC3339, req.ScheduledAt)
+		if err != nil {
+			t, err = time.Parse("2006-01-02", req.ScheduledAt)
+		}
 		if err == nil {
 			solicitacao.ScheduledAt = &t
+		} else {
+			fmt.Printf("Error parsing ScheduledAt: %v\n", err)
 		}
 	}
 	solicitacao.UpdatedAt = time.Now()

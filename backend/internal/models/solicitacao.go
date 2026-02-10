@@ -55,7 +55,7 @@ type Solicitacao struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
-	Client         Cliente                  `gorm:"foreignKey:ClientID" json:"-"`
+	Client         Cliente                  `gorm:"foreignKey:ClientID" json:"client,omitempty"`
 	Equipments     []SolicitacaoEquipamento `gorm:"foreignKey:SolicitacaoID" json:"equipments,omitempty"`
 	History        []SolicitacaoHistorico   `gorm:"foreignKey:SolicitacaoID" json:"history,omitempty"`
 	Checklists     []Checklist              `gorm:"foreignKey:SolicitacaoID" json:"checklists,omitempty"`

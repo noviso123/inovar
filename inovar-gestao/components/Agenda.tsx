@@ -143,7 +143,9 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                   </p>
                   {request.equipments && request.equipments.length > 0 && (
                     <p className="text-[10px] text-cyan-600 font-bold mt-2">
-                      📍 {request.equipments[0]?.equipamento?.location || 'Local não definido'}
+                      📍 {request.client?.endereco
+                        ? `${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}`
+                        : (request.equipments[0]?.equipamento?.location || 'Endereço não definido')}
                     </p>
                   )}
                 </div>
