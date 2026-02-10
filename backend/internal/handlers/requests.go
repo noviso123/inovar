@@ -379,10 +379,18 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := middleware.GetUserID(c)
 	role := middleware.GetUserRole(c)
-
+	// Find request
 	var solicitacao models.Solicitacao
-	// Preload Equipments to update their maintenance date
-	if err := h.DB.Preload("Equipments.Equipamento").First(&solicitacao, "id = ?", id).Error; err != nil {
+	// Preload everything deeply
+	err := h.DB.
+		Preload("Client").
+		Preload("Client.Endereco"). // <--- CRITICAL: Load the address!
+		Preload("Equipments").
+		Preload("History").
+		Preload("Attachments").
+		Preload("OrcamentoItems").
+		Preload("NotaFiscal").
+		First(&solicitacao, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Solicitação não encontrada")
 	}
 
