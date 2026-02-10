@@ -245,13 +245,21 @@ func (h *Handler) DeleteEquipment(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	// 2. Delete equipment itself
+	// 2. Delete Checklists associated with this equipment
+	if err := tx.Unscoped().Where("equipamento_id = ?", id).Delete(&models.Checklist{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 3. Delete equipment itself
 	if err := tx.Unscoped().Delete(&equipment).Error; err != nil {
 		tx.Rollback()
 		return ServerError(c, err)
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		return ServerError(c, err)
+	}
 
 	h.Hub.Broadcast("equipment:deleted", fiber.Map{"id": id})
 

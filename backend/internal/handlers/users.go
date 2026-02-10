@@ -235,19 +235,39 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	// 2. Delete related Technician profile if exists
+	// 2. Delete Agenda items for this user
+	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&models.Agenda{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 3. Delete History entries created by this user
+	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&models.SolicitacaoHistorico{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 4. Delete NFSe Events created by this user
+	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&models.NFSeEvento{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 5. Delete related Technician profile if exists
 	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&models.Tecnico{}).Error; err != nil {
 		tx.Rollback()
 		return ServerError(c, err)
 	}
 
-	// 3. Delete User permanently
+	// 6. Delete User permanently
 	if err := tx.Unscoped().Delete(&user).Error; err != nil {
 		tx.Rollback()
 		return ServerError(c, err)
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		return ServerError(c, err)
+	}
 
 	// Broadcast event
 	h.Hub.Broadcast("user:deleted", fiber.Map{"id": id})

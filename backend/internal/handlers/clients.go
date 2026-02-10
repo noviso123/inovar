@@ -34,7 +34,7 @@ func (h *Handler) ListClients(c *fiber.Ctx) error {
 
 	// Admin sees all
 
-	query.Preload("User").Order("name ASC").Find(&clients)
+	query.Preload("User").Preload("Endereco").Order("name ASC").Find(&clients)
 
 	// Populate Active field from User
 	for i := range clients {

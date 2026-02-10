@@ -50,8 +50,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ currentUser }) => {
     const loadClient = async (clientId: string) => {
         try {
             setLoading(true);
-            const clients = await apiService.getClients();
-            const client = clients.find(c => c.id === clientId);
+            const client = await apiService.getClient(clientId);
 
             if (client) {
                 setFormData(client);
