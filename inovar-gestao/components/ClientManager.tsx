@@ -103,6 +103,28 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ currentUser }) => 
                 {client.active ? 'Bloq.' : 'Ativar'}
               </button>
             </div>
+
+             <div className="flex gap-3 mt-3">
+              <button
+                onClick={async () => {
+                  if(window.confirm(`ATENÇÃO: Deseja EXCLUIR PERMANENTEMENTE o cliente ${client.name}?\n\nIsso apagará:\n- Todos os chamados\n- Histórico completo\n- Equipamentos\n- Notas Fiscais\n\nEsta ação NÃO pode ser desfeita.`)) {
+                     if(window.confirm(`Tem certeza absoluta? Digite OK para confirmar.`)) {
+                        try {
+                          await apiService.deleteClient(client.id);
+                          setClients(prev => prev.filter(c => c.id !== client.id));
+                          alert('Cliente excluído permanentemente.');
+                        } catch (e: any) {
+                          alert(`Erro ao excluir: ${e.message || 'Erro desconhecido'}`);
+                        }
+                     }
+                  }
+                }}
+                className="w-full py-3 text-[10px] font-black bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-colors uppercase tracking-widest flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                Excluir
+              </button>
+             </div>
              <button
               onClick={async () => {
                 if(window.confirm(`Resetar senha de ${client.name} para 123456?`)) {
