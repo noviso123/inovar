@@ -117,7 +117,7 @@ class ApiService {
     // This prevents "Session expired" error from stale tokens
     this.clearTokens();
 
-    console.log('🔐 Login attempt:', { email, apiBase: API_BASE });
+    this.clearTokens();
 
     try {
       // Direct fetch for login - don't use this.request() as it tries to refresh old tokens
@@ -127,13 +127,9 @@ class ApiService {
         body: JSON.stringify({ email, password }),
       });
 
-      console.log('📡 Login response status:', response.status);
-
       const data = await response.json();
-      console.log('📦 Login response data:', data);
 
       if (!response.ok) {
-        console.log('❌ Login failed - response not ok');
         return {
           success: false,
           data: data,
@@ -142,7 +138,6 @@ class ApiService {
       }
 
       if (data.success) {
-        console.log('✅ Login successful, saving tokens');
         this.setAccessToken(data.data.accessToken);
         this.setRefreshToken(data.data.refreshToken);
         localStorage.setItem('currentUser', JSON.stringify(data.data.user));

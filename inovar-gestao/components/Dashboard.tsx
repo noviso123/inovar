@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { ServiceRequest, RequestStatus, User, UserRole } from '../types';
 import { apiService } from '../services/apiService';
-import { DollarSign, FileText, ClipboardList, CheckCircle } from 'lucide-react';
+import { DollarSign, FileText, ClipboardList, CheckCircle, Calendar } from 'lucide-react';
 
 interface DashboardProps {
   requests: ServiceRequest[];

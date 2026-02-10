@@ -205,11 +205,12 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
-	// TODO: Send email with new password
+	// TODO: Future improvement - Send email with new password
+	// For now, Admin must communicate the temporary password manually.
 
 	return Success(c, fiber.Map{
 		"message":      "Senha resetada com sucesso",
-		"tempPassword": tempPassword, // Only for demo, remove in production
+		"tempPassword": tempPassword,
 	})
 }
 
