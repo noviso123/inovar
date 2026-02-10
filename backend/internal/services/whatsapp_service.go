@@ -26,10 +26,19 @@ type WhatsAppService struct {
 func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 
-	// Use Postgres instead of SQLite for 100% Supabase Integration
-	container, err := sqlstore.New(context.Background(), "pgx", cfg.DatabaseURL, dbLog)
+	// Determine driver based on DB URL
+	dbDriver := "sqlite3"
+	if len(cfg.DatabaseURL) > 10 && (cfg.DatabaseURL[:8] == "postgres" || cfg.DatabaseURL[:5] == "pgsql") {
+		dbDriver = "pgx"
+	}
+
+	// Initialize container
+	container, err := sqlstore.New(context.Background(), dbDriver, cfg.DatabaseURL, dbLog)
 	if err != nil {
-		fmt.Printf("Falha ao conectar no banco do WhatsApp (Postgres): %v\n", err)
+		fmt.Printf("Falha ao conectar no banco do WhatsApp (%s): %v\n", dbDriver, err)
+		// Don't return nil, return a service that knows it's broken?
+		// Actually, if we can't store session, we are doomed.
+		// But let's verify if we can fallback to memory for testing? No, sqlstore needs DB.
 		return nil
 	}
 

@@ -2,11 +2,14 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/models"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -67,41 +70,82 @@ func (h *Handler) GoogleCallback(c *fiber.Ctx) error {
 		return BadRequest(c, "Failed to exchange token: "+err.Error())
 	}
 
-	// Get basic user info to identify or verify
-	// In a real flow, we would match this with the logged-in user.
-	// Assuming the user initiated this from their profile, we should have their ID in a cookie or state.
-	// For now, let's assume we pass the UserID in the state parameter or use a temporary cookie storage.
-	// IMPROVEMENT: Secure 'state' handling.
+	// Get User Info from Google
+	client := googleOauthConfig.Client(context.Background(), token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return BadRequest(c, "Failed to get user info: "+err.Error())
+	}
+	defer resp.Body.Close()
 
-	// For this implementation, we will rely on the user being logged in via JWT in the frontend,
-	// but the callback comes from Google. We can set a cookie before redirecting.
-
-	// Simplification: We will return the tokens to the frontend or handle the user mapping here?
-	// Better approach: The frontend calls /auth/google/login which redirects.
-	// The callback handler needs to know WHICH user to update.
-	// We can use a cookie set on the Login endpoint.
-
-	userID := c.Cookies("oauth_user_id")
-	if userID == "" {
-		return BadRequest(c, "User session not found for OAuth linking")
+	var googleUser struct {
+		ID      string `json:"id"`
+		Email   string `json:"email"`
+		Name    string `json:"name"`
+		Picture string `json:"picture"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		return BadRequest(c, "Failed to decode user info")
 	}
 
-	// Update User
+	// 1. Try to find user by Email
 	var user models.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return BadRequest(c, "User not found")
+	result := h.DB.Where("email = ?", googleUser.Email).First(&user)
+
+	if result.Error != nil {
+		// User not found.
+		// Check if we should CREATE a new user (Sign Up) or Error.
+		// For this system, we might want to auto-register clients?
+		// OPTION: Auto-register as CLIENTE.
+
+		// Create new User
+		user = models.User{
+			ID:        uuid.New().String(),
+			Name:      googleUser.Name,
+			Email:     googleUser.Email,
+			Role:      models.RoleCliente, // Default to Client
+			Active:    true,
+			AvatarURL: &googleUser.Picture,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		}
+		// We'll calculate null password hash or handle it
+		if err := h.DB.Create(&user).Error; err != nil {
+			return ServerError(c, err)
+		}
+
+		// Also create a Client profile for them?
+		// Logic suggests yes, but let's keep it simple: Just create the User.
 	}
 
+	// 2. Update Google Tokens
 	user.GoogleAccessToken = token.AccessToken
 	user.GoogleRefreshToken = token.RefreshToken
 	user.GoogleTokenExpiry = token.Expiry
+	h.DB.Save(&user)
 
-	if err := h.DB.Save(&user).Error; err != nil {
-		if err := h.DB.Save(&user).Error; err != nil {
-			return ServerError(c, fmt.Errorf("failed to save tokens: %w", err))
-		}
+	// 3. Generate JWT (Login)
+	companyID := ""
+	if user.CompanyID != nil {
+		companyID = *user.CompanyID
 	}
 
-	// Redirect back to frontend profile
-	return c.Redirect(os.Getenv("FRONTEND_URL") + "/prestador/perfil?status=google_connected")
+	accessToken, err := middleware.GenerateToken(
+		user.ID,
+		user.Email,
+		user.Role,
+		companyID,
+		h.Config.JWTSecret,
+		h.Config.JWTExpireMinutes,
+	)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	// 4. Redirect to Frontend with Token
+	// We pass the token in the URL fragment or query.
+	// Make sure frontend handles this!
+	// URL: /auth/callback?token=...
+	redirectURL := fmt.Sprintf("%s/auth/callback?token=%s", os.Getenv("FRONTEND_URL"), accessToken)
+	return c.Redirect(redirectURL)
 }

@@ -41,6 +41,7 @@ class ApiService {
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      cache: 'no-store', // Prevent browser caching (fix for ghost data)
     });
 
     // Handle token expiration
