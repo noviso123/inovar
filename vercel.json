@@ -1,16 +1,7 @@
 {
-    "version": 2,
-    "builds": [
-        {
-            "src": "inovar-gestao/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
-        }
-    ],
-    "routes": [
-        { "handle": "filesystem" },
-        { "src": "/(.*)", "dest": "/index.html" }
+    "buildCommand": "cd inovar-gestao && npm install && npm run build",
+    "outputDirectory": "inovar-gestao/dist",
+    "rewrites": [
+        { "source": "/(.*)", "destination": "/index.html" }
     ]
 }
