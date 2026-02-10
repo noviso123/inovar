@@ -46,7 +46,12 @@ func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
 	deviceStore, err := container.GetFirstDevice(context.Background())
 	if err != nil {
 		fmt.Printf("Falha ao obter dispositivo: %v\n", err)
-		return nil
+		// Try to create a new device if getting failed (likely empty)
+		deviceStore = container.NewDevice()
+	} else if deviceStore == nil {
+		// No device found, create one
+		fmt.Println("Nenhum dispositivo encontrado, criando novo...")
+		deviceStore = container.NewDevice()
 	}
 
 	clientLog := waLog.Stdout("Client", "ERROR", true)
