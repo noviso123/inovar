@@ -861,53 +861,86 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
               </section>
             )}
 
-            {/* Contacts Section */}
+            {/* Contacts & Address - FINAL FIX */}
             <section>
               <h4 className="font-black text-slate-800 text-sm mb-3 uppercase tracking-widest">Contatos & Localização</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-slate-50 p-5 rounded-[1.5rem] flex items-center gap-4 border border-slate-100/50">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
+                  {/* Contact Card */}
+                  <div className="bg-slate-50 p-6 rounded-[2rem] flex items-center gap-4 border border-slate-100 shadow-sm">
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-500 shadow-md shadow-blue-100">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-black text-slate-800 text-sm uppercase tracking-tight">{request.clientName}</p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{request.client?.phone || 'Telefone não cadastrado'}</p>
+                      <p className="font-black text-slate-800 text-lg uppercase tracking-tight">{request.clientName}</p>
+                      <div className="flex flex-col gap-1 mt-1">
+                          <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-2">
+                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                             {formatPhone(request.client?.phone) || 'Sem Telefone'}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                             {request.client?.email || 'Sem E-mail'}
+                          </p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 p-5 rounded-[1.5rem] flex items-center gap-4 border border-slate-100/50">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100">
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-slate-800 text-sm leading-tight">
-                        {request.client?.endereco ? (
-                            <>
-                                {request.client.endereco.street}, {request.client.endereco.number}
-                                {request.client.endereco.complement && ` - ${request.client.endereco.complement}`}
-                                <br />
-                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1 block">
-                                  {request.client.endereco.district} - {request.client.endereco.city}/{request.client.endereco.state} - CEP: {request.client.endereco.zipCode}
-                                </span>
-                            </>
-                        ) : (
-                          request.equipments?.[0]?.equipamento?.location || 'Endereço não cadastrado'
-                        )}
-                      </p>
-                      {request.equipments?.[0]?.equipamento?.location && (
-                         <div className="mt-2 flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
-                            <span className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.1em]">
-                               Ambiente: {request.equipments[0].equipamento.location}
-                            </span>
-                         </div>
-                      )}
-                    </div>
+                  {/* Address Card */}
+                  <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 shadow-sm relative overflow-hidden group hover:border-blue-100 transition-colors">
+                     <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-transparent rounded-bl-[4rem]"></div>
+
+                     <div className="flex gap-4 relative z-10">
+                        <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-inner">
+                           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                           </svg>
+                        </div>
+
+                        <div className="flex-1">
+                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Endereço de atendimento</p>
+                           {request.client?.endereco ? (
+                              <div className="space-y-1">
+                                 <p className="text-base font-black text-slate-800 leading-tight">
+                                    {request.client.endereco.street}, {request.client.endereco.number}
+                                 </p>
+                                 {request.client.endereco.complement && (
+                                    <p className="text-xs font-bold text-slate-500">
+                                       {request.client.endereco.complement}
+                                    </p>
+                                 )}
+                                 <div className="flex items-center gap-2 mt-2">
+                                    <span className="px-2 py-1 bg-slate-100 rounded-lg text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                                       {request.client.endereco.district}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400">
+                                       {request.client.endereco.city}/{request.client.endereco.state}
+                                    </span>
+                                 </div>
+                                 <p className="text-[10px] font-mono font-bold text-slate-400 mt-1">
+                                    CEP: {formatCEP(request.client.endereco.zipCode)}
+                                 </p>
+                              </div>
+                           ) : (
+                              <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                 Endereço não cadastrado
+                              </div>
+                           )}
+
+                           {/* Equipment Location Hint */}
+                           {request.equipments && request.equipments.length > 0 && (
+                              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
+                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                 <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                                    Ambiente: {request.equipments.map(e => e.location || (e.equipamento && e.equipamento.location)).join(', ')}
+                                 </p>
+                              </div>
+                           )}
+                        </div>
+                     </div>
                   </div>
               </div>
             </section>
