@@ -29,6 +29,19 @@ export const ServiceOrderPrint: React.FC = () => {
 
     return (
         <div className="bg-white p-8 max-w-[210mm] mx-auto text-black print:p-0">
+            {/* Mobile/Screen Only Controls */}
+            <div className="print:hidden mb-8 flex justify-between items-center bg-slate-100 p-4 rounded-xl border border-slate-200">
+                <p className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                    <span className="text-xl">🖨️</span> Visualização de Impressão
+                </p>
+                <button
+                    onClick={() => window.print()}
+                    className="px-6 py-3 bg-blue-600 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Imprimir / Salvar PDF
+                </button>
+            </div>
             {/* Header */}
             <div className="border-b-2 border-black pb-4 mb-6 flex justify-between items-start">
                 <div className="flex items-center gap-4">

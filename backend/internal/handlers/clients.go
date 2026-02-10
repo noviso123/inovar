@@ -293,51 +293,60 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 		// Permanent delete - Start transaction
 		tx := h.DB.Begin()
 
+		// Capture UserID for cleanup of orphans
+		userID := cliente.UserID
+
 		// 1. Find all service requests for this client
 		var requestIDs []string
 		tx.Model(&models.Solicitacao{}).Where("client_id = ?", id).Pluck("id", &requestIDs)
 
 		// 2. Cascadingly delete all requests and their dependencies
 		for _, reqID := range requestIDs {
-			// Delete dependencies of each request
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Anexo{})
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Checklist{})
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoHistorico{})
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoEquipamento{})
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.OrcamentoItem{})
+			// Delete dependencies of each request by SolicitacaoID to be safe
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.Anexo{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.Checklist{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoHistorico{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.SolicitacaoEquipamento{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.OrcamentoItem{})
 
 			// Delete NFSe and Events
 			tx.Exec("DELETE FROM nfse_eventos WHERE nfse_id IN (SELECT id FROM notas_fiscais WHERE solicitacao_id = ?)", reqID)
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.NotaFiscal{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.NotaFiscal{})
 
 			// Delete from Agenda
-			tx.Where("solicitacao_id = ?", reqID).Delete(&models.Agenda{})
+			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&models.Agenda{})
 		}
 
 		// 3. Delete the requests themselves
 		if len(requestIDs) > 0 {
-			if err := tx.Where("client_id = ?", id).Delete(&models.Solicitacao{}).Error; err != nil {
+			if err := tx.Unscoped().Where("client_id = ?", id).Delete(&models.Solicitacao{}).Error; err != nil {
 				tx.Rollback()
 				return ServerError(c, err)
 			}
 		}
 
-		// 4. Delete associated Equipments
+		// 4. Delete associated Equipments (Hard Delete)
 		if err := tx.Unscoped().Where("client_id = ?", id).Delete(&models.Equipamento{}).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
-		// 5. Capture address ID before deleting client
+		// 5. Clean up any ORPHAN records linked to the UserID (Extra safety)
+		// This handles cases where history/agenda might exist but request was already gone or unlinked
+		tx.Unscoped().Where("user_id = ?", userID).Delete(&models.Agenda{})
+		tx.Unscoped().Where("user_id = ?", userID).Delete(&models.SolicitacaoHistorico{})
+		tx.Unscoped().Where("user_id = ?", userID).Delete(&models.NFSeEvento{})
+
+		// 6. Capture address ID before deleting client
 		var addrID *string = cliente.EnderecoID
 
-		// 6. Delete the Client
+		// 7. Delete the Client
 		if err := tx.Unscoped().Delete(&cliente).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
-		// 7. Delete the Address if it exists
+		// 8. Delete the Address if it exists
 		if addrID != nil && *addrID != "" {
 			if err := tx.Unscoped().Delete(&models.Endereco{}, "id = ?", *addrID).Error; err != nil {
 				tx.Rollback()
@@ -345,13 +354,15 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 			}
 		}
 
-		// 8. Delete the User if it exists (unless it's the admin themselves)
-		if err := tx.Unscoped().Delete(&models.User{}, "id = ?", cliente.UserID).Error; err != nil {
+		// 9. Delete the User (This is the final step)
+		if err := tx.Unscoped().Delete(&models.User{}, "id = ?", userID).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
-		tx.Commit()
+		if err := tx.Commit().Error; err != nil {
+			return ServerError(c, err)
+		}
 	} else {
 		// Soft delete via blocking
 		h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Update("active", false)
@@ -359,5 +370,5 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 
 	h.Hub.Broadcast("client:deleted", fiber.Map{"id": id})
 
-	return Success(c, fiber.Map{"message": "Cliente removido"})
+	return Success(c, fiber.Map{"message": "Cliente e todos os dados associados foram removidos permanentemente"})
 }

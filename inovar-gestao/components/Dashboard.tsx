@@ -137,7 +137,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
           </div>
           <div className="relative z-10">
             <p className="text-4xl font-black text-slate-800 tracking-tighter">{completedRequests}</p>
-            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 text-white/40">Total Finalizados</p>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1">Total Finalizados</p>
           </div>
         </div>
       </div>

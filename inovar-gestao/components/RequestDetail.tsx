@@ -679,18 +679,29 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
           </div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
              {request.clientName}
-             {request.client?.endereco ? (
-                <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="text-xs">📍</span>
-                    {`${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state}`}
-                </span>
-             ) : (
-                request.equipments?.[0]?.equipamento?.location && (
-                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="text-xs">📍</span> {request.equipments[0].equipamento.location}
+             {request.clientName}
+             <div className="flex flex-col gap-1 mt-1">
+                 {request.client?.endereco ? (
+                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit">
+                        <span className="text-xs">📍</span>
+                        <span className="font-bold">Endereço do Cliente:</span>
+                        {`${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state}`}
                     </span>
-                )
-             )}
+                 ) : (
+                    <span className="bg-rose-50 text-rose-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit font-bold">
+                        <AlertTriangle className="w-3 h-3" />
+                         Endereço do Cliente não cadastrado
+                    </span>
+                 )}
+
+                 {request.equipments?.[0]?.equipamento?.location && (
+                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit">
+                        <span className="text-xs">🔧</span>
+                         <span className="font-bold">Local do Equipamento:</span>
+                         {request.equipments[0].equipamento.location}
+                    </span>
+                 )}
+             </div>
           </p>
         </div>
         <button
