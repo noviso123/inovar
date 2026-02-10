@@ -259,8 +259,23 @@ func (h *Handler) DeleteEquipment(c *fiber.Ctx) error {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
-	// Permanent delete - only for Admin
-	h.DB.Unscoped().Delete(&equipment)
+	// Permanent delete - also for Prestador
+	// Start transaction to clean up junction table
+	tx := h.DB.Begin()
+
+	// 1. Delete associations in solicitacao_equipamentos
+	if err := tx.Where("equipamento_id = ?", id).Delete(&models.SolicitacaoEquipamento{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 2. Delete equipment itself
+	if err := tx.Unscoped().Delete(&equipment).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	tx.Commit()
 
 	h.Hub.Broadcast("equipment:deleted", fiber.Map{"id": id})
 

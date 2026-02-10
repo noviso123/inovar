@@ -117,7 +117,7 @@ func main() {
 	users.Put("/:id", h.UpdateUser)
 	users.Patch("/:id/block", h.BlockUser)
 	users.Post("/:id/reset-password", h.AdminResetPassword)
-	users.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA"), h.DeleteUser)
+	users.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.DeleteUser)
 
 	// Clients
 	clients := protected.Group("/clients")

@@ -285,10 +285,40 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 		return NotFound(c, "Cliente não encontrado")
 	}
 
-	if role == models.RoleAdmin {
-		// Permanent delete
-		h.DB.Unscoped().Delete(&cliente)
-		h.DB.Unscoped().Delete(&models.User{}, "id = ?", cliente.UserID)
+	if role == models.RoleAdmin || role == models.RolePrestador {
+		// Permanent delete - Start transaction
+		tx := h.DB.Begin()
+
+		// 1. Delete associated Equipments
+		if err := tx.Unscoped().Where("client_id = ?", id).Delete(&models.Equipamento{}).Error; err != nil {
+			tx.Rollback()
+			return ServerError(c, err)
+		}
+
+		// 2. Capture address ID before deleting client
+		var addrID *string = cliente.EnderecoID
+
+		// 3. Delete the Client
+		if err := tx.Unscoped().Delete(&cliente).Error; err != nil {
+			tx.Rollback()
+			return ServerError(c, err)
+		}
+
+		// 4. Delete the Address if it exists
+		if addrID != nil && *addrID != "" {
+			if err := tx.Unscoped().Delete(&models.Endereco{}, "id = ?", *addrID).Error; err != nil {
+				tx.Rollback()
+				return ServerError(c, err)
+			}
+		}
+
+		// 5. Delete the User if it exists (unless it's the admin themselves, but we should check)
+		if err := tx.Unscoped().Delete(&models.User{}, "id = ?", cliente.UserID).Error; err != nil {
+			tx.Rollback()
+			return ServerError(c, err)
+		}
+
+		tx.Commit()
 	} else {
 		// Soft delete via blocking
 		h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Update("active", false)

@@ -154,7 +154,22 @@ func (h *Handler) DeleteAgendaEntry(c *fiber.Ctx) error {
 		return NotFound(c, "Agendamento não encontrado")
 	}
 
-	h.DB.Delete(&agenda)
+	// Start transaction
+	tx := h.DB.Begin()
+
+	// 1. Clear scheduled date in solicitacao
+	if err := tx.Model(&models.Solicitacao{}).Where("id = ?", agenda.SolicitacaoID).Update("scheduled_at", nil).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 2. Delete agenda entry
+	if err := tx.Delete(&agenda).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	tx.Commit()
 
 	h.Hub.Broadcast("agenda:deleted", fiber.Map{"id": id})
 

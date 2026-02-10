@@ -218,13 +218,31 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	// Delete related Technician profile if exists
-	h.DB.Unscoped().Where("user_id = ?", id).Delete(&models.Tecnico{})
+	// Start transaction
+	tx := h.DB.Begin()
 
-	// Delete User permantently
-	if err := h.DB.Unscoped().Delete(&user).Error; err != nil {
+	// 1. Null out assigned requests if this user was responsible
+	if err := tx.Model(&models.Solicitacao{}).Where("responsible_id = ?", id).Updates(map[string]interface{}{
+		"responsible_id":   nil,
+		"responsible_name": nil,
+	}).Error; err != nil {
+		tx.Rollback()
 		return ServerError(c, err)
 	}
+
+	// 2. Delete related Technician profile if exists
+	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&models.Tecnico{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 3. Delete User permanently
+	if err := tx.Unscoped().Delete(&user).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	tx.Commit()
 
 	// Broadcast event
 	h.Hub.Broadcast("user:deleted", fiber.Map{"id": id})

@@ -1066,7 +1066,22 @@ func (h *Handler) DeleteRequest(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	// 6. Delete the Request itself
+	// 6. Delete NFSe records
+	if err := tx.Where("solicitacao_id = ?", id).Delete(&models.NotaFiscal{}).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 7. Delete NFSe Events
+	// Note: We search by NFSe ID first if needed, but since they are tied to OS, we can use a subquery or join if they have OS ID
+	// Looking at the model, NFSeEvento has NFSeID. We need to find the NFSe ID first?
+	// Actually, easier to just delete events where nfse_id IN (select id from notas_fiscais where solicitacao_id = ...)
+	if err := tx.Exec("DELETE FROM nfse_eventos WHERE nfse_id IN (SELECT id FROM notas_fiscais WHERE solicitacao_id = ?)", id).Error; err != nil {
+		tx.Rollback()
+		return ServerError(c, err)
+	}
+
+	// 8. Delete the Request itself
 	if err := tx.Delete(&solicitacao).Error; err != nil {
 		tx.Rollback()
 		return ServerError(c, err)
