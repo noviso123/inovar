@@ -203,14 +203,49 @@ func (h *Handler) UpdateClient(c *fiber.Ctx) error {
 	cliente.Document = req.Document
 	cliente.UpdatedAt = time.Now()
 
+	// Update or Create address
+	if req.Endereco != nil {
+		if cliente.EnderecoID != nil && *cliente.EnderecoID != "" {
+			// Update existing address
+			h.DB.Model(&models.Endereco{}).Where("id = ?", *cliente.EnderecoID).Updates(map[string]interface{}{
+				"street":     req.Endereco.Street,
+				"number":     req.Endereco.Number,
+				"complement": req.Endereco.Complement,
+				"district":   req.Endereco.District,
+				"city":       req.Endereco.City,
+				"state":      req.Endereco.State,
+				"zip_code":   req.Endereco.ZipCode,
+			})
+		} else {
+			// Create new address
+			endereco := models.Endereco{
+				ID:         uuid.New().String(),
+				Street:     req.Endereco.Street,
+				Number:     req.Endereco.Number,
+				Complement: req.Endereco.Complement,
+				District:   req.Endereco.District,
+				City:       req.Endereco.City,
+				State:      req.Endereco.State,
+				ZipCode:    req.Endereco.ZipCode,
+			}
+			if err := h.DB.Create(&endereco).Error; err == nil {
+				cliente.EnderecoID = &endereco.ID
+			}
+		}
+	}
+
 	// Update user as well
 	h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Updates(map[string]interface{}{
 		"name":  req.Name,
 		"phone": req.Phone,
 	})
 
-	h.DB.Save(&cliente)
+	if err := h.DB.Save(&cliente).Error; err != nil {
+		return InternalError(c, "Erro ao salvar cliente")
+	}
 
+	// Reload with address for the broadcast
+	h.DB.Preload("Endereco").First(&cliente, "id = ?", cliente.ID)
 	h.Hub.Broadcast("client:updated", cliente)
 
 	return Success(c, cliente)
