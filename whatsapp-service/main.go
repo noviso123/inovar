@@ -35,7 +35,7 @@ func main() {
 	// Get database URL
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "whatsapp.db"
+		dbURL = "file:whatsapp.db?_journal_mode=WAL"
 		log.Println("⚠️  DATABASE_URL not set, using local SQLite: whatsapp.db")
 	}
 
@@ -54,10 +54,11 @@ func main() {
 
 	log.Printf("📡 Using database driver: %s", dbDriver)
 
-	// Initialize WhatsApp
+	// Initialize WhatsApp (non-fatal if it fails)
 	service := initWhatsApp(dbURL, dbDriver)
 	if service == nil {
-		log.Fatal("❌ Failed to initialize WhatsApp service")
+		log.Println("⚠️  WhatsApp init failed. Starting HTTP server anyway (status will show disabled).")
+		service = &WhatsAppMicroService{} // Empty service
 	}
 
 	// HTTP Handlers
