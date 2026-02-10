@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
+	"github.com/inovar/backend/internal/config"
 	"github.com/mdp/qrterminal/v3"
-	_ "github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -19,15 +20,16 @@ import (
 type WhatsAppService struct {
 	client *whatsmeow.Client
 	qrCode string
+	mu     sync.RWMutex
 }
 
-func NewWhatsAppService() *WhatsAppService {
-	dbLog := waLog.Stdout("Database", "DEBUG", true)
+func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
+	dbLog := waLog.Stdout("Database", "ERROR", true)
 
-	// Create persistent store
-	container, err := sqlstore.New(context.Background(), "sqlite", "file:wadata.db?_foreign_keys=on", dbLog)
+	// Use Postgres instead of SQLite for 100% Supabase Integration
+	container, err := sqlstore.New(context.Background(), "postgres", cfg.DatabaseURL, dbLog)
 	if err != nil {
-		fmt.Printf("Falha ao conectar no banco do WhatsApp: %v\n", err)
+		fmt.Printf("Falha ao conectar no banco do WhatsApp (Postgres): %v\n", err)
 		return nil
 	}
 
@@ -38,49 +40,59 @@ func NewWhatsAppService() *WhatsAppService {
 		return nil
 	}
 
-	clientLog := waLog.Stdout("Client", "DEBUG", true)
+	clientLog := waLog.Stdout("Client", "ERROR", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
 	service := &WhatsAppService{client: client}
 
-	// Message handler (optional, just to see it works)
+	// Message handler
 	client.AddEventHandler(func(evt interface{}) {
 		switch v := evt.(type) {
 		case *events.Message:
-			fmt.Println("Mensagem recebida:", v.Info.Sender)
+			fmt.Println("Mensagem recebida de:", v.Info.Sender)
+		case *events.Connected:
+			fmt.Println("✅ WhatsApp conectado!")
+			service.mu.Lock()
+			service.qrCode = "" // Clear QR on connection
+			service.mu.Unlock()
 		}
 	})
 
 	// Connect/Login logic
 	if client.Store.ID == nil {
-		// NO Session found - Generate QR
+		// No session - get QR channel
 		qrChan, _ := client.GetQRChannel(context.Background())
 		err = client.Connect()
 		if err != nil {
-			fmt.Printf("Falha ao conectar WhatsApp: %v\n", err)
+			fmt.Printf("Falha ao conectar: %v\n", err)
 			return nil
 		}
 
-		// Print QR to terminal
 		go func() {
 			for evt := range qrChan {
 				if evt.Event == "code" {
-					service.qrCode = evt.Code // Save for API
-					fmt.Println("\n\n📷 ESCANEIE ESTE QR CODE NO SEU WHATSAPP (Aparelhos Conectados):")
+					service.mu.Lock()
+					service.qrCode = evt.Code
+					service.mu.Unlock()
+					fmt.Println("\n📷 ESCANEIE O QR CODE NO SEU WHATSAPP:")
 					qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
-					fmt.Println("\n(Aguardando conexão...)")
 				} else {
-					fmt.Println("Evento de Login:", evt.Event)
+					fmt.Printf("Evento WhatsApp: %s\n", evt.Event)
+					if evt.Event == "success" {
+						service.mu.Lock()
+						service.qrCode = ""
+						service.mu.Unlock()
+					}
 				}
 			}
 		}()
 	} else {
-		// Session exists - Just connect
+		// Session exists
 		err = client.Connect()
 		if err != nil {
-			fmt.Printf("Falha ao reconectar WhatsApp: %v\n", err)
+			fmt.Printf("Falha ao reconectar: %v\n", err)
 			return nil
 		}
-		fmt.Println("✅ WhatsApp reconectado com sucesso!")
+		fmt.Println("✅ WhatsApp reconectado!")
 	}
 
 	return service
@@ -91,30 +103,27 @@ func (s *WhatsAppService) GetStatus() (bool, string) {
 	if s.client == nil {
 		return false, ""
 	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	return s.client.IsConnected(), s.qrCode
 }
 
-// SendMessage sends a text message to a phone number
-// phone format: 5511999999999 (Country + Area + Number)
+// SendMessage sends a text message
 func (s *WhatsAppService) SendMessage(phone, text string) error {
 	if s.client == nil {
 		return fmt.Errorf("whatsapp client not initialized")
 	}
 
-	// Ensure connection
 	if !s.client.IsConnected() {
-		// Try to reconnect?
-		// For now, just fail
 		return fmt.Errorf("whatsapp client not connected")
 	}
 
-	// Format JID (Jabber ID)
+	// Format JID
 	jid, err := types.ParseJID(phone + "@s.whatsapp.net")
 	if err != nil {
-		return fmt.Errorf("invalid phone number: %v", err)
+		return fmt.Errorf("invalid phone: %v", err)
 	}
 
-	// Send
 	msg := &waE2E.Message{
 		Conversation: proto.String(text),
 	}

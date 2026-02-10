@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -113,13 +114,9 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 	}
 
 	// Parse scheduled date
-	var scheduledAt *time.Time
-	if req.ScheduledAt != "" {
-		t, err := time.Parse(time.RFC3339, req.ScheduledAt)
-		if err != nil {
-			return BadRequest(c, "Data de agendamento inválida")
-		}
-		scheduledAt = &t
+	scheduledAt, err := ParseDateTime(req.ScheduledAt)
+	if err != nil {
+		return BadRequest(c, "Data de agendamento inválida: "+err.Error())
 	}
 
 	if req.ServiceType == "" {
@@ -413,34 +410,25 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		solicitacao.MaterialsUsed = req.MaterialsUsed
 	}
 	if req.NextMaintenanceAt != "" {
-		// Try RFC3339 first (includes time)
-		t, err := time.Parse(time.RFC3339, req.NextMaintenanceAt)
-		if err != nil {
-			// Try Date only format (YYYY-MM-DD)
-			t, err = time.Parse("2006-01-02", req.NextMaintenanceAt)
-		}
+		t, err := ParseDateTime(req.NextMaintenanceAt)
 		if err == nil {
-			solicitacao.NextMaintenanceAt = &t
+			solicitacao.NextMaintenanceAt = t
 		} else {
 			fmt.Printf("Error parsing NextMaintenanceAt: %v\n", err)
 		}
 	}
 
-	if req.ScheduledAt == "NULL" {
-		solicitacao.ScheduledAt = nil
-	} else if req.ScheduledAt != "" {
-		t, err := time.Parse(time.RFC3339, req.ScheduledAt)
-		if err != nil {
-			t, err = time.Parse("2006-01-02", req.ScheduledAt)
-		}
+	if req.ScheduledAt != "" {
+		t, err := ParseDateTime(req.ScheduledAt)
 		if err == nil {
-			solicitacao.ScheduledAt = &t
+			solicitacao.ScheduledAt = t
 		} else {
 			fmt.Printf("Error parsing ScheduledAt: %v\n", err)
 		}
 	}
 	solicitacao.UpdatedAt = time.Now()
 
+	before := solicitacao // Copy original
 	// AUTOMATED PREVENTIVE MAINTENANCE LOGIC
 	if req.Status == models.StatusFinalizada && req.PreventiveDone {
 		// 1. Get Global Default Interval
@@ -501,6 +489,19 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		"newStatus": req.Status,
 		"userId":    userID,
 	})
+
+	// Auto-Email on Finalization
+	if req.Status == models.StatusFinalizada {
+		go func() {
+			if h.EmailService != nil && solicitacao.ClientName != "" {
+				// We need to ensure solicitacao has Client loaded. Preload used earlier should have it.
+				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, fmt.Sprint(solicitacao.Numero), os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
+			}
+		}()
+	}
+
+	// Final Audit
+	h.LogAudit(c, "Request", solicitacao.ID, "UPDATE_STATUS", fmt.Sprintf("Changed status from %s to %s", oldStatus, solicitacao.Status), before, solicitacao)
 
 	return Success(c, solicitacao)
 }

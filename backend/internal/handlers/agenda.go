@@ -76,9 +76,12 @@ func (h *Handler) CreateAgendaEntry(c *fiber.Ctx) error {
 		targetUserID = userID
 	}
 
-	scheduledAt, err := time.Parse(time.RFC3339, req.ScheduledAt)
+	scheduledAt, err := ParseDateTime(req.ScheduledAt)
 	if err != nil {
-		return BadRequest(c, "Data inválida")
+		return BadRequest(c, "Data inválida: "+err.Error())
+	}
+	if scheduledAt == nil {
+		return BadRequest(c, "Data de agendamento é obrigatória")
 	}
 
 	agenda := models.Agenda{
@@ -86,10 +89,11 @@ func (h *Handler) CreateAgendaEntry(c *fiber.Ctx) error {
 		UserID:        targetUserID,
 		SolicitacaoID: req.SolicitacaoID,
 		Title:         req.Title,
-		ScheduledAt:   scheduledAt,
+		ScheduledAt:   *scheduledAt,
 		Duration:      req.Duration,
 		Notes:         req.Notes,
 		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	h.DB.Create(&agenda)
@@ -120,11 +124,12 @@ func (h *Handler) UpdateAgendaEntry(c *fiber.Ctx) error {
 	}
 
 	if req.ScheduledAt != "" {
-		scheduledAt, _ := time.Parse(time.RFC3339, req.ScheduledAt)
-		agenda.ScheduledAt = scheduledAt
-
-		// Update solicitacao scheduled date
-		h.DB.Model(&models.Solicitacao{}).Where("id = ?", agenda.SolicitacaoID).Update("scheduled_at", scheduledAt)
+		scheduledAt, err := ParseDateTime(req.ScheduledAt)
+		if err == nil && scheduledAt != nil {
+			agenda.ScheduledAt = *scheduledAt
+			// Update solicitacao scheduled date
+			h.DB.Model(&models.Solicitacao{}).Where("id = ?", agenda.SolicitacaoID).Update("scheduled_at", scheduledAt)
+		}
 	}
 
 	if req.Duration > 0 {

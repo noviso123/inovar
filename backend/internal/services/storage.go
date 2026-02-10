@@ -22,7 +22,6 @@ func NewStorageService(cfg *config.Config) *StorageService {
 
 // UploadFile uploads a file to Supabase Storage
 func (s *StorageService) UploadFile(file *multipart.FileHeader, folder string) (string, error) {
-	// If Supabase is not configured, fallback to local (or error)
 	if s.Config.SupabaseURL == "" {
 		return "", fmt.Errorf("supabase not configured")
 	}

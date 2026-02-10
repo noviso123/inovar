@@ -521,6 +521,20 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
       alert('Por favor, descreva o serviço realizado no Relatório Técnico.');
       return;
     }
+
+    // ENFORCE SIGNATURES for Omega Pro Max
+    if (!request.assinaturaCliente) {
+      alert('A assinatura do CLIENTE é obrigatória para concluir o chamado. Vá para a aba "Conclusão" e colha a assinatura.');
+      setActiveTab('assinatura');
+      return;
+    }
+
+    if (!request.assinaturaTecnico) {
+      alert('A sua assinatura (TÉCNICO) é obrigatória para concluir o chamado. Vá para a aba "Conclusão" e assine.');
+      setActiveTab('assinatura');
+      return;
+    }
+
     try {
       await apiService.updateRequestStatus(
         request.id,
@@ -1371,7 +1385,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                             <button
                                 key={item}
                                 onClick={() => addTextSuggestion(technicalReport, setTechnicalReport, item, 'report')}
-                                className="px-3 py-1.5 bg-white shadow-sm hover:shadow-md hover:scale-105 text-slate-600 hover:text-purple-600 text-[11px] font-bold rounded-full border border-slate-200 transition-all"
+                                className="px-3 py-1.5 bg-white shadow-sm hover:shadow-md hover:scale-105 text-slate-600 hover:text-cyan-600 text-[11px] font-bold rounded-full border border-slate-200 transition-all"
                             >
                                 + {item}
                             </button>

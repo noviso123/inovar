@@ -1,7 +1,7 @@
 package handlers
 
 import (
-
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/inovar/backend/internal/models"
@@ -10,62 +10,51 @@ import (
 // GetFinanceSummary calculates financial stats from requests
 func (h *Handler) GetFinanceSummary(c *fiber.Ctx) error {
 	var requests []models.Solicitacao
-	if err := h.DB.Find(&requests).Error; err != nil {
+	// Preload OrcamentoItens to have real transaction data
+	if err := h.DB.Preload("OrcamentoItens").Find(&requests).Error; err != nil {
 		return ServerError(c, err)
 	}
-
-	// Calculate mock finance data based on real requests
-	// In a real scenario, this would come from a payments table
-	// Here we simulate values based on request types to "make it real"
 
 	totalRevenue := 0.0
 	pendingRevenue := 0.0
 	expenses := 0.0
 
+	var expenseRecords []models.Expense
+	h.DB.Find(&expenseRecords)
+	for _, exp := range expenseRecords {
+		expenses += exp.Amount
+	}
+
 	transactions := []fiber.Map{}
 
 	for _, req := range requests {
-		value := 0.0
-		cost := 0.0
-
-		// Simulate values based on priority/complexity
-		switch req.Priority {
-		case models.PriorityBaixa:
-			value = 150.00
-			cost = 40.00
-		case models.PriorityMedia:
-			value = 350.00
-			cost = 80.00
-		case models.PriorityAlta:
-			value = 650.00
-			cost = 150.00
-		case models.PriorityEmergencial:
-			value = 1200.00
-			cost = 300.00
-		}
-
 		if req.Status == models.StatusFinalizada {
-			totalRevenue += value
-			expenses += cost
+			totalRevenue += req.ValorOrcamento
+
+			// Transaction for the total OS value
 			transactions = append(transactions, fiber.Map{
-				"id":        req.ID,
-				"date":      req.CreatedAt,
-				"type":      "income",
-				"amount":    value,
-				"description": "OS #" + req.ID + " - " + req.Description,
-				"status":    "paid",
-			})
-			transactions = append(transactions, fiber.Map{
-				"id":        req.ID + "-cost",
-				"date":      req.CreatedAt,
-				"type":      "expense",
-				"amount":    cost,
-				"description": "Custo Operacional OS #" + req.ID,
-				"status":    "paid",
+				"id":          req.ID,
+				"date":        req.UpdatedAt, // Use update date as completion date
+				"type":        "income",
+				"amount":      req.ValorOrcamento,
+				"description": fmt.Sprintf("OS #%d - %s", req.Numero, req.ClientName),
+				"status":      "paid",
 			})
 		} else if req.Status != models.StatusCancelada {
-			pendingRevenue += value
+			pendingRevenue += req.ValorOrcamento
 		}
+	}
+
+	// Add individual expense transactions
+	for _, exp := range expenseRecords {
+		transactions = append(transactions, fiber.Map{
+			"id":          exp.ID,
+			"date":        exp.Date,
+			"type":        "expense",
+			"amount":      exp.Amount,
+			"description": fmt.Sprintf("[%s] %s", exp.Category, exp.Description),
+			"status":      "paid",
+		})
 	}
 
 	return Success(c, fiber.Map{

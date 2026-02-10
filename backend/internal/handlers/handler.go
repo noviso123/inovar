@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 
 	"github.com/inovar/backend/internal/config"
+	"github.com/inovar/backend/internal/middleware"
+	"github.com/inovar/backend/internal/models"
 	"github.com/inovar/backend/internal/services"
 	"github.com/inovar/backend/internal/websocket"
 )
@@ -25,7 +29,7 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 	go hub.Run()
 
 	emailService := services.NewEmailService(cfg)
-	whatsappService := services.NewWhatsAppService()
+	whatsappService := services.NewWhatsAppService(cfg)
 	storageService := services.NewStorageService(cfg)
 
 	return &Handler{
@@ -97,4 +101,43 @@ func ServerError(c *fiber.Ctx, err error) error {
 		"message": "Erro interno do servidor",
 		"details": err.Error(),
 	})
+}
+
+// LogAudit records a system action with deep diffs
+func (h *Handler) LogAudit(c *fiber.Ctx, entity, entityID, action, details string, before, after interface{}) {
+	userID := middleware.GetUserID(c)
+	userName := middleware.GetUserName(c)
+	userRole := middleware.GetUserRole(c)
+
+	var beforeJSON, afterJSON string
+	if before != nil {
+		b, _ := json.Marshal(before)
+		beforeJSON = string(b)
+	}
+	if after != nil {
+		a, _ := json.Marshal(after)
+		afterJSON = string(a)
+	}
+
+	log := models.AuditLog{
+		ID:          "", // Handled by DB or GORM if configured, otherwise uuid
+		UserID:      userID,
+		UserName:    userName,
+		UserRole:    userRole,
+		Entity:      entity,
+		EntityID:    entityID,
+		Action:      action,
+		Details:     details,
+		BeforeValue: beforeJSON,
+		AfterValue:  afterJSON,
+		IPAddress:   c.IP(),
+		UserAgent:   string(c.Context().UserAgent()),
+	}
+
+	// Generate UUID if needed
+	if log.ID == "" {
+		log.ID = "" // We'll let GORM handle it if it has a hook, or use uuid.NewString()
+	}
+
+	h.DB.Create(&log)
 }

@@ -69,27 +69,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {isProvider ? (
           <div
             onClick={() => onNavigate('financeiro')}
-            className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all active:scale-95"
+            className="group relative bg-white p-6 rounded-[2.5rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-emerald-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
           >
-            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
-              <DollarSign className="w-6 h-6" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+            <div className="w-12 h-12 bg-emerald-600 shadow-lg shadow-emerald-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">
+              <DollarSign className="w-7 h-7" />
             </div>
-            <div>
-              <p className="text-lg font-black text-slate-800 tracking-tight">{earnings}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase">A Receber</p>
+            <div className="relative z-10">
+              <p className="text-2xl font-black text-slate-800 tracking-tighter sm:text-3xl">{earnings}</p>
+              <p className="text-[10px] text-emerald-600/60 font-black uppercase tracking-[0.2em] mt-1">Saldo a Receber</p>
             </div>
           </div>
         ) : (
           <div
             onClick={() => onNavigate('chamados')}
-            className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-cyan-200 transition-all active:scale-95"
+            className="group relative bg-white p-6 rounded-[2.5rem] border border-cyan-100 shadow-xl shadow-cyan-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-cyan-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
           >
-            <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center">
-              <FileText className="w-6 h-6" />
+             <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+            <div className="w-12 h-12 bg-cyan-600 shadow-lg shadow-cyan-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">
+              <FileText className="w-7 h-7" />
             </div>
-            <div>
-              <p className="text-3xl font-black text-slate-800">{openRequests + inProgressRequests}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase">Meus Chamados</p>
+            <div className="relative z-10">
+              <p className="text-4xl font-black text-slate-800 tracking-tighter">{openRequests + inProgressRequests}</p>
+              <p className="text-[10px] text-cyan-600/60 font-black uppercase tracking-[0.2em] mt-1">Total de Chamados</p>
             </div>
           </div>
         )}
@@ -97,42 +99,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {/* Card 2: Open/Available */}
         <div
           onClick={() => onNavigate('chamados')}
-          className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-orange-200 transition-all active:scale-95"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-xl shadow-orange-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-orange-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
-          <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center">
-            <ClipboardList className="w-6 h-6" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="w-12 h-12 bg-orange-500 shadow-lg shadow-orange-500/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:-rotate-12">
+            <ClipboardList className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-3xl font-black text-slate-800">{openRequests}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">{isClient ? 'Em Aberto' : 'Disponíveis'}</p>
+          <div className="relative z-10">
+            <p className="text-4xl font-black text-slate-800 tracking-tighter">{openRequests}</p>
+            <p className="text-[10px] text-orange-600/60 font-black uppercase tracking-[0.2em] mt-1">{isClient ? 'Em Aberto' : 'Disponíveis'}</p>
           </div>
         </div>
 
         {/* Card 3: In Progress / Scheduled */}
         <div
           onClick={() => onNavigate(isTech || isProvider ? 'agenda' : 'chamados')}
-          className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-amber-200 transition-all active:scale-95"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
-          <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
-             <FileText className="w-6 h-6" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="w-12 h-12 bg-blue-600 shadow-lg shadow-blue-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:scale-110">
+             <Calendar className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-3xl font-black text-slate-800">{inProgressRequests}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">{isClient ? 'Em Andamento' : 'Agendados'}</p>
+          <div className="relative z-10">
+            <p className="text-4xl font-black text-slate-800 tracking-tighter">{inProgressRequests}</p>
+            <p className="text-[10px] text-blue-600/60 font-black uppercase tracking-[0.2em] mt-1">{isClient ? 'Em Andamento' : 'Agendados'}</p>
           </div>
         </div>
 
         {/* Card 4: Completed */}
         <div
           onClick={() => onNavigate('chamados')}
-          className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between h-40 cursor-pointer hover:shadow-lg hover:border-emerald-200 transition-all active:scale-95"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-slate-900 shadow-2xl shadow-slate-900/10 flex flex-col justify-between h-44 cursor-pointer hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
-          <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
-            <CheckCircle className="w-6 h-6" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
+          <div className="w-12 h-12 bg-slate-900 shadow-lg shadow-slate-900/50 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">
+            <CheckCircle className="w-7 h-7" />
           </div>
-          <div>
-            <p className="text-3xl font-black text-slate-800">{completedRequests}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase">Concluídos</p>
+          <div className="relative z-10">
+            <p className="text-4xl font-black text-slate-800 tracking-tighter">{completedRequests}</p>
+            <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-1 text-white/40">Total Finalizados</p>
           </div>
         </div>
       </div>

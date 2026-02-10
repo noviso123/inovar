@@ -72,7 +72,7 @@ export const ClientManager: React.FC<ClientManagerProps> = ({ currentUser }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {clients.map(client => (
-          <div key={client.id} className={`group relative bg-white p-8 rounded-[2.5rem] border-2 transition-all hover:shadow-2xl hover:-translate-y-1 ${client.active ? 'border-slate-100 hover:border-blue-100' : 'border-rose-50 bg-rose-50/10'}`}>
+          <div key={client.id} className={`group relative bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border-2 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-2 ${client.active ? 'border-slate-100 hover:border-blue-200' : 'border-rose-100 bg-rose-50/20'}`}>
             <div className="flex justify-between items-start mb-8">
               <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-3xl font-black shadow-lg ${client.active ? 'bg-cyan-600 text-white' : 'bg-rose-100 text-rose-400'}`}>
                 {client.name.charAt(0)}

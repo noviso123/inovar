@@ -142,6 +142,7 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
+	before := user // Copy original state
 	user.Name = req.Name
 	user.Phone = req.Phone
 	if req.AvatarURL != "" {
@@ -157,6 +158,9 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	h.DB.Save(&user)
 
 	h.Hub.Broadcast("user:updated", user)
+
+	// Final Audit
+	h.LogAudit(c, "User", user.ID, "UPDATE", fmt.Sprintf("Updated user %s (Role: %s)", user.Email, user.Role), before, user)
 
 	return Success(c, user)
 }

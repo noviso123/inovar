@@ -240,13 +240,17 @@ func (h *Handler) UpdateClient(c *fiber.Ctx) error {
 		"phone": req.Phone,
 	})
 
+	before := cliente // Copy original state
 	if err := h.DB.Save(&cliente).Error; err != nil {
-		return InternalError(c, "Erro ao salvar cliente")
+		return ServerError(c, err)
 	}
 
 	// Reload with address for the broadcast
 	h.DB.Preload("Endereco").First(&cliente, "id = ?", cliente.ID)
 	h.Hub.Broadcast("client:updated", cliente)
+
+	// Final Audit
+	h.LogAudit(c, "Client", cliente.ID, "UPDATE", fmt.Sprintf("Updated client %s", cliente.Name), before, cliente)
 
 	return Success(c, cliente)
 }

@@ -16,10 +16,10 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 	var dialector gorm.Dialector
 
 	if strings.HasPrefix(databaseURL, "postgres://") || strings.HasPrefix(databaseURL, "postgresql://") {
-		log.Println("🔌 Connecting to PostgreSQL...")
+		log.Println("ðŸ”Œ Connecting to PostgreSQL...")
 		dialector = postgres.Open(databaseURL)
 	} else {
-		log.Println("🔌 Connecting to SQLite...")
+		log.Println("ðŸ”Œ Connecting to SQLite...")
 		dialector = sqlite.Open(databaseURL)
 	}
 
@@ -30,12 +30,12 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	log.Println("✅ Database connected successfully")
+	log.Println("âœ… Database connected successfully")
 	return db, nil
 }
 
 func Migrate(db *gorm.DB) error {
-	log.Println("🔄 Running database migrations...")
+	log.Println("ðŸ”„ Running database migrations...")
 
 	err := db.AutoMigrate(
 		&models.User{},
@@ -54,6 +54,7 @@ func Migrate(db *gorm.DB) error {
 		&models.Setting{},
 		&models.RefreshToken{},
 		&models.OrcamentoItem{},
+		&models.Expense{},
 		&models.NotaFiscal{},
 		&models.CertificadoDigital{},
 		&models.ConfiguracaoFiscal{},
@@ -64,6 +65,6 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
-	log.Println("✅ Migrations completed")
+	log.Println("âœ… Migrations completed")
 	return nil
 }

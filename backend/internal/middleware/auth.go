@@ -115,6 +115,14 @@ func GetCompanyID(c *fiber.Ctx) string {
 	return ""
 }
 
+// GetUserName gets user email/name from context
+func GetUserName(c *fiber.Ctx) string {
+	if email := c.Locals("userEmail"); email != nil {
+		return email.(string)
+	}
+	return ""
+}
+
 // GenerateToken creates a new JWT token
 func GenerateToken(userID, email, role, companyID, jwtSecret string, expireMinutes int) (string, error) {
 	claims := Claims{

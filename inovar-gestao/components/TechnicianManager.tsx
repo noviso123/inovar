@@ -67,7 +67,7 @@ export const TechnicianManager: React.FC<TechnicianManagerProps> = ({ currentUse
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {techs.map(t => (
-          <div key={t.id} className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-sm flex flex-col items-center text-center group hover:border-blue-500 transition-all">
+          <div key={t.id} className="bg-white/80 backdrop-blur-xl p-8 rounded-[2.5rem] border-2 border-slate-50 shadow-xl shadow-slate-900/5 flex flex-col items-center text-center group hover:border-blue-500 hover:-translate-y-2 transition-all duration-500">
             <div className="w-20 h-20 rounded-[2rem] bg-slate-900 text-blue-400 flex items-center justify-center text-3xl font-black mb-6 shadow-xl group-hover:scale-110 transition-transform">
               {t.name.charAt(0)}
             </div>

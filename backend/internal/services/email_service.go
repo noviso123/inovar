@@ -102,3 +102,24 @@ func (s *EmailService) SendPasswordResetEmail(toEmail, token, userName string) e
 
 	return s.dialer.DialAndSend(m)
 }
+
+func (s *EmailService) SendOSFinalized(toEmail, clientName, osNumber, pdfLink string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", s.from)
+	m.SetHeader("To", toEmail)
+	m.SetHeader("Subject", fmt.Sprintf("OS #%s Finalizada - Inovar Gestão", osNumber))
+	m.SetBody("text/html", fmt.Sprintf(`
+		<div style="font-family: Arial, sans-serif; color: #333; padding: 20px;">
+			<h2 style="color: #2563eb;">Serviço Concluído! ✅</h2>
+			<p>Olá <b>%s</b>,</p>
+			<p>A Ordem de Serviço <b>#%s</b> foi finalizada com sucesso.</p>
+			<p>Você pode visualizar o relatório completo clicando no botão abaixo:</p>
+			<br>
+			<a href="%s" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ver Relatório Completo</a>
+			<br><br>
+			<p>Obrigado por confiar na <b>Inovar Gestão</b>!</p>
+		</div>
+	`, clientName, osNumber, pdfLink))
+
+	return s.dialer.DialAndSend(m)
+}

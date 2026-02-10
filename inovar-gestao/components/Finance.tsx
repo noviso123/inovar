@@ -1,5 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { apiService } from '../services/apiService';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  LineChart,
+  Line,
+  AreaChart,
+  Area
+} from 'recharts';
+import { FileDown, TrendingUp, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 interface FinanceSummary {
   totalRevenue: number;
@@ -13,23 +28,29 @@ export const Finance: React.FC = () => {
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [taxRate, setTaxRate] = useState(16.5);
 
   useEffect(() => {
     loadFinance();
+    loadTaxRate();
   }, []);
+
+  const loadTaxRate = async () => {
+    try {
+      const config = await apiService.getFiscalConfig();
+      if (config.aliquotaISSPadrao) {
+        setTaxRate(config.aliquotaISSPadrao);
+      } else if (config.aliquotaSimplesNac) {
+        setTaxRate(config.aliquotaSimplesNac);
+      }
+    } catch (e) {
+      console.warn('Using default tax rate');
+    }
+  };
 
   const loadFinance = async () => {
     try {
       const data = await apiService.getFinanceSummary();
-
-      // Also try to get detailed transactions if available
-      try {
-        const transactions = await apiService.getFinanceTransactions();
-        data.transactions = transactions || data.transactions || [];
-      } catch (e) {
-        console.warn('getFinanceTransactions not available, using summary transactions');
-      }
-
       setSummary(data);
     } catch (err: any) {
       console.error(err);
@@ -39,19 +60,33 @@ export const Finance: React.FC = () => {
     }
   };
 
-  const taxes = summary ? summary.totalRevenue * 0.165 : 0;
+  const handleExport = () => {
+    window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/finance/export`, '_blank');
+  };
+
+  const taxes = summary ? summary.totalRevenue * (taxRate / 100) : 0;
+
+  // Process data for charts
+  const chartData = summary?.transactions ?
+    Object.values(summary.transactions.reduce((acc: any, t) => {
+      const date = new Date(t.date).toLocaleDateString('pt-BR');
+      if (!acc[date]) acc[date] = { date, income: 0, expense: 0 };
+      if (t.type === 'income') acc[date].income += t.amount;
+      else acc[date].expense += t.amount;
+      return acc;
+    }, {})).slice(-7) as any[] : [];
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 text-slate-400 gap-4">
       <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-xs font-black uppercase tracking-widest">Calculando métricas...</p>
+      <p className="text-xs font-black uppercase tracking-widest">Calculando métricas financeiras...</p>
     </div>
   );
 
   if (error) return (
     <div className="p-10 text-center bg-rose-50 rounded-[2.5rem] border border-rose-100 max-w-2xl mx-auto mt-10">
       <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+        <AlertCircle className="w-8 h-8" />
       </div>
       <h3 className="text-rose-900 font-black text-lg mb-2">Erro de Acesso</h3>
       <p className="text-rose-700/80 mb-6 font-medium">{error}</p>
@@ -65,23 +100,74 @@ export const Finance: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-700 text-left -mx-4">
       {/* Header */}
       <div className="flex justify-between items-center px-4">
-        <h3 className="text-2xl font-black text-slate-800 tracking-tight">Faturamento</h3>
+        <div>
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Fluxo de Caixa</h3>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Consolidação em Tempo Real</p>
+        </div>
         <div className="flex gap-4">
-          <button className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg></button>
-          <button className="w-10 h-10 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg></button>
+          <button
+            onClick={handleExport}
+            className="px-6 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl flex items-center gap-2 hover:bg-blue-600 transition-all group"
+          >
+            <FileDown className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            Exportar CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Analytics Summary Charts */}
+      <div className="px-4">
+        <div className="bg-white p-8 rounded-[3rem] border-2 border-slate-50 shadow-sm">
+          <div className="flex items-center justify-between mb-8">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Desempenho Semanal (R$)</h4>
+            <div className="flex gap-4">
+               <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full"></div><span className="text-[10px] font-black text-slate-400">RECEITA</span></div>
+               <div className="flex items-center gap-2"><div className="w-3 h-3 bg-rose-500 rounded-full"></div><span className="text-[10px] font-black text-slate-400">DESPESA</span></div>
+            </div>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{fontSize: 9, fontWeight: 900, fill: '#cbd5e1'}}
+                  dy={10}
+                />
+                <YAxis hide />
+                <Tooltip
+                  contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', fontWeight: 900, fontSize: '10px'}}
+                />
+                <Area type="monotone" dataKey="income" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
+                <Area type="monotone" dataKey="expense" stroke="#f43f5e" strokeWidth={4} fill="transparent" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Top Cards Row */}
       <div className="grid grid-cols-2 gap-4 px-4">
-        <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Total pago</p>
-          <p className="text-2xl font-black text-slate-800 tracking-tighter">R$ {summary.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <p className="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-1">pela FindUP</p>
+        <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-blue-50 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+          <TrendingUp className="absolute right-4 top-4 w-5 h-5 text-blue-500" />
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 relative z-10">Total pago</p>
+          <p className="text-2xl font-black text-slate-800 tracking-tighter relative z-10">R$ {summary.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-1">Acumulado do mês</p>
         </div>
-        <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2">Total pendente</p>
-          <p className="text-2xl font-black text-amber-600 tracking-tighter">R$ {summary.pendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+        <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-50 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
+          <Wallet className="absolute right-4 top-4 w-5 h-5 text-amber-500" />
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 relative z-10">Total pendente</p>
+          <p className="text-2xl font-black text-amber-600 tracking-tighter relative z-10">R$ {summary.pendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-1">Aguardando validação</p>
         </div>
       </div>
@@ -90,42 +176,45 @@ export const Finance: React.FC = () => {
       <div className="grid grid-cols-2 gap-4 px-4">
         <div className="bg-emerald-50 p-6 rounded-[2rem] border-2 border-emerald-100 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-2">Lucro líquido est.</p>
-          <p className="text-2xl font-black text-emerald-800 tracking-tighter">R$ {(summary.totalRevenue - taxes).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Livre de impostos (16,5%)</p>
+          <p className="text-2xl font-black text-emerald-800 tracking-tighter">R$ {(summary.totalRevenue - taxes - summary.expenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Livre de impostos & despesas</p>
         </div>
         <div className="bg-rose-50 p-6 rounded-[2rem] border-2 border-rose-100 shadow-sm flex flex-col justify-center items-center text-center">
-          <p className="text-[10px] text-rose-600 font-black uppercase tracking-widest mb-2">Provisão de impostos</p>
-          <p className="text-2xl font-black text-rose-800 tracking-tighter">R$ {taxes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          <p className="text-[9px] text-rose-400 font-bold uppercase tracking-widest mt-1">NFS-e Nacional est.</p>
+          <p className="text-[10px] text-rose-600 font-black uppercase tracking-widest mb-2">Despesas Reais</p>
+          <p className="text-2xl font-black text-rose-800 tracking-tighter">R$ {summary.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-[9px] text-rose-400 font-bold uppercase tracking-widest mt-1">Materiais & Logística</p>
         </div>
       </div>
 
       {/* Transaction List */}
-      <div className="space-y-4 px-4">
+      <div className="space-y-4 px-4 pb-20">
+        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-4">Últimas Movimentações</h4>
         {summary.transactions.length === 0 ? (
           <div className="py-24 text-center text-slate-300 font-black uppercase text-xs">Aguardando movimentação</div>
         ) : (
-          summary.transactions.map(t => (
+          [...summary.transactions].reverse().map(t => (
             <div key={t.id} className="bg-white p-6 rounded-[2rem] border border-slate-50 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                  t.type === 'income' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'
+                }`}>
+                  {t.type === 'income' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
                 </div>
                 <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">Valor total</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5">{t.description}</p>
                   <p className="text-lg font-black text-slate-800 tracking-tight">R$ {t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                 </div>
               </div>
 
               <div className="text-right">
-                <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest mb-2">
-                  {t.status === 'completed' ? 'Pago' : 'Aguardando validação'}
+                <span className={`inline-block px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest mb-2 ${
+                  t.status === 'paid' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
+                }`}>
+                  {t.status === 'paid' ? 'Consolidado' : 'Auditando'}
                 </span>
                 <div className="flex items-center justify-end gap-2 text-slate-300 text-[9px] font-black uppercase tracking-widest">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                   {new Date(t.date).toLocaleDateString('pt-BR')}
                 </div>
-                <p className="text-[9px] text-slate-300 font-black text-right mt-0.5">#{t.id.slice(0, 5)}</p>
               </div>
             </div>
           ))

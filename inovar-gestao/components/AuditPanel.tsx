@@ -53,7 +53,13 @@ export const AuditPanel: React.FC<AuditPanelProps> = () => {
           <p className="text-sm text-slate-500 font-medium">Histórico imutável de todas as transações do sistema.</p>
         </div>
         <div className="flex gap-2">
-           <button className="px-6 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-600 transition-all">Exportar Logs (.csv)</button>
+           <button
+             onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/audit/export`, '_blank')}
+             className="px-6 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-600 transition-all font-black uppercase tracking-widest group flex items-center gap-2"
+           >
+             <FileDown className="w-4 h-4" />
+             Exportar Logs (.csv)
+           </button>
         </div>
       </div>
 

@@ -4,8 +4,8 @@
   "description": "- **frontend/**: React + TypeScript + Vite application.\r - **backend/**: Go (Golang) API server.\r - **scripts/**: Automation and utility scripts.",
   "main": "index.js",
   "scripts": {
-    "dev": "concurrently \"cd backend && go run main.go\" \"npm run dev --prefix frontend\"",
-    "build": "echo 'Building Backend...' && cd backend && go build -o ../inovar_api.exe main.go && echo 'Building Frontend...' && npm run build --prefix ../frontend",
+    "dev": "concurrently \"cd backend && go run main.go\" \"npm run dev --prefix inovar-gestao\"",
+    "build": "echo 'Building Backend...' && cd backend && go build -o ../inovar_api.exe main.go && echo 'Building Frontend...' && npm run build --prefix inovar-gestao",
     "test": "python .agent/scripts/checklist.py .",
     "audit": "python .agent/scripts/checklist.py .",
     "prepare": "husky install"
@@ -14,7 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/noviso123/inovar.git"
   },
-  "keywords": [],
+  "keywords": [ ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",

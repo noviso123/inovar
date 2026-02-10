@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { UserRole, User } from '../types';
 import { Sidebar } from './Sidebar';
+import { GlobalNotifications } from './GlobalNotifications';
 import {
   Home,
   FileText,
@@ -118,6 +119,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex justify-center">
+      <GlobalNotifications />
       <Helmet>
         <title>Inovar Gestão - Manutenção Inteligente</title>
         <meta name="description" content="Sistema de gestão de manutenção em tempo real para climatização." />
@@ -208,7 +210,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </div>
 
         {/* BOTTOM NAVIGATION (PILL) with integrated menu button */}
-        <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-slate-900/40 rounded-full px-6 py-3 flex items-center gap-4 z-[70]">
+        <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] px-8 py-4 flex items-center gap-6 z-[70] transition-all duration-500 hover:scale-[1.02] hover:bg-slate-900">
           {visibleNavItems.map(item => {
             const fullPath = getPath(item.path);
             const isActive = location.pathname === fullPath || (item.path !== '' && location.pathname.startsWith(fullPath));
@@ -216,26 +218,29 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
               <NavLink
                 key={item.path}
                 to={fullPath}
-                className={`flex flex-col items-center gap-1 transition-all duration-300 relative ${isActive ? 'text-cyan-400 -translate-y-1' : 'text-slate-500 hover:text-white'
+                className={`flex flex-col items-center gap-1 transition-all duration-500 relative ${isActive ? 'text-cyan-400 -translate-y-2' : 'text-slate-400 hover:text-white'
                   }`}
               >
-                <div className={`p-2 rounded-2xl ${isActive ? 'bg-cyan-600/20' : ''}`}>
-                  {item.icon}
+                <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'hover:bg-white/5'}`}>
+                  {React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6" })}
                 </div>
-                {isActive && <div className="w-1 h-1 rounded-full bg-cyan-500 absolute -bottom-2"></div>}
+                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute -bottom-3 shadow-[0_0_10px_#22d3ee]"></div>}
               </NavLink>
             );
           })}
 
+          {/* Vertical Divider */}
+          <div className="w-px h-8 bg-white/10 mx-1"></div>
+
           {/* Menu Button - integrated into navbar */}
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="flex flex-col items-center gap-1 text-slate-500 hover:text-white transition-all duration-300 ml-2"
+            className="group flex flex-col items-center gap-1 text-slate-400 hover:text-white transition-all duration-300"
             title="Menu"
             aria-label="Menu"
           >
-            <div className="p-2 rounded-2xl">
-              <Menu className="w-6 h-6" />
+            <div className="p-3 rounded-2xl group-hover:bg-white/5 transition-all">
+              <Menu className="w-6 h-6 transition-transform group-hover:rotate-180 duration-500" />
             </div>
           </button>
         </nav>

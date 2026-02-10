@@ -31,7 +31,7 @@ backend/.env
 
 # Local storage & database (Supabase handles all)
 storage/
-database/
+# database/
 backend/storage/
 backend/inovar.db
 *.db

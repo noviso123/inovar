@@ -133,9 +133,8 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({ currentUser 
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
         {equipments.map(e => {
-          console.log('Equipment Data:', e);
           return (
-          <div key={e.id} className={`group relative p-10 bg-white rounded-[3.5rem] border-2 transition-all hover:shadow-2xl ${e.active ? 'border-slate-50' : 'border-slate-50 opacity-50 saturate-0 shadow-inner'}`}>
+          <div key={e.id} className={`group relative p-10 bg-white/80 backdrop-blur-xl rounded-[3.5rem] border-2 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 ${e.active ? 'border-slate-50 hover:border-blue-200' : 'border-slate-100 opacity-60 saturate-0 shadow-inner'}`}>
             <div className="flex justify-between items-start mb-8">
               <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-colors ${e.active ? 'bg-cyan-600 text-white' : 'bg-slate-200 text-slate-400'}`}>

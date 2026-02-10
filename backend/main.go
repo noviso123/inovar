@@ -201,10 +201,12 @@ func main() {
 	finance := protected.Group("/finance", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"))
 	finance.Get("/summary", h.GetFinanceSummary)
 	finance.Get("/transactions", h.ListTransactions)
+	finance.Get("/export", h.ExportFinance)
 
 	// Audit logs (Admin only)
 	audit := protected.Group("/audit", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"))
 	audit.Get("/", h.ListAuditLogs)
+	audit.Get("/export", h.ExportAudit)
 
 	// Settings (Admin only)
 	settings := protected.Group("/settings", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"))

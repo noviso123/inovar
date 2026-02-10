@@ -6,17 +6,19 @@ import (
 
 // AuditLog stores all system actions for auditing
 type AuditLog struct {
-	ID        string    `gorm:"primaryKey;size:36" json:"id"`
-	UserID    string    `gorm:"size:36;not null;index" json:"userId"`
-	UserName  string    `gorm:"size:255;not null" json:"userName"`
-	UserRole  string    `gorm:"size:50" json:"userRole"`
-	Entity    string    `gorm:"size:50;not null;index" json:"entity"`
-	EntityID  string    `gorm:"size:36;index" json:"entityId"`
-	Action    string    `gorm:"size:100;not null" json:"action"`
-	Details   string    `gorm:"type:text" json:"details,omitempty"`
-	IPAddress string    `gorm:"size:45" json:"ipAddress,omitempty"`
-	UserAgent string    `gorm:"size:500" json:"userAgent,omitempty"`
-	CreatedAt time.Time `gorm:"index" json:"timestamp"`
+	ID          string    `gorm:"primaryKey;size:36" json:"id"`
+	UserID      string    `gorm:"size:36;not null;index" json:"userId"`
+	UserName    string    `gorm:"size:255;not null" json:"userName"`
+	UserRole    string    `gorm:"size:50" json:"userRole"`
+	Entity      string    `gorm:"size:50;not null;index" json:"entity"`
+	EntityID    string    `gorm:"size:36;index" json:"entityId"`
+	Action      string    `gorm:"size:100;not null" json:"action"`
+	Details     string    `gorm:"type:text" json:"details,omitempty"`
+	BeforeValue string    `gorm:"type:text" json:"beforeValue,omitempty"`
+	AfterValue  string    `gorm:"type:text" json:"afterValue,omitempty"`
+	IPAddress   string    `gorm:"size:45" json:"ipAddress,omitempty"`
+	UserAgent   string    `gorm:"size:500" json:"userAgent,omitempty"`
+	CreatedAt   time.Time `gorm:"index" json:"timestamp"`
 }
 
 // Setting stores system configuration

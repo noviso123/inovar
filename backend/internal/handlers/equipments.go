@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -47,14 +48,14 @@ func (h *Handler) ListEquipments(c *fiber.Ctx) error {
 
 // CreateEquipmentRequest represents equipment creation payload
 type CreateEquipmentRequest struct {
-	ClientID           string     `json:"clientId"`
-	Brand              string     `json:"brand"`
-	Model              string     `json:"model"`
-	BTU                int        `json:"btu"`
-	SerialNumber       string     `json:"serialNumber"`
-	Location           string     `json:"location"`
-	LastPreventiveDate *time.Time `json:"lastPreventiveDate"`
-	PreventiveInterval int        `json:"preventiveInterval"`
+	ClientID           string `json:"clientId"`
+	Brand              string `json:"brand"`
+	Model              string `json:"model"`
+	BTU                int    `json:"btu"`
+	SerialNumber       string `json:"serialNumber"`
+	Location           string `json:"location"`
+	LastPreventiveDate string `json:"lastPreventiveDate"`
+	PreventiveInterval int    `json:"preventiveInterval"`
 }
 
 // CreateEquipment creates a new equipment
@@ -96,8 +97,9 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 	}
 
 	baseDate := time.Now()
-	if req.LastPreventiveDate != nil {
-		baseDate = *req.LastPreventiveDate
+	lastPreventive, _ := ParseDateTime(req.LastPreventiveDate)
+	if lastPreventive != nil {
+		baseDate = *lastPreventive
 	}
 	nextDate := baseDate.AddDate(0, 0, interval)
 
@@ -111,7 +113,7 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 		Location:           req.Location,
 		Active:             true,
 		CreatedAt:          time.Now(),
-		LastPreventiveDate: req.LastPreventiveDate,
+		LastPreventiveDate: lastPreventive,
 		NextPreventiveDate: &nextDate,
 		PreventiveInterval: req.PreventiveInterval,
 	}
@@ -175,41 +177,15 @@ func (h *Handler) UpdateEquipment(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	equipment.Brand = req.Brand
-	equipment.Model = req.Model
-	equipment.BTU = req.BTU
-	equipment.SerialNumber = req.SerialNumber
-	equipment.Location = req.Location
-	equipment.PreventiveInterval = req.PreventiveInterval
-	equipment.LastPreventiveDate = req.LastPreventiveDate
-
-	// Recalculate Next Preventive Date
-	calcInterval := equipment.PreventiveInterval
-	if calcInterval <= 0 {
-		calcInterval = 90
-		var s models.Setting
-		if err := h.DB.Where("key = ?", "preventive_interval").First(&s).Error; err == nil && s.Value != "" {
-			if val, err := strconv.Atoi(s.Value); err == nil {
-				calcInterval = val
-			}
-		}
-	}
-
-	baseUpdateDate := equipment.CreatedAt
-	if equipment.LastPreventiveDate != nil {
-		baseUpdateDate = *equipment.LastPreventiveDate
-	}
-	newNext := baseUpdateDate.AddDate(0, 0, calcInterval)
-
-	// Only update next date if it hasn't passed OR if we want to force reschedule.
-	// User said "SEMPRE REFLETIR". So force update based on rule is safer.
-	equipment.NextPreventiveDate = &newNext
-
+	before := equipment // Copy original state
 	equipment.UpdatedAt = time.Now()
 
 	h.DB.Save(&equipment)
 
 	h.Hub.Broadcast("equipment:updated", equipment)
+
+	// Final Audit
+	h.LogAudit(c, "Equipment", equipment.ID, "UPDATE", fmt.Sprintf("Updated equipment %s (%s)", equipment.Model, equipment.Brand), before, equipment)
 
 	return Success(c, equipment)
 }

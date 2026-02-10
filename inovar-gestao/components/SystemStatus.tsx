@@ -93,7 +93,7 @@ const SystemStatus: React.FC<SystemStatusProps> = () => {
     const systemInfo = {
         backend: {
             framework: 'Go Fiber',
-            database: 'SQLite / PostgreSQL',
+            database: 'PostgreSQL (Supabase)',
             orm: 'GORM',
             auth: 'JWT + bcrypt'
         },
