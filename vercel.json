@@ -3,11 +3,14 @@
     "builds": [
         {
             "src": "inovar-gestao/package.json",
-            "use": "@vercel/static-build"
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
         }
     ],
     "routes": [
-        { "src": "/api/(.*)", "dest": "/api/$1" },
-        { "src": "/(.*)", "dest": "/inovar-gestao/index.html" }
+        { "handle": "filesystem" },
+        { "src": "/(.*)", "dest": "/index.html" }
     ]
 }
