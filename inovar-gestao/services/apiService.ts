@@ -94,7 +94,7 @@ class ApiService {
     return false;
   }
 
-  private setAccessToken(token: string) {
+  setAccessToken(token: string) {
     this.accessToken = token;
     localStorage.setItem('accessToken', token);
   }

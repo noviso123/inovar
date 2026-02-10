@@ -37,23 +37,22 @@ func (h *Handler) GoogleLogin(c *fiber.Ctx) error {
 		InitGoogleAuth()
 	}
 
+	// userId is optional: present for account-linking, absent for sign-in
 	userID := c.Query("userId")
-	if userID == "" {
-		return BadRequest(c, "User ID is required")
+
+	if userID != "" {
+		// Account linking flow: remember who initiated it
+		c.Cookie(&fiber.Cookie{
+			Name:     "oauth_user_id",
+			Value:    userID,
+			Expires:  time.Now().Add(10 * time.Minute),
+			HTTPOnly: true,
+			Secure:   true,
+			SameSite: "Lax",
+		})
 	}
 
-	// Set a short-lived cookie to remember who initiated the flow
-	c.Cookie(&fiber.Cookie{
-		Name:     "oauth_user_id",
-		Value:    userID,
-		Expires:  time.Now().Add(10 * time.Minute),
-		HTTPOnly: true,
-		Secure:   true, // Set to true if using HTTPS
-		SameSite: "Lax",
-	})
-
-	// DEBUG: Print the Redirect URL being used
-	fmt.Printf("DEBUG: Google OAuth Redirect URL: '%s'\n", googleOauthConfig.RedirectURL)
+	fmt.Printf("DEBUG: Google OAuth - userId='%s', RedirectURL='%s'\n", userID, googleOauthConfig.RedirectURL)
 
 	url := googleOauthConfig.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	return c.Redirect(url)

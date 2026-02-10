@@ -36,6 +36,7 @@ import { ServiceOrderPrint } from './ServiceOrderPrint';
 import { BudgetPrint } from './BudgetPrint';
 import SystemStatus from './SystemStatus';
 import { FiscalSettings } from './FiscalSettings';
+import { GoogleAuthCallback } from './GoogleAuthCallback';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -257,6 +258,11 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
       <Route path="/force-change-password" element={
           currentUser ? <ForceChangePassword onLogout={onLogout} onUpdateUser={onUpdateUser} /> : <Navigate to="/login" replace />
+      } />
+
+      {/* Google OAuth Callback - receives token from backend redirect */}
+      <Route path="/auth/callback" element={
+        <GoogleAuthCallback />
       } />
 
       {/* Print Routes */}
