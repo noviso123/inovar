@@ -27,7 +27,7 @@ func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 
 	// Use Postgres instead of SQLite for 100% Supabase Integration
-	container, err := sqlstore.New(context.Background(), "postgres", cfg.DatabaseURL, dbLog)
+	container, err := sqlstore.New(context.Background(), "pgx", cfg.DatabaseURL, dbLog)
 	if err != nil {
 		fmt.Printf("Falha ao conectar no banco do WhatsApp (Postgres): %v\n", err)
 		return nil

@@ -875,7 +875,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-slate-800 text-sm leading-tight">
-                        {request.client.endereco ? (
+                        {request.client?.endereco ? (
                             <>
                                 {request.client.endereco.street}, {request.client.endereco.number}
                                 {request.client.endereco.complement && ` - ${request.client.endereco.complement}`}

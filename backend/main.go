@@ -17,6 +17,7 @@ import (
 	"github.com/inovar/backend/internal/handlers"
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/websocket"
+	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx driver for whatsmeow
 	"github.com/joho/godotenv"
 )
 
