@@ -390,9 +390,13 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
       setChecklists(prev => prev.map(c => c.id === itemId ? { ...c, checked } : c));
       try {
           await apiService.updateChecklist(request.id, itemId, { checked, observation: '' });
+          // Reload to ensure sync
+          await reloadRequest();
       } catch (err) {
-          alert('Erro ao atualizar item.');
-          loadChecklists(request.id); // Revert
+          console.error(err);
+          // Revert in case of error (reload)
+          await reloadRequest();
+          alert('Erro ao atualizar checklist');
       }
   };
 
@@ -661,10 +665,17 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
           </div>
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
              {request.clientName}
-             {request.equipments?.[0]?.equipamento?.location && (
+             {request.client?.endereco ? (
                 <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="text-xs">📍</span> {request.equipments[0].equipamento.location}
+                    <span className="text-xs">📍</span>
+                    {`${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state}`}
                 </span>
+             ) : (
+                request.equipments?.[0]?.equipamento?.location && (
+                    <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="text-xs">📍</span> {request.equipments[0].equipamento.location}
+                    </span>
+                )
              )}
           </p>
         </div>

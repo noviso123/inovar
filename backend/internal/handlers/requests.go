@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/models"
-	"github.com/inovar/backend/internal/utils"
 )
 
 // SLA hours by priority
@@ -34,7 +32,7 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 	clientID := c.Query("clientId")
 
 	var requests []models.Solicitacao
-	query := h.DB.Preload("Equipments.Equipamento")
+	query := h.DB.Preload("Equipments.Equipamento").Preload("Client.Endereco")
 
 	switch role {
 	case models.RoleCliente:
@@ -207,7 +205,7 @@ func (h *Handler) GetRequest(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 
 	var solicitacao models.Solicitacao
-	query := h.DB.Preload("Equipments.Equipamento").Preload("History").Preload("Checklists").Preload("Attachments").Preload("OrcamentoItens")
+	query := h.DB.Preload("Equipments.Equipamento").Preload("Client.Endereco").Preload("History").Preload("Checklists").Preload("Attachments").Preload("OrcamentoItens")
 
 	// Check scope
 	if role == models.RoleCliente {
@@ -815,15 +813,10 @@ func (h *Handler) UploadAttachment(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx "+strconv.FormatInt(h.Config.MaxUploadSize/1024/1024, 10)+"MB)")
 	}
 
-	// Save file using Supabase Storage
+	// Save file using Supabase Storage (no local fallback)
 	url, err := h.StorageService.UploadFile(file, "requests/"+requestID)
 	if err != nil {
-		// Fallback to local if needed or just error
-		log.Printf("Supabase upload failed, falling back to local: %v", err)
-		url, err = utils.SaveFile(c, file, "anexos", requestID)
-		if err != nil {
-			return ServerError(c, err)
-		}
+		return ServerError(c, err)
 	}
 
 	// Get user

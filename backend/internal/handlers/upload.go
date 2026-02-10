@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/inovar/backend/internal/utils"
 )
 
-// UploadFile uploads a generic file and returns the URL
+// UploadFile uploads a generic file to Supabase Storage and returns the URL
 func (h *Handler) UploadFile(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -20,7 +19,7 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx 10MB)")
 	}
 
-	// Determine category based on extension or other logic
+	// Determine category based on extension
 	category := "outros"
 	ext := strings.ToLower(filepath.Ext(file.Filename))
 	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
@@ -29,20 +28,14 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		category = "documentos"
 	}
 
-	// Use "temp" or "geral" as subfolder since this is a generic upload endpoint
 	subfolder := "geral"
 
-	// Save using Supabase Storage
+	// Upload to Supabase Storage (no local fallback)
 	url, err := h.StorageService.UploadFile(file, category+"/"+subfolder)
 	if err != nil {
-		// Fallback to local if needed
-		url, err = utils.SaveFile(c, file, category, subfolder)
-		if err != nil {
-			return ServerError(c, err)
-		}
+		return ServerError(c, err)
 	}
 
-	// Return format compatible with what frontend might expect
 	return Success(c, fiber.Map{
 		"url":      url,
 		"filename": filepath.Base(url),

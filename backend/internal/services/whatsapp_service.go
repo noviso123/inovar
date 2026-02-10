@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/mdp/qrterminal/v3"
+	_ "github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -24,7 +25,7 @@ func NewWhatsAppService() *WhatsAppService {
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 
 	// Create persistent store
-	container, err := sqlstore.New(context.Background(), "sqlite3", "file:wadata.db?_foreign_keys=on", dbLog)
+	container, err := sqlstore.New(context.Background(), "sqlite", "file:wadata.db?_foreign_keys=on", dbLog)
 	if err != nil {
 		fmt.Printf("Falha ao conectar no banco do WhatsApp: %v\n", err)
 		return nil

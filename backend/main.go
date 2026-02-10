@@ -3,9 +3,12 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 
@@ -56,6 +59,19 @@ func main() {
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,
+	}))
+	app.Use(helmet.New())
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,
+		Expiration: 60 * time.Second,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Muitas requisições. Tente novamente mais tarde.",
+			})
+		},
 	}))
 
 	// Initialize handlers
@@ -202,13 +218,7 @@ func main() {
 	system.Get("/tables/:name", h.GetTableData)
 	system.Get("/whatsapp", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR"), h.GetWhatsAppStatus)
 
-	// Serve static files (storage)
-	// Ensure directory exists
-	os.MkdirAll("./storage", 0755)
-	app.Static("/storage", "./storage")
-	// Keep /uploads for backward compatibility if needed, or remove it.
-	// The new helper uses /storage, so let's serve that.
-	// app.Static("/uploads", cfg.UploadDir) // Legacy
+	// Storage is handled by Supabase Storage - no local file serving needed
 
 	// WebSocket for real-time updates
 	app.Get("/ws", websocket.Upgrade(), websocket.Handler(h.Hub))

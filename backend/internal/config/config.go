@@ -19,14 +19,14 @@ type Config struct {
 	SMTPUser          string
 	SMTPPassword      string
 	SMTPFrom          string
-	UploadDir         string
-	MaxUploadSize     int64
-	LockTimeoutSecs   int
-	ConfirmDays       int
-	Environment       string // development, staging, production
-	DefaultPassword   string
-	SupabaseURL       string
-	SupabaseKey       string
+
+	MaxUploadSize   int64
+	LockTimeoutSecs int
+	ConfirmDays     int
+	Environment     string // development, staging, production
+	DefaultPassword string
+	SupabaseURL     string
+	SupabaseKey     string
 }
 
 func Load() *Config {
@@ -35,7 +35,7 @@ func Load() *Config {
 
 	return &Config{
 		Environment:       env,
-		DatabaseURL:       getEnv("DATABASE_URL", "../database/inovar.db"),
+		DatabaseURL:       getEnv("DATABASE_URL", "inovar.db"), // Default to inovar.db only if env is missing
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
@@ -45,13 +45,13 @@ func Load() *Config {
 		SMTPUser:          getEnv("SMTP_USER", ""),
 		SMTPPassword:      getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:          getEnv("SMTP_FROM", "noreply@inovar.com"),
-		UploadDir:         getEnv("UPLOAD_DIR", "../storage/uploads"),
-		MaxUploadSize:     int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
-		LockTimeoutSecs:   getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
-		ConfirmDays:       getEnvInt("CONFIRM_DAYS", 7),
-		DefaultPassword:   getEnv("DEFAULT_PASSWORD", "inovar123"),
-		SupabaseURL:       getEnv("SUPABASE_URL", ""),
-		SupabaseKey:       getEnv("SUPABASE_KEY", ""),
+
+		MaxUploadSize:   int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
+		LockTimeoutSecs: getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
+		ConfirmDays:     getEnvInt("CONFIRM_DAYS", 7),
+		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
+		SupabaseURL:     getEnv("SUPABASE_URL", ""),
+		SupabaseKey:     getEnv("SUPABASE_KEY", ""),
 	}
 }
 

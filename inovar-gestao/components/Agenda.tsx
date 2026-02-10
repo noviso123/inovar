@@ -51,8 +51,8 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
       {/* Header with Navigation */}
       <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-6">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={prevWeek} className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+          <button onClick={prevWeek} className="w-12 h-12 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
           <div className="text-center">
             <h2 className="text-lg font-black text-slate-800 tracking-tight">Agenda de atendimentos</h2>
@@ -60,8 +60,8 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
               {monthNames[weekStart.getMonth()]} {weekStart.getFullYear()}
             </p>
           </div>
-          <button onClick={nextWeek} className="w-10 h-10 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+          <button onClick={nextWeek} className="w-12 h-12 rounded-xl hover:bg-slate-50 flex items-center justify-center text-slate-400">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
 
@@ -74,7 +74,7 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
               <button
                 key={i}
                 onClick={() => setSelectedDate(day)}
-                className={`flex flex-col items-center justify-center w-10 h-14 rounded-2xl transition-all ${isSelected
+                className={`flex flex-col items-center justify-center w-12 h-16 rounded-2xl transition-all ${isSelected
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-110'
                   : isToday
                     ? 'bg-cyan-50 text-cyan-600'
@@ -149,7 +149,7 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
                 </div>
 
                 {/* Arrow */}
-                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-cyan-600 group-hover:text-white transition-all shrink-0 self-center">
+                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-cyan-600 group-hover:text-white transition-all shrink-0 self-center">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                   </svg>

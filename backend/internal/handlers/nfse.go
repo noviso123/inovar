@@ -9,7 +9,6 @@ import (
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/models"
 	"github.com/inovar/backend/internal/services"
-	"github.com/inovar/backend/internal/utils"
 )
 
 // UploadCertificate uploads a digital certificate (A1)
@@ -37,9 +36,8 @@ func (h *Handler) UploadCertificate(c *fiber.Ctx) error {
 		return BadRequest(c, "Senha do certificado obrigatória")
 	}
 
-	// Save certificate using structured storage
-	// Category: certificados, Subfolder: companyID
-	url, err := utils.SaveFile(c, file, "certificados", *user.CompanyID)
+	// Save certificate using Supabase Storage
+	url, err := h.StorageService.UploadFile(file, "certificados/"+*user.CompanyID)
 	if err != nil {
 		return ServerError(c, err)
 	}

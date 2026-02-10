@@ -5,8 +5,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/inovar/backend/internal/config"
@@ -122,28 +120,16 @@ func (s *DANFSeService) Generate(nfse *models.NotaFiscal, prestador *models.Pres
 	return html, nil
 }
 
-// SavePDF saves the DANFS-e as PDF (using html2pdf or similar)
+// SavePDF generates the DANFS-e HTML (PDF conversion can be done client-side)
 func (s *DANFSeService) SavePDF(nfse *models.NotaFiscal, prestador *models.Prestador, tomador *models.Cliente) (string, error) {
 	html, err := s.Generate(nfse, prestador, tomador)
 	if err != nil {
 		return "", err
 	}
 
-	// Create storage directory
-	pdfDir := filepath.Join(s.config.UploadDir, "nfse", nfse.PrestadorID)
-	if err := os.MkdirAll(pdfDir, 0755); err != nil {
-		return "", err
-	}
-
-	// Save HTML for now (PDF conversion requires wkhtmltopdf or similar)
-	filename := fmt.Sprintf("danfse_%s.html", nfse.Numero)
-	htmlPath := filepath.Join(pdfDir, filename)
-
-	if err := os.WriteFile(htmlPath, []byte(html), 0644); err != nil {
-		return "", err
-	}
-
-	return htmlPath, nil
+	// Return HTML content directly (no local file storage)
+	// PDF conversion can be handled client-side or via a cloud service
+	return html, nil
 }
 
 // renderHTML generates HTML from template

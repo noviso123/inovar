@@ -13,15 +13,6 @@ import (
 
 func Seed(db *gorm.DB) {
 	// Check if already seeded
-	var count int64
-	db.Model(&models.User{}).Count(&count)
-	if count > 0 {
-		log.Println("📦 Database already seeded, skipping...")
-		return
-	}
-
-	log.Println("🌱 Seeding initial data...")
-
 	// Hash password
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 

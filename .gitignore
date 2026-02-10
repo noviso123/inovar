@@ -23,3 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Secrets & Environment
+.env
+backend/.env
+*.env.local
+
+# Local storage & database (Supabase handles all)
+storage/
+database/
+backend/storage/
+backend/inovar.db
+*.db
