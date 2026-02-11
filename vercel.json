@@ -8,7 +8,7 @@
         },
         {
             "source": "/((?!api/|.*\\.).*)",
-            "destination": "/inovar-gestao/index.html"
+            "destination": "/index.html"
         }
     ]
 }

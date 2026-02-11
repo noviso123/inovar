@@ -2,7 +2,7 @@ services:
   - type: web
     name: inovar-backend
     env: docker
-    repo: https://github.com/SUA-CONTA/inovar
+    repo: https://github.com/noviso123/inovar.git
     rootDir: backend
     plan: free
     region: oregon
