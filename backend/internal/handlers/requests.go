@@ -379,18 +379,20 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	id := c.Params("id")
 	userID := middleware.GetUserID(c)
 	role := middleware.GetUserRole(c)
+
 	// Find request
 	var solicitacao models.Solicitacao
 	// Preload everything deeply
 	err := h.DB.
 		Preload("Client").
-		Preload("Client.Endereco"). // <--- CRITICAL: Load the address!
+		Preload("Client.Endereco").
 		Preload("Equipments").
 		Preload("History").
 		Preload("Attachments").
 		Preload("OrcamentoItems").
 		Preload("NotaFiscal").
-		First(&solicitacao, "id = ?", id).Error; err != nil {
+		First(&solicitacao, "id = ?", id).Error
+	if err != nil {
 		return NotFound(c, "Solicitação não encontrada")
 	}
 
@@ -421,8 +423,6 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		t, err := ParseDateTime(req.NextMaintenanceAt)
 		if err == nil {
 			solicitacao.NextMaintenanceAt = t
-		} else {
-			fmt.Printf("Error parsing NextMaintenanceAt: %v\n", err)
 		}
 	}
 
@@ -430,8 +430,6 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		t, err := ParseDateTime(req.ScheduledAt)
 		if err == nil {
 			solicitacao.ScheduledAt = t
-		} else {
-			fmt.Printf("Error parsing ScheduledAt: %v\n", err)
 		}
 	}
 	solicitacao.UpdatedAt = time.Now()
@@ -439,7 +437,6 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	before := solicitacao // Copy original
 	// AUTOMATED PREVENTIVE MAINTENANCE LOGIC
 	if req.Status == models.StatusFinalizada && req.PreventiveDone {
-		// 1. Get Global Default Interval
 		var setting models.Setting
 		defaultInterval := 90 // Default 90 days
 		if err := h.DB.First(&setting, "key = ?", "preventive_interval").Error; err == nil {
@@ -449,19 +446,13 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		}
 
 		now := time.Now()
-
-		// 2. Update each equipment
 		for _, assoc := range solicitacao.Equipments {
 			equip := assoc.Equipamento
 			interval := equip.PreventiveInterval
 			if interval == 0 {
 				interval = defaultInterval
 			}
-
-			// Calculate next date
 			nextDate := now.AddDate(0, 0, interval)
-
-			// Update equipment
 			h.DB.Model(&equip).Updates(map[string]interface{}{
 				"last_preventive_date": now,
 				"next_preventive_date": nextDate,
@@ -502,7 +493,6 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	if req.Status == models.StatusFinalizada {
 		go func() {
 			if h.EmailService != nil && solicitacao.ClientName != "" {
-				// We need to ensure solicitacao has Client loaded. Preload used earlier should have it.
 				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, fmt.Sprint(solicitacao.Numero), os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
 			}
 		}()

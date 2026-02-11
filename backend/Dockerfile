@@ -29,8 +29,7 @@ COPY --from=builder /app/main .
 # Ensure storage directory exists
 RUN mkdir -p storage
 
-# Expose port (Cloud Run uses $PORT)
-ENV PORT 8080
+# Expose port (Render provides $PORT)
 EXPOSE 8080
 
 # Run the application

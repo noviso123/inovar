@@ -2,6 +2,13 @@
     "buildCommand": "cd inovar-gestao && npm install && npm run build",
     "outputDirectory": "inovar-gestao/dist",
     "rewrites": [
-        { "source": "/((?!api/|.*\\.).*)", "destination": "/index.html" }
+        {
+            "source": "/api/(.*)",
+            "destination": "https://[YOUR-RENDER-URL].onrender.com/api/$1"
+        },
+        {
+            "source": "/((?!api/|.*\\.).*)",
+            "destination": "/inovar-gestao/index.html"
+        }
     ]
 }
