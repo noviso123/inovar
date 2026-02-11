@@ -97,6 +97,16 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	// Create user first
+	// SYNC TO SUPABASE FIRST
+	var supabaseID *string
+	if h.SupabaseService != nil {
+		sID, err := h.SupabaseService.AdminCreateUser(req.Email, password)
+		if err != nil {
+			return BadRequest(c, fmt.Sprintf("Erro ao criar usuário no Supabase: %v", err))
+		}
+		supabaseID = &sID
+	}
+
 	user := models.User{
 		ID:                 uuid.New().String(),
 		Name:               req.Name,
@@ -107,9 +117,16 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 		Active:             true,
 		MustChangePassword: true,
 		CompanyID:          &companyID,
+		SupabaseID:         supabaseID,
 		CreatedAt:          time.Now(),
 	}
-	h.DB.Create(&user)
+	if err := h.DB.Create(&user).Error; err != nil {
+		// Cleanup Supabase if local DB fails
+		if supabaseID != nil && h.SupabaseService != nil {
+			h.SupabaseService.AdminDeleteUser(*supabaseID)
+		}
+		return ServerError(c, err)
+	}
 
 	// Create address if provided
 	var enderecoID *string
@@ -235,10 +252,19 @@ func (h *Handler) UpdateClient(c *fiber.Ctx) error {
 	}
 
 	// Update user as well
-	h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Updates(map[string]interface{}{
-		"name":  req.Name,
-		"phone": req.Phone,
-	})
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", cliente.UserID).Error; err == nil {
+		h.DB.Model(&user).Updates(map[string]interface{}{
+			"name":  req.Name,
+			"phone": req.Phone,
+		})
+
+		// SYNC TO SUPABASE
+		if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+			// We don't update email here as it's the identifier, but if needed, added params
+			h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", nil, nil)
+		}
+	}
 
 	before := cliente // Copy original state
 	if err := h.DB.Save(&cliente).Error; err != nil {
@@ -269,6 +295,11 @@ func (h *Handler) BlockClient(c *fiber.Ctx) error {
 	h.DB.First(&user, "id = ?", cliente.UserID)
 	user.Active = !user.Active
 	h.DB.Save(&user)
+
+	// SYNC TO SUPABASE
+	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", nil, &user.Active)
+	}
 
 	action := "client:blocked"
 	if user.Active {
@@ -355,17 +386,39 @@ func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 		}
 
 		// 9. Delete the User (This is the final step)
+		var user models.User
+		h.DB.First(&user, "id = ?", userID) // Fetch to get SupabaseID
+
 		if err := tx.Unscoped().Delete(&models.User{}, "id = ?", userID).Error; err != nil {
 			tx.Rollback()
 			return ServerError(c, err)
 		}
 
+		// SYNC TO SUPABASE (After successful local transaction commit)
+		// We do this after commit to ensure local consistency, but capture ID first
+		supabaseID := user.SupabaseID
+
 		if err := tx.Commit().Error; err != nil {
 			return ServerError(c, err)
 		}
+
+		if supabaseID != nil && *supabaseID != "" && h.SupabaseService != nil {
+			h.SupabaseService.AdminDeleteUser(*supabaseID)
+		}
 	} else {
 		// Soft delete via blocking
-		h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Update("active", false)
+		var user models.User
+		if err := h.DB.First(&user, "id = ?", cliente.UserID).Error; err == nil {
+			user.Active = false
+			h.DB.Save(&user)
+
+			// SYNC TO SUPABASE
+			if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+				active := false
+				h.DB.Model(&models.User{}).Where("id = ?", cliente.UserID).Update("active", false)
+				h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", nil, &active)
+			}
+		}
 	}
 
 	h.Hub.Broadcast("client:deleted", fiber.Map{"id": id})

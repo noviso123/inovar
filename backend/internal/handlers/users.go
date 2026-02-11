@@ -69,8 +69,18 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		return BadRequest(c, "Email já cadastrado")
 	}
 
-	// Hash password
+	// Hash password (keep for local legacy/reporting if needed, but not for auth)
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+
+	// SYNC TO SUPABASE FIRST
+	var supabaseID *string
+	if h.SupabaseService != nil {
+		sID, err := h.SupabaseService.AdminCreateUser(req.Email, req.Password)
+		if err != nil {
+			return BadRequest(c, fmt.Sprintf("Erro ao criar usuário no Supabase: %v", err))
+		}
+		supabaseID = &sID
+	}
 
 	// Set company ID for non-admin creators
 	companyID := req.CompanyID
@@ -89,10 +99,15 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		MustChangePassword: true,
 		CompanyID:          &companyID,
 		AvatarURL:          req.AvatarURL,
+		SupabaseID:         supabaseID,
 		CreatedAt:          time.Now(),
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
+		// Cleanup Supabase if local DB fails
+		if supabaseID != nil && h.SupabaseService != nil {
+			h.SupabaseService.AdminDeleteUser(*supabaseID)
+		}
 		return ServerError(c, err)
 	}
 
@@ -157,6 +172,11 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 
 	h.DB.Save(&user)
 
+	// SYNC TO SUPABASE
+	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, user.Email, nil, nil)
+	}
+
 	h.Hub.Broadcast("user:updated", user)
 
 	// Final Audit
@@ -177,6 +197,11 @@ func (h *Handler) BlockUser(c *fiber.Ctx) error {
 	user.Active = !user.Active
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
+
+	// SYNC TO SUPABASE
+	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", nil, &user.Active)
+	}
 
 	action := "user:blocked"
 	if user.Active {
@@ -205,8 +230,10 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
-	// TODO: Future improvement - Send email with new password
-	// For now, Admin must communicate the temporary password manually.
+	// SYNC TO SUPABASE
+	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", &tempPassword, nil)
+	}
 
 	return Success(c, fiber.Map{
 		"message":      "Senha resetada com sucesso",
@@ -267,6 +294,11 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 
 	if err := tx.Commit().Error; err != nil {
 		return ServerError(c, err)
+	}
+
+	// 7. SYNC TO SUPABASE
+	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
+		h.SupabaseService.AdminDeleteUser(*user.SupabaseID)
 	}
 
 	// Broadcast event

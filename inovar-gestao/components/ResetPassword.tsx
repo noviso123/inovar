@@ -14,10 +14,17 @@ export const ResetPassword: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!token) {
-            setError('Token de recuperação inválido ou expirado.');
-        }
-    }, [token]);
+        // Supabase recovery flow automatically sets a session via URL hash.
+        // We check if we have a session or if the URL contains recovery info.
+        const checkSession = async () => {
+            const { supabase } = await import('../services/supabase');
+            const { data } = await supabase.auth.getSession();
+            if (!data.session && !window.location.hash.includes('type=recovery')) {
+                setError('Link de recuperação inválido ou expirado. Por favor, solicite um novo.');
+            }
+        };
+        checkSession();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +43,7 @@ export const ResetPassword: React.FC = () => {
         setError(null);
 
         try {
-            const response = await apiService.resetPassword(token!, password);
+            const response = await apiService.resetPassword('', password);
             if (response.success) {
                 setSuccess(true);
                 setTimeout(() => navigate('/login'), 3000);
@@ -87,7 +94,7 @@ export const ResetPassword: React.FC = () => {
                                 </div>
                             )}
 
-                            {!token ? (
+                            {error && !loading ? (
                                 <div className="text-center py-4">
                                     <Link
                                         to="/forgot-password"

@@ -36,19 +36,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       />
 
       {/* Sidebar Panel */}
-      <aside className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col">
+      <aside className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-slate-900/95 backdrop-blur-xl border-l border-white/5 shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg text-sm">I</div>
+            <div className="w-10 h-10 bg-cyan-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-cyan-600/20 text-sm">I</div>
             <div>
-              <h3 className="text-sm font-black text-slate-800 tracking-tight">Menu</h3>
-              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Navegação</p>
+              <h3 className="text-sm font-black text-white tracking-tight">Menu</h3>
+              <p className="text-[9px] text-cyan-400 font-bold uppercase tracking-widest">Navegação</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-200 transition-all"
+            className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-slate-400 hover:bg-white/10 hover:text-white transition-all"
             aria-label="Fechar sidebar"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,12 +71,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.path}
                 to={fullPath}
                 onClick={onClose}
-                className={`flex items-center gap-4 px-6 py-4 transition-all ${isActive
-                  ? 'bg-cyan-50 text-cyan-600 border-r-4 border-cyan-600'
-                  : 'text-slate-600 hover:bg-slate-50'
+                className={`flex items-center gap-4 px-6 py-4 transition-all border-l-4 ${isActive
+                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500'
+                  : 'text-slate-400 hover:bg-white/5 border-transparent'
                   }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-cyan-100' : 'bg-slate-100'
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-cyan-500/20' : 'bg-white/5'
                   }`}>
                    {item.icon}
                 </div>
@@ -87,12 +87,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Footer - Logout */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50">
+        <div className="p-4 border-t border-white/5 bg-slate-900/50">
           <button
             onClick={() => { onClose(); onLogout(); }}
-            className="w-full flex items-center gap-4 px-4 py-4 text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+            className="w-full flex items-center gap-4 px-4 py-4 text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
           >
-            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-rose-500/10 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>

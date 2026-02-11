@@ -20,7 +20,6 @@ class ApiService {
   private refreshToken: string | null = null;
 
   constructor() {
-    // Load tokens from localStorage
     this.accessToken = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
   }
@@ -29,38 +28,31 @@ class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const { supabase } = await import('./supabase');
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token || this.accessToken;
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
 
-    if (this.accessToken) {
-      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
-      cache: 'no-store', // Prevent browser caching (fix for ghost data)
+      cache: 'no-store',
     });
 
-    // Handle token expiration
-    if (response.status === 401) {
-      const refreshed = await this.tryRefreshToken();
-      if (refreshed) {
-        // Retry request with new token
-        headers['Authorization'] = `Bearer ${this.accessToken}`;
-        const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
-          ...options,
-          headers,
-        });
-        return retryResponse.json();
-      } else {
-        // Clear tokens and redirect to login
-        this.clearTokens();
-        window.location.reload();
-        throw new Error('Session expired');
-      }
+    // Handle session expiration
+    if (response.status === 401 || response.status === 426) {
+      // Clear tokens and redirect to login if session is truly dead
+      this.clearTokens();
+      window.location.href = '/login';
+      throw new Error('Sessão expirada. Por favor, faça login novamente.');
     }
 
     const data = await response.json();
@@ -72,36 +64,9 @@ class ApiService {
     return data;
   }
 
-  private async tryRefreshToken(): Promise<boolean> {
-    if (!this.refreshToken) return false;
-
-    try {
-      const response = await fetch(`${API_BASE}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        this.setAccessToken(data.accessToken);
-        return true;
-      }
-    } catch (e) {
-      console.error('Token refresh failed:', e);
-    }
-
-    return false;
-  }
-
   setAccessToken(token: string) {
     this.accessToken = token;
     localStorage.setItem('accessToken', token);
-  }
-
-  private setRefreshToken(token: string) {
-    this.refreshToken = token;
-    localStorage.setItem('refreshToken', token);
   }
 
   private clearTokens() {
@@ -114,37 +79,59 @@ class ApiService {
 
   // Auth
   async login(email: string, password: string): Promise<AuthResponse> {
-    // Clear any existing tokens before login attempt
-    // This prevents "Session expired" error from stale tokens
-    this.clearTokens();
+    const { supabase } = await import('./supabase');
 
+    // Clear any existing tokens before login attempt
     this.clearTokens();
 
     try {
-      // Direct fetch for login - don't use this.request() as it tries to refresh old tokens
-      const response = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
+      if (error) {
         return {
           success: false,
-          data: data,
-          message: data.message || 'Credenciais inválidas',
-        } as AuthResponse;
+          data: null,
+          message: error.message || 'Credenciais inválidas',
+        } as unknown as AuthResponse;
       }
 
-      if (data.success) {
-        this.setAccessToken(data.data.accessToken);
-        this.setRefreshToken(data.data.refreshToken);
-        localStorage.setItem('currentUser', JSON.stringify(data.data.user));
+      if (data.session) {
+        this.setAccessToken(data.session.access_token);
+        this.setRefreshToken(data.session.refresh_token);
+
+        // Fetch full user data from our backend /me to get role/company
+        // The backend will now accept the Supabase token!
+        try {
+          const user = await this.getCurrentUser();
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          return {
+            success: true,
+            data: {
+              user,
+              accessToken: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+              expiresIn: data.session.expires_in,
+            }
+          };
+        } catch (err) {
+          // If /me fails, we still have the session but might be missing profile
+          localStorage.setItem('currentUser', JSON.stringify(data.user));
+           return {
+            success: true,
+            data: {
+              user: data.user,
+              accessToken: data.session.access_token,
+              refreshToken: data.session.refresh_token,
+              expiresIn: data.session.expires_in,
+            }
+          };
+        }
       }
 
-      return data;
+      return { success: false, message: 'Falha na autenticação' } as unknown as AuthResponse;
     } catch (error) {
       console.error('🚨 Login error:', error);
       throw error;
@@ -152,8 +139,11 @@ class ApiService {
   }
 
   async logout(): Promise<void> {
+    const { supabase } = await import('./supabase');
     try {
-      await this.request('/logout', { method: 'POST' });
+      await supabase.auth.signOut();
+      // Optional: notify backend but don't wait for it
+      this.request('/logout', { method: 'POST' }).catch(() => {});
     } finally {
       this.clearTokens();
     }
@@ -629,24 +619,28 @@ class ApiService {
 
   // Auth - Forgot Password (public endpoint)
   async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE}/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+    const { supabase } = await import('./supabase');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
     });
-    const data = await response.json();
-    return { success: response.ok, message: data.message || 'E-mail enviado com sucesso' };
+    return {
+      success: !error,
+      message: error ? error.message : 'Se o email existir, enviaremos instruções de recuperação'
+    };
   }
 
   // Auth - Reset Password (public endpoint)
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const response = await fetch(`${API_BASE}/auth/reset-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, newPassword }),
-    });
-    const data = await response.json();
-    return { success: response.ok, message: data.message || 'Senha alterada com sucesso' };
+    const { supabase } = await import('./supabase');
+    // Note: Supabase handles recovery tokens via URL hash usually.
+    // If we have a token manually, we might need a different flow,
+    // but usually user is redirected to /reset-password#access_token=...
+    // and we can just call updateUser.
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return {
+      success: !error,
+      message: error ? error.message : 'Senha alterada com sucesso'
+    };
   }
 
   // Fiscal - Upload Certificate A1

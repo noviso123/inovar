@@ -23,6 +23,7 @@ type User struct {
 	GoogleAccessToken   string         `gorm:"size:1024" json:"-"`
 	GoogleRefreshToken  string         `gorm:"size:1024" json:"-"`
 	GoogleTokenExpiry   time.Time      `json:"-"`
+	SupabaseID          *string        `gorm:"size:36;uniqueIndex" json:"supabaseId,omitempty"`
 	CreatedAt           time.Time      `json:"createdAt"`
 	UpdatedAt           time.Time      `json:"updatedAt"`
 	DeletedAt           gorm.DeletedAt `gorm:"index" json:"-"`

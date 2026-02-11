@@ -19,53 +19,53 @@ type DANFSeService struct {
 // DANFSeData contains all data needed to generate DANFS-e
 type DANFSeData struct {
 	// Company (Prestador)
-	PrestadorNome     string
-	PrestadorCNPJ     string
-	PrestadorIM       string
-	PrestadorEndereco string
-	PrestadorCidade   string
-	PrestadorUF       string
-	PrestadorTelefone string
-	PrestadorEmail    string
-	PrestadorLogo     string // Base64 or URL
+	PrestadorNome     string `json:"prestadorNome"`
+	PrestadorCNPJ     string `json:"prestadorCnpj"`
+	PrestadorIM       string `json:"prestadorIm"`
+	PrestadorEndereco string `json:"prestadorEndereco"`
+	PrestadorCidade   string `json:"prestadorCidade"`
+	PrestadorUF       string `json:"prestadorUf"`
+	PrestadorTelefone string `json:"prestadorTelefone"`
+	PrestadorEmail    string `json:"prestadorEmail"`
+	PrestadorLogo     string `json:"prestadorLogo"` // Base64 or URL
 
 	// NFS-e Info
-	NumeroNFSe        string
-	CodigoVerificacao string
-	DataEmissao       string
-	DataCompetencia   string
-	ChaveAcesso       string
-	Ambiente          string
+	NumeroNFSe        string `json:"numeroNfse"`
+	CodigoVerificacao string `json:"codigoVerificacao"`
+	DataEmissao       string `json:"dataEmissao"`
+	DataCompetencia   string `json:"dataCompetencia"`
+	ChaveAcesso       string `json:"chaveAcesso"`
+	Ambiente          string `json:"ambiente"`
 
 	// Tomador (Cliente)
-	TomadorNome      string
-	TomadorDocumento string
-	TomadorEndereco  string
-	TomadorCidade    string
-	TomadorUF        string
-	TomadorEmail     string
+	TomadorNome      string `json:"tomadorNome"`
+	TomadorDocumento string `json:"tomadorDocumento"`
+	TomadorEndereco  string `json:"tomadorEndereco"`
+	TomadorCidade    string `json:"tomadorCidade"`
+	TomadorUF        string `json:"tomadorUf"`
+	TomadorEmail     string `json:"tomadorEmail"`
 
 	// Serviço
-	Discriminacao string
-	CodigoServico string
-	CNAE          string
+	Discriminacao string `json:"discriminacao"`
+	CodigoServico string `json:"codigoServico"`
+	CNAE          string `json:"cnae"`
 
 	// Valores
-	ValorServicos string
-	ValorDeducoes string
-	ValorLiquido  string
-	AliquotaISS   string
-	ValorISS      string
-	ISSRetido     bool
-	ValorPIS      string
-	ValorCOFINS   string
-	ValorCSLL     string
-	ValorIR       string
-	ValorINSS     string
+	ValorServicos string `json:"valorServicos"`
+	ValorDeducoes string `json:"valorDeducoes"`
+	ValorLiquido  string `json:"valorLiquido"`
+	AliquotaISS   string `json:"aliquotaIss"`
+	ValorISS      string `json:"valorIss"`
+	ISSRetido     bool   `json:"issRetido"`
+	ValorPIS      string `json:"valorPis"`
+	ValorCOFINS   string `json:"valorCofins"`
+	ValorCSLL     string `json:"valorCsll"`
+	ValorIR       string `json:"valorIr"`
+	ValorINSS     string `json:"valorInss"`
 
 	// Extras
-	LinkVerificacao   string
-	QRCodeVerificacao string
+	LinkVerificacao   string `json:"linkVerificacao"`
+	QRCodeVerificacao string `json:"qrCodeVerificacao"`
 }
 
 // NewDANFSeService creates a new DANFS-e generator

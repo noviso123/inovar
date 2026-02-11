@@ -47,24 +47,24 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 		claims, _ := token.Claims.(*Claims)
 
 		// Sync with Local Database
-		// We use Email as the primary anchor between Supabase and our DB
+		// Primary anchor: Supabase UUID (sub claim)
+		// Secondary anchor: Email (legacy/migration)
 		var user struct {
 			ID        string
+			Name      string
 			Email     string
 			Role      string
 			CompanyID *string
 		}
 
-		// Use the email from simple claims or Supabase claims
-		email := claims.Email
-		if email == "" {
-			// Fallback or secondary check
-		}
+		// Try to find by Supabase UUID first
+		query := db.Table("users").Select("id, name, email, role, company_id").Where("active = ?", true)
 
-		err = db.Table("users").
-			Select("id, email, role, company_id").
-			Where("email = ? AND active = ?", email, true).
-			First(&user).Error
+		if claims.Subject != "" {
+			err = query.Where("supabase_id = ? OR email = ?", claims.Subject, claims.Email).First(&user).Error
+		} else {
+			err = query.Where("email = ?", claims.Email).First(&user).Error
+		}
 
 		if err != nil {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
@@ -75,6 +75,7 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 
 		// Store user info in context
 		c.Locals("userId", user.ID)
+		c.Locals("userName", user.Name)
 		c.Locals("userEmail", user.Email)
 		c.Locals("userRole", user.Role)
 		companyID := ""
@@ -129,8 +130,11 @@ func GetCompanyID(c *fiber.Ctx) string {
 	return ""
 }
 
-// GetUserName gets user email/name from context
+// GetUserName gets user name from context
 func GetUserName(c *fiber.Ctx) string {
+	if name := c.Locals("userName"); name != nil {
+		return name.(string)
+	}
 	if email := c.Locals("userEmail"); email != nil {
 		return email.(string)
 	}

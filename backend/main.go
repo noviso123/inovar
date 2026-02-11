@@ -61,6 +61,11 @@ func main() {
 		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		AllowCredentials: true,
 	}))
+
+	// Sanity check for CORS
+	if cfg.CorsOrigins == "*" {
+		log.Println("⚠️ AVISO: CORS configurado como '*' com credenciais. Isso pode falhar em navegadores modernos.")
+	}
 	app.Use(helmet.New())
 	app.Use(limiter.New(limiter.Config{
 		Max:        100,

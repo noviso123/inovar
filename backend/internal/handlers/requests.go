@@ -1086,7 +1086,9 @@ func (h *Handler) DeleteRequest(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	tx.Commit()
+	if err := tx.Commit().Error; err != nil {
+		return ServerError(c, err)
+	}
 
 	return Success(c, fiber.Map{"message": "Chamado e dados relacionados excluídos com sucesso"})
 }

@@ -304,10 +304,10 @@ func (s *TaxCalculationService) getFaixaDescricao(faixa string) string {
 // CNPJData represents data returned from CNPJ lookup
 type CNPJData struct {
 	CNPJ             string                     `json:"cnpj"`
-	RazaoSocial      string                     `json:"razao_social"`
-	NomeFantasia     string                     `json:"nome_fantasia"`
-	CNAE             int                        `json:"cnae_fiscal"`
-	CNAEDescricao    string                     `json:"cnae_fiscal_descricao"`
+	RazaoSocial      string                     `json:"razaoSocial"`
+	NomeFantasia     string                     `json:"nomeFantasia"`
+	CNAE             int                        `json:"cnaeFiscal"`
+	CNAEDescricao    string                     `json:"cnaeFiscalDescricao"`
 	Logradouro       string                     `json:"logradouro"`
 	Numero           string                     `json:"numero"`
 	Complemento      string                     `json:"complemento"`
@@ -315,10 +315,10 @@ type CNPJData struct {
 	CEP              string                     `json:"cep"`
 	Municipio        string                     `json:"municipio"`
 	UF               string                     `json:"uf"`
-	CodigoMunicipio  int                        `json:"codigo_municipio"`
-	RegimeTributario interface{}                `json:"regime_tributario"` // API can return array, so we use interface{} and overwrite later
-	Simples          *bool                      `json:"opcao_pelo_simples"`
-	MEI              *bool                      `json:"opcao_pelo_mei"`
+	CodigoMunicipio  int                        `json:"codigoMunicipio"`
+	RegimeTributario interface{}                `json:"regimeTributario"` // API can return array, so we use interface{} and overwrite later
+	Simples          *bool                      `json:"opcaoPeloSimples"`
+	MEI              *bool                      `json:"opcaoPeloMei"`
 	SuggestedConfig  *models.ConfiguracaoFiscal `json:"suggestedConfig,omitempty"`
 }
 

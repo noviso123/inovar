@@ -1,13 +1,9 @@
 package handlers
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/models"
@@ -19,147 +15,19 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// Login authenticates a user
+// Login is disabled in favor of Supabase Auth
 func (h *Handler) Login(c *fiber.Ctx) error {
-	var req LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	// Find user
-	var user models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   "invalid_credentials",
-			"message": "Email ou senha incorretos",
-		})
-	}
-
-	// Check if active
-	if !user.Active {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   "user_blocked",
-			"message": "Usuário bloqueado. Contate o administrador.",
-		})
-	}
-
-	// Check password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   "invalid_credentials",
-			"message": "Email ou senha incorretos",
-		})
-	}
-
-	// Get company ID
-	companyID := ""
-	if user.CompanyID != nil {
-		companyID = *user.CompanyID
-	}
-
-	// Generate access token
-	accessToken, err := middleware.GenerateToken(
-		user.ID,
-		user.Email,
-		user.Role,
-		companyID,
-		h.Config.JWTSecret,
-		h.Config.JWTExpireMinutes,
-	)
-	if err != nil {
-		return ServerError(c, err)
-	}
-
-	// Generate refresh token
-	refreshTokenStr := uuid.New().String()
-	refreshToken := models.RefreshToken{
-		ID:        uuid.New().String(),
-		UserID:    user.ID,
-		Token:     refreshTokenStr,
-		ExpiresAt: time.Now().AddDate(0, 0, h.Config.RefreshExpireDays),
-		CreatedAt: time.Now(),
-	}
-	h.DB.Create(&refreshToken)
-
-	return c.JSON(fiber.Map{
-		"success": true,
-		"data": fiber.Map{
-			"user": fiber.Map{
-				"id":                 user.ID,
-				"name":               user.Name,
-				"email":              user.Email,
-				"role":               user.Role,
-				"phone":              user.Phone,
-				"active":             user.Active,
-				"companyId":          user.CompanyID,
-				"avatarUrl":          user.AvatarURL,
-				"mustChangePassword": user.MustChangePassword,
-			},
-			"accessToken":  accessToken,
-			"refreshToken": refreshTokenStr,
-			"expiresIn":    h.Config.JWTExpireMinutes * 60,
-		},
+	return c.Status(fiber.StatusUpgradeRequired).JSON(fiber.Map{
+		"error":   "migration_required",
+		"message": "Este serviço de login legado foi desativado. Por favor, use a autenticação via Supabase.",
 	})
 }
 
-// RefreshTokenRequest represents refresh token payload
-type RefreshTokenRequest struct {
-	RefreshToken string `json:"refreshToken"`
-}
-
-// RefreshToken generates a new access token
+// RefreshToken is disabled in favor of Supabase Auth
 func (h *Handler) RefreshToken(c *fiber.Ctx) error {
-	var req RefreshTokenRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	// Find refresh token
-	var refreshToken models.RefreshToken
-	if err := h.DB.Where("token = ? AND revoked = ?", req.RefreshToken, false).First(&refreshToken).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   "invalid_token",
-			"message": "Refresh token inválido",
-		})
-	}
-
-	// Check expiration
-	if refreshToken.ExpiresAt.Before(time.Now()) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error":   "token_expired",
-			"message": "Refresh token expirado",
-		})
-	}
-
-	// Find user
-	var user models.User
-	if err := h.DB.First(&user, "id = ?", refreshToken.UserID).Error; err != nil {
-		return ServerError(c, err)
-	}
-
-	// Get company ID
-	companyID := ""
-	if user.CompanyID != nil {
-		companyID = *user.CompanyID
-	}
-
-	// Generate new access token
-	accessToken, err := middleware.GenerateToken(
-		user.ID,
-		user.Email,
-		user.Role,
-		companyID,
-		h.Config.JWTSecret,
-		h.Config.JWTExpireMinutes,
-	)
-	if err != nil {
-		return ServerError(c, err)
-	}
-
-	return c.JSON(fiber.Map{
-		"success":     true,
-		"accessToken": accessToken,
-		"expiresIn":   h.Config.JWTExpireMinutes * 60,
+	return c.Status(fiber.StatusUpgradeRequired).JSON(fiber.Map{
+		"error":   "migration_required",
+		"message": "Este serviço de refresh token legado foi desativado. Por favor, use a autenticação via Supabase.",
 	})
 }
 
@@ -178,44 +46,12 @@ type ForgotPasswordRequest struct {
 	Email string `json:"email"`
 }
 
-// ForgotPassword initiates password reset
+// ForgotPassword is handled by Supabase Auth directly on the frontend
 func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
-	var req ForgotPasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	// Find user
-	var user models.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		// Don't reveal if user exists
-		return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
-	}
-
-	// Generate reset token
-	token := uuid.New().String()
-	expiration := time.Now().Add(1 * time.Hour)
-
-	user.ResetToken = &token
-	user.ResetTokenExpiresAt = &expiration
-	h.DB.Save(&user)
-
-	// Send notifications
-	go func() {
-		// Email
-		if h.EmailService != nil {
-			h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name)
-		}
-
-		// WhatsApp
-		if h.WhatsAppService != nil && user.Phone != "" {
-			resetLink := fmt.Sprintf("%s/reset-password?token=%s", os.Getenv("FRONTEND_URL"), token)
-			msg := fmt.Sprintf("🔒 *Recuperação de Senha*\n\nOlá %s,\nRecebemos uma solicitação para redefinir sua senha.\n\nClique no link abaixo:\n%s\n\n(Se não foi você, ignore esta mensagem)", user.Name, resetLink)
-			h.WhatsAppService.SendMessage(user.Phone, msg)
-		}
-	}()
-
-	return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
+	return c.Status(fiber.StatusUpgradeRequired).JSON(fiber.Map{
+		"error":   "migration_required",
+		"message": "Este serviço de recuperação legado foi desativado. Por favor, use o fluxo do Supabase.",
+	})
 }
 
 // ResetPasswordRequest represents reset password payload
@@ -224,37 +60,12 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword"`
 }
 
-// ResetPassword completes password reset
+// ResetPassword is handled by Supabase Auth directly on the frontend
 func (h *Handler) ResetPassword(c *fiber.Ctx) error {
-	var req ResetPasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	if req.Token == "" || req.NewPassword == "" {
-		return BadRequest(c, "Token e nova senha são obrigatórios")
-	}
-
-	// Find user with valid token
-	var user models.User
-	if err := h.DB.Where("reset_token = ? AND reset_token_expires_at > ?", req.Token, time.Now()).First(&user).Error; err != nil {
-		return BadRequest(c, "Token inválido ou expirado")
-	}
-
-	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return ServerError(c, err)
-	}
-
-	// Update user
-	user.PasswordHash = string(hashedPassword)
-	user.ResetToken = nil
-	user.ResetTokenExpiresAt = nil
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
-
-	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
+	return c.Status(fiber.StatusUpgradeRequired).JSON(fiber.Map{
+		"error":   "migration_required",
+		"message": "Este serviço de reset legado foi desativado. Por favor, use o fluxo do Supabase.",
+	})
 }
 
 // GetCurrentUser returns the authenticated user
@@ -312,35 +123,10 @@ type ChangePasswordRequest struct {
 	NewPassword     string `json:"newPassword"`
 }
 
-// ChangePassword changes the authenticated user's password
+// ChangePassword is handled by Supabase Auth on the frontend (updateUser)
 func (h *Handler) ChangePassword(c *fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
-
-	var req ChangePasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	var user models.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return NotFound(c, "Usuário não encontrado")
-	}
-
-	// Verify current password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		return BadRequest(c, "Senha atual incorreta")
-	}
-
-	// Hash new password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
-	if err != nil {
-		return ServerError(c, err)
-	}
-
-	user.PasswordHash = string(hashedPassword)
-	user.MustChangePassword = false
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
-
-	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
+	return c.Status(fiber.StatusUpgradeRequired).JSON(fiber.Map{
+		"error":   "migration_required",
+		"message": "Este serviço de troca de senha legado foi desativado. Por favor, use o fluxo do Supabase.",
+	})
 }

@@ -55,13 +55,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-12 duration-1000">
+    <div className="min-h-screen bg-[url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-fixed bg-center flex items-center justify-center p-6 font-sans">
+      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-sm z-0"></div>
+
+      <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-12 duration-1000 relative z-10">
         {/* Logo - AC Unit Icon */}
         <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-2xl shadow-cyan-600/30">
+          <div className="w-24 h-24 glass-panel rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-[0_0_30px_rgba(6,182,212,0.3)] border border-cyan-500/30">
             {/* AC Unit Icon */}
-            <svg className="w-14 h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-14 h-14 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <rect x="2" y="4" width="20" height="14" rx="2" strokeWidth="2" />
               <circle cx="9" cy="11" r="4" strokeWidth="2" />
               <circle cx="9" cy="11" r="1.5" strokeWidth="1" />
@@ -70,14 +72,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <path strokeWidth="2" d="M5 18v2M19 18v2" />
             </svg>
           </div>
-          <h1 className="text-5xl font-black text-white tracking-tighter mb-2">INOVAR</h1>
-          <p className="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[10px]">Gestão de Climatização</p>
+          <h1 className="text-5xl font-black text-white tracking-tighter mb-2 drop-shadow-xl">INOVAR</h1>
+          <p className="text-cyan-400 font-bold tracking-[0.4em] uppercase text-[10px] drop-shadow-md">Gestão de Climatização</p>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-[3rem] p-10 shadow-2xl space-y-6">
+        <form onSubmit={handleSubmit} className="glass-panel !bg-slate-900/60 rounded-[3rem] p-10 shadow-2xl shadow-black/50 space-y-6 border border-white/10">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl text-sm font-bold animate-in shake duration-300">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-200 px-4 py-3 rounded-2xl text-sm font-bold animate-in shake duration-300">
               {error}
             </div>
           )}
@@ -92,7 +94,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-cyan-500 focus:outline-none font-black text-slate-800 transition-all"
+              className="w-full px-6 py-4 rounded-2xl bg-slate-900/50 border-2 border-slate-700/50 focus:border-cyan-500 focus:outline-none font-black text-white placeholder-slate-600 transition-all focus:bg-slate-900/80"
               placeholder="seu@email.com"
               disabled={loading}
             />
@@ -108,7 +110,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               required
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="w-full px-6 py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-cyan-500 focus:outline-none font-black text-slate-800 transition-all"
+              className="w-full px-6 py-4 rounded-2xl bg-slate-900/50 border-2 border-slate-700/50 focus:border-cyan-500 focus:outline-none font-black text-white placeholder-slate-600 transition-all focus:bg-slate-900/80"
               placeholder="••••••"
               disabled={loading}
             />
@@ -117,7 +119,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-5 bg-slate-900 hover:bg-emerald-600 text-white font-black rounded-2xl shadow-xl shadow-slate-900/30 uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black rounded-2xl shadow-xl shadow-cyan-600/20 uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 border border-white/10"
           >
             {loading ? (
               <>
@@ -131,17 +133,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100"></div>
+              <div className="w-full border-t border-slate-700/50"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-400 font-bold text-[10px] uppercase tracking-widest">Ou continue com</span>
+              <span className="px-2 bg-slate-900 text-slate-500 font-bold text-[10px] uppercase tracking-widest rounded-full">Ou continue com</span>
             </div>
           </div>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full py-4 bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-600 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:border-slate-200"
+            className="w-full py-4 bg-white hover:bg-slate-100 text-slate-700 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-95"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -167,7 +169,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </form>
 
         {/* Footer */}
-        <p className="text-center mt-8 text-slate-600 text-[10px] font-bold uppercase tracking-widest">
+        <p className="text-center mt-8 text-slate-500 text-[10px] font-bold uppercase tracking-widest">
           © 2026 INOVAR • Todos os direitos reservados
         </p>
       </div>

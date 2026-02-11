@@ -20,13 +20,14 @@ type Config struct {
 	SMTPPassword      string
 	SMTPFrom          string
 
-	MaxUploadSize   int64
-	LockTimeoutSecs int
-	ConfirmDays     int
-	Environment     string // development, staging, production
-	DefaultPassword string
-	SupabaseURL     string
-	SupabaseKey     string
+	MaxUploadSize      int64
+	LockTimeoutSecs    int
+	ConfirmDays        int
+	Environment        string // development, staging, production
+	DefaultPassword    string
+	SupabaseURL        string
+	SupabaseKey        string
+	SupabaseServiceKey string
 }
 
 func Load() *Config {
@@ -39,19 +40,20 @@ func Load() *Config {
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
-		CorsOrigins:       getEnv("CORS_ORIGINS", "*"),
+		CorsOrigins:       getEnv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,https://inovar-gestao.vercel.app,https://inovar-gestao-893228897791.southamerica-east1.run.app"),
 		SMTPHost:          getEnv("SMTP_HOST", ""),
 		SMTPPort:          getEnvInt("SMTP_PORT", 587),
 		SMTPUser:          getEnv("SMTP_USER", ""),
 		SMTPPassword:      getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:          getEnv("SMTP_FROM", "noreply@inovar.com"),
 
-		MaxUploadSize:   int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
-		LockTimeoutSecs: getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
-		ConfirmDays:     getEnvInt("CONFIRM_DAYS", 7),
-		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
-		SupabaseURL:     getEnv("SUPABASE_URL", ""),
-		SupabaseKey:     getEnv("SUPABASE_KEY", ""),
+		MaxUploadSize:      int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
+		LockTimeoutSecs:    getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
+		ConfirmDays:        getEnvInt("CONFIRM_DAYS", 7),
+		DefaultPassword:    getEnv("DEFAULT_PASSWORD", "inovar123"),
+		SupabaseURL:        getEnv("SUPABASE_URL", ""),
+		SupabaseKey:        getEnv("SUPABASE_KEY", ""),
+		SupabaseServiceKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
 	}
 }
 

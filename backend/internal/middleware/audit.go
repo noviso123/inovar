@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,17 +24,14 @@ func AuditMiddleware(db *gorm.DB) fiber.Handler {
 
 		// Log after processing
 		userID := GetUserID(c)
+		userName := GetUserName(c)
 		userRole := GetUserRole(c)
 
 		if userID != "" {
-			// Get user name
-			var user models.User
-			db.First(&user, "id = ?", userID)
-
 			log := models.AuditLog{
 				ID:        uuid.New().String(),
 				UserID:    userID,
-				UserName:  user.Name,
+				UserName:  userName,
 				UserRole:  userRole,
 				Entity:    extractEntity(c.Path()),
 				EntityID:  c.Params("id"),
@@ -58,22 +56,9 @@ func extractEntity(path string) string {
 	// Extract entity name from path like /api/users -> users
 	parts := []string{"users", "clients", "equipments", "requests", "checklists", "attachments", "agenda", "settings"}
 	for _, part := range parts {
-		if contains(path, part) {
+		if strings.Contains(path, part) {
 			return part
 		}
 	}
 	return "unknown"
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
-}
-
-func containsHelper(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }

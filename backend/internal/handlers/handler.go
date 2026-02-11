@@ -21,6 +21,7 @@ type Handler struct {
 	EmailService    *services.EmailService
 	WhatsAppService *services.WhatsAppService
 	StorageService  *services.StorageService
+	SupabaseService *services.SupabaseService
 }
 
 // New creates a new Handler instance
@@ -31,6 +32,7 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 	emailService := services.NewEmailService(cfg)
 	whatsappService := services.NewWhatsAppService(cfg)
 	storageService := services.NewStorageService(cfg)
+	supabaseService, _ := services.NewSupabaseService(cfg)
 
 	return &Handler{
 		DB:              db,
@@ -39,6 +41,7 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 		EmailService:    emailService,
 		WhatsAppService: whatsappService,
 		StorageService:  storageService,
+		SupabaseService: supabaseService,
 	}
 }
 
