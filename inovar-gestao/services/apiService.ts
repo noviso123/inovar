@@ -1,7 +1,7 @@
 // API Service for INOVAR Backend
 // Replaces localStorage with real API calls
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://inovar-gestao-893228897791.southamerica-east1.run.app/api';
 
 import { ServiceRequest, User, UserRole } from '../types';
 
