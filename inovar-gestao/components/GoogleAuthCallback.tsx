@@ -26,6 +26,9 @@ export const GoogleAuthCallback: React.FC = () => {
 
         const token = data.session.access_token;
         apiService.setAccessToken(token);
+        if (data.session.refresh_token) {
+          apiService.setRefreshToken(data.session.refresh_token);
+        }
 
         // SYNC GOOGLE TOKENS (For Calendar Sync)
         const providerToken = (data.session as any).provider_token;

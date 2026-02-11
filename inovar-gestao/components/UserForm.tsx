@@ -75,7 +75,7 @@ export const UserForm: React.FC<UserFormProps> = ({ currentUser }) => {
     const handleResetPassword = async () => {
         if (!id || !formData.name) return;
 
-        if (window.confirm(`Resetar senha de "${formData.name}" para o padrão do sistema?`)) {
+        if (window.confirm(`Resetar senha de "${formData.name}" para o padrão (123456)?`)) {
             try {
                 await apiService.adminResetPassword(id);
                 alert(`Senha de ${formData.name} resetada com sucesso!`);
@@ -172,7 +172,7 @@ export const UserForm: React.FC<UserFormProps> = ({ currentUser }) => {
                                 onClick={handleResetPassword}
                                 className="w-full py-4 bg-slate-50 text-slate-500 font-bold rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all uppercase text-xs tracking-widest"
                             >
-                                Resetar Senha para Padrão
+                                Resetar Senha para Padrão (123456)
                             </button>
                         </div>
                     )}

@@ -69,6 +69,11 @@ class ApiService {
     localStorage.setItem('accessToken', token);
   }
 
+  setRefreshToken(token: string) {
+    this.refreshToken = token;
+    localStorage.setItem('refreshToken', token);
+  }
+
   private clearTokens() {
     this.accessToken = null;
     this.refreshToken = null;
@@ -91,10 +96,14 @@ class ApiService {
       });
 
       if (error) {
+        let msg = error.message;
+        if (msg === 'Invalid login credentials') msg = 'E-mail ou senha incorretos';
+        if (msg === 'Email not confirmed') msg = 'E-mail não confirmado. Verifique sua caixa de entrada';
+
         return {
           success: false,
           data: null,
-          message: error.message || 'Credenciais inválidas',
+          message: msg || 'Credenciais inválidas',
         } as unknown as AuthResponse;
       }
 
@@ -177,6 +186,13 @@ class ApiService {
     await this.request('/me/password', {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  async syncGoogleTokens(data: { accessToken: string; refreshToken?: string; expiresAt?: number }): Promise<void> {
+    await this.request('/me/google-tokens', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 
@@ -625,7 +641,7 @@ class ApiService {
     });
     return {
       success: !error,
-      message: error ? error.message : 'Se o email existir, enviaremos instruções de recuperação'
+      message: error ? (error.message === 'User not found' ? 'Usuário não encontrado' : error.message) : 'Se o email existir, enviaremos instruções de recuperação'
     };
   }
 
@@ -639,7 +655,7 @@ class ApiService {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     return {
       success: !error,
-      message: error ? error.message : 'Senha alterada com sucesso'
+      message: error ? (error.message === 'New password should be different from the old password' ? 'A nova senha deve ser diferente da antiga' : error.message) : 'Senha alterada com sucesso'
     };
   }
 
