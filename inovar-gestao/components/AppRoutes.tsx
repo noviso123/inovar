@@ -167,7 +167,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Dashboard
           requests={filteredRequests}
           onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
-          currentUser={currentUser!}
+          currentUser={currentUser || {} as User}
           onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
         />
       } />
@@ -185,7 +185,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
     <React.Fragment key="chamados-novo">
       <Route path="chamados/novo" element={
         <RequestFlow
-          currentUser={currentUser!}
+          currentUser={currentUser || {} as User}
           onCancel={() => navigate(`/${prefix}/chamados`)}
           onComplete={handleCreateRequest}
         />
@@ -194,8 +194,8 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
     <React.Fragment key="chamados-id">
       <Route path="chamados/:id" element={
         <RequestDetail
-          request={selectedRequest!}
-          currentUser={currentUser!}
+          request={selectedRequest || {} as ServiceRequest}
+          currentUser={currentUser || {} as User}
           onUpdateStatus={(st) => selectedRequest && handleUpdateStatus(selectedRequest.id, st)}
           onClose={() => { setSelectedRequest(null); navigate(`/${prefix}/chamados`); }}
         />
@@ -329,7 +329,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       {/* ============================================ */}
       <Route path="/admin" element={
         <RoleRouteGuard user={currentUser} expectedRole={UserRole.ADMIN}>
-          <Layout user={currentUser!} onLogout={onLogout} notifications={notifications} rolePrefix="admin" />
+          <Layout user={currentUser || {} as User} notifications={notifications} rolePrefix="admin" onLogout={onLogout} />
         </RoleRouteGuard>
       }>
         {renderCommonRoutes('admin')}

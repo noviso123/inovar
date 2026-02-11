@@ -19,8 +19,13 @@ const App: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notifications, setNotifications] = useState<Array<{ id: string, title: string, message: string, severity: 'info' | 'warning' | 'success' }>>(() => {
-    const saved = localStorage.getItem('app_notifications');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('app_notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to parse notifications from localStorage:', e);
+      return [];
+    }
   });
 
   useEffect(() => {
