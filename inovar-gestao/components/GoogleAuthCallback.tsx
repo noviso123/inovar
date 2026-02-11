@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
+import { supabase } from '../services/supabase';
 
 /**
  * GoogleAuthCallback - Receives the JWT token from the backend Google OAuth redirect.
@@ -13,36 +14,40 @@ export const GoogleAuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-
-    if (!token) {
-      setError('Token não encontrado na URL. Tente fazer login novamente.');
-      return;
-    }
-
-    // Store the token in the ApiService singleton
-    apiService.setAccessToken(token);
-
-    // Fetch the current user profile using the new token
-    const loadUser = async () => {
+    const handleCallback = async () => {
       try {
-        const user = await apiService.getCurrentUser();
-        if (user) {
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          // Reload the page to let App.tsx pick up the new auth state
-          window.location.href = '/';
-        } else {
-          setError('Falha ao carregar perfil do usuário.');
+        const { data, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+        if (!data.session) {
+          setError('Sessão não encontrada. Tente fazer login novamente.');
+          return;
         }
-      } catch (err) {
-        console.error('Google Auth Callback Error:', err);
-        setError('Erro ao processar login com Google. Tente novamente.');
-        localStorage.removeItem('accessToken');
+
+        const token = data.session.access_token;
+        apiService.setAccessToken(token);
+
+        try {
+          const profile = await apiService.getCurrentUser();
+          if (profile) {
+            localStorage.setItem('currentUser', JSON.stringify(profile));
+            window.location.href = '/';
+          } else {
+            setError('Falha ao carregar perfil do usuário no sistema.');
+          }
+        } catch (err: any) {
+          console.error('Profile sync error:', err);
+          setError('Erro ao sincronizar perfil: ' + (err.message || 'Verifique se sua conta está ativa.'));
+          localStorage.removeItem('accessToken');
+        }
+      } catch (err: any) {
+        console.error('Supabase Callback Error:', err);
+        setError(err.message || 'Erro ao processar login com Google.');
       }
     };
 
-    loadUser();
-  }, [searchParams, navigate]);
+    handleCallback();
+  }, [navigate]);
 
   if (error) {
     return (

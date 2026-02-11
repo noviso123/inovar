@@ -6,19 +6,23 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
-// Claims represents JWT claims
+// Claims represents JWT claims (compatible with custom and Supabase)
 type Claims struct {
 	UserID    string `json:"userId"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	CompanyID string `json:"companyId,omitempty"`
+	// Supabase specific fields
+	Subject string `json:"sub,omitempty"`
+	Aud     string `json:"aud,omitempty"`
 	jwt.RegisteredClaims
 }
 
-// AuthRequired validates JWT tokens
-func AuthRequired(jwtSecret string) fiber.Handler {
+// AuthRequired validates JWT tokens (Supports Supabase and Custom)
+func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
@@ -29,13 +33,6 @@ func AuthRequired(jwtSecret string) fiber.Handler {
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Formato de token inválido",
-			})
-		}
-
 		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte(jwtSecret), nil
 		})
@@ -47,27 +44,44 @@ func AuthRequired(jwtSecret string) fiber.Handler {
 			})
 		}
 
-		claims, ok := token.Claims.(*Claims)
-		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Claims inválidos",
-			})
+		claims, _ := token.Claims.(*Claims)
+
+		// Sync with Local Database
+		// We use Email as the primary anchor between Supabase and our DB
+		var user struct {
+			ID        string
+			Email     string
+			Role      string
+			CompanyID *string
 		}
 
-		// Check expiration
-		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "token_expired",
-				"message": "Token expirado",
+		// Use the email from simple claims or Supabase claims
+		email := claims.Email
+		if email == "" {
+			// Fallback or secondary check
+		}
+
+		err = db.Table("users").
+			Select("id, email, role, company_id").
+			Where("email = ? AND active = ?", email, true).
+			First(&user).Error
+
+		if err != nil {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error":   "user_not_found",
+				"message": "Usuário não encontrado ou inativo no sistema",
 			})
 		}
 
 		// Store user info in context
-		c.Locals("userId", claims.UserID)
-		c.Locals("userEmail", claims.Email)
-		c.Locals("userRole", claims.Role)
-		c.Locals("companyId", claims.CompanyID)
+		c.Locals("userId", user.ID)
+		c.Locals("userEmail", user.Email)
+		c.Locals("userRole", user.Role)
+		companyID := ""
+		if user.CompanyID != nil {
+			companyID = *user.CompanyID
+		}
+		c.Locals("companyId", companyID)
 
 		return c.Next()
 	}

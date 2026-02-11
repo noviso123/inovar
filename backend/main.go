@@ -97,7 +97,7 @@ func main() {
 	auth.Get("/google/callback", h.GoogleCallback)
 
 	// Protected routes
-	protected := api.Group("", middleware.AuthRequired(cfg.JWTSecret))
+	protected := api.Group("", middleware.AuthRequired(db, cfg.JWTSecret))
 
 	// User profile
 	protected.Get("/me", h.GetCurrentUser)

@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from '../services/supabase';
 
 interface LoginProps {
   onLogin: (email: string, password: string) => Promise<any>;
@@ -11,6 +12,25 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          scopes: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Erro ao iniciar login com Google');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,8 +138,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          <a
-            href={`${(import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/api$/, '')}/api/auth/google/login`}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
             className="w-full py-4 bg-white border-2 border-slate-100 hover:bg-slate-50 text-slate-600 font-bold rounded-2xl flex items-center justify-center gap-3 transition-all hover:border-slate-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -141,7 +162,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               />
             </svg>
             Entrar com Google
-          </a>
+          </button>
 
         </form>
 
