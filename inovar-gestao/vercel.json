@@ -1,0 +1,14 @@
+{
+    "buildCommand": "npm install && npm run build",
+    "outputDirectory": "dist",
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "https://inovar-gestao-893228897791.southamerica-east1.run.app/api/$1"
+        },
+        {
+            "source": "/((?!api/|.*\\.).*)",
+            "destination": "/index.html"
+        }
+    ]
+}
