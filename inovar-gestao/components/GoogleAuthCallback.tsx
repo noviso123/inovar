@@ -27,6 +27,26 @@ export const GoogleAuthCallback: React.FC = () => {
         const token = data.session.access_token;
         apiService.setAccessToken(token);
 
+        // SYNC GOOGLE TOKENS (For Calendar Sync)
+        const providerToken = (data.session as any).provider_token;
+        const providerRefreshToken = (data.session as any).provider_refresh_token;
+        const expiresAt = data.session.expires_at;
+
+        if (providerToken) {
+          console.log('🔄 Syncing Google tokens with backend...');
+          try {
+            await apiService.syncGoogleTokens({
+              accessToken: providerToken,
+              refreshToken: providerRefreshToken,
+              expiresAt: expiresAt
+            });
+            console.log('✅ Google tokens synced successfully');
+          } catch (syncErr) {
+            console.error('⚠️ Failed to sync Google tokens:', syncErr);
+            // We don't block the login if sync fails, but it's noted
+          }
+        }
+
         try {
           const profile = await apiService.getCurrentUser();
           if (profile) {

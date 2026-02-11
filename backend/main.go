@@ -103,6 +103,7 @@ func main() {
 	protected.Get("/me", h.GetCurrentUser)
 	protected.Put("/me", h.UpdateCurrentUser)
 	protected.Put("/me/password", h.ChangePassword)
+	protected.Post("/me/google-tokens", h.SyncGoogleTokens)
 	protected.Post("/logout", h.Logout) // Changed from /auth/logout to prevent middleware collision with public /auth
 	protected.Post("/upload", h.UploadFile)
 

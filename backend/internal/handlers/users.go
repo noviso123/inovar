@@ -369,3 +369,44 @@ func (h *Handler) UpdateCompany(c *fiber.Ctx) error {
 
 	return Success(c, company)
 }
+
+// SyncGoogleTokensRequest represents the payload for syncing Google tokens
+type SyncGoogleTokensRequest struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresAt    int64  `json:"expiresAt"` // Unix timestamp
+}
+
+// SyncGoogleTokens updates the authenticated user's Google OAuth tokens
+func (h *Handler) SyncGoogleTokens(c *fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+
+	var req SyncGoogleTokensRequest
+	if err := c.BodyParser(&req); err != nil {
+		return BadRequest(c, "Dados inválidos")
+	}
+
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
+		return NotFound(c, "Usuário não encontrado")
+	}
+
+	// Update tokens
+	user.GoogleAccessToken = req.AccessToken
+	if req.RefreshToken != "" {
+		user.GoogleRefreshToken = req.RefreshToken
+	}
+	if req.ExpiresAt > 0 {
+		user.GoogleTokenExpiry = time.Unix(req.ExpiresAt, 0)
+	}
+	user.UpdatedAt = time.Now()
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		return ServerError(c, err)
+	}
+
+	// Log Audit
+	h.LogAudit(c, "User", user.ID, "SYNC_TOKENS", fmt.Sprintf("Synced Google tokens for user %s", user.Email), nil, nil)
+
+	return Success(c, fiber.Map{"message": "Tokens sincronizados com sucesso"})
+}
