@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/apiService';
 import { supabase } from '../services/supabase';
+import { getRolePrefix } from './AppRoutes';
 
 /**
  * GoogleAuthCallback - Receives the JWT token from the backend Google OAuth redirect.
@@ -53,15 +54,16 @@ export const GoogleAuthCallback: React.FC = () => {
         try {
           const profile = await apiService.getCurrentUser();
           if (profile) {
-            localStorage.setItem('currentUser', JSON.stringify(profile));
-            window.location.href = '/';
+            // No need to set localStorage here, apiService.getCurrentUser does it!
+            navigate(`/${getRolePrefix(profile.role)}`, { replace: true });
           } else {
             setError('Falha ao carregar perfil do usuário no sistema.');
           }
         } catch (err: any) {
           console.error('Profile sync error:', err);
           setError('Erro ao sincronizar perfil: ' + (err.message || 'Verifique se sua conta está ativa.'));
-          localStorage.removeItem('accessToken');
+          // Use apiService to clear session
+          apiService.logout().catch(() => {});
         }
       } catch (err: any) {
         console.error('Supabase Callback Error:', err);

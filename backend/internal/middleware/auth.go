@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/base64"
 	"strings"
 	"time"
 
@@ -34,6 +35,10 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			// Supabase secrets are often base64 encoded
+			if decoded, err := base64.StdEncoding.DecodeString(jwtSecret); err == nil && len(decoded) > 0 {
+				return decoded, nil
+			}
 			return []byte(jwtSecret), nil
 		})
 

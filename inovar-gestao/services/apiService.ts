@@ -18,6 +18,7 @@ interface AuthResponse {
 class ApiService {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  public onUnauthorized: (() => void) | null = null;
 
   constructor() {
     this.accessToken = localStorage.getItem('accessToken');
@@ -26,7 +27,7 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit & { skipRedirect?: boolean } = {}
   ): Promise<T> {
     const { supabase } = await import('./supabase');
     const { data: sessionData } = await supabase.auth.getSession();
@@ -49,10 +50,14 @@ class ApiService {
 
     // Handle session expiration
     if (response.status === 401 || response.status === 426) {
-      // Clear tokens and redirect to login if session is truly dead
-      this.clearTokens();
-      window.location.href = '/login';
-      throw new Error('Sessão expirada. Por favor, faça login novamente.');
+      if (!options.skipRedirect) {
+        console.error('🔓 Unauthorized access detected. Clearing tokens...');
+        this.clearTokens();
+        if (this.onUnauthorized) {
+          this.onUnauthorized();
+        }
+      }
+      throw new Error('Sessão expirada ou acesso negado. Por favor, faça login novamente.');
     }
 
     const data = await response.json();
@@ -125,18 +130,15 @@ class ApiService {
               expiresIn: data.session.expires_in,
             }
           };
-        } catch (err) {
-          // If /me fails, we still have the session but might be missing profile
-          localStorage.setItem('currentUser', JSON.stringify(data.user));
-           return {
-            success: true,
-            data: {
-              user: data.user,
-              accessToken: data.session.access_token,
-              refreshToken: data.session.refresh_token,
-              expiresIn: data.session.expires_in,
-            }
-          };
+        } catch (err: any) {
+          // If profile sync fails, we cannot proceed as we won't have the role/companyId
+          this.clearTokens();
+          console.error('❌ Profile sync failed:', err);
+          return {
+            success: false,
+            data: null,
+            message: err.message || 'Sua conta Supabase foi validada, mas seu perfil não foi encontrado no sistema. Entre em contato com o suporte.'
+          } as unknown as AuthResponse;
         }
       }
 
@@ -159,7 +161,7 @@ class ApiService {
   }
 
   async getCurrentUser(): Promise<any> {
-    const response = await this.request<{ data: any }>('/me');
+    const response = await this.request<{ data: any }>('/me', { skipRedirect: true });
     // Sync to localStorage to ensure fresh state on reload (crucial for MustChangePassword)
     if (response.data) {
       localStorage.setItem('currentUser', JSON.stringify(response.data));

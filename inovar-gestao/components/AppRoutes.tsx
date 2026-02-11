@@ -41,13 +41,14 @@ import { GoogleAuthCallback } from './GoogleAuthCallback';
 // ============================================
 // ROLE PREFIX HELPER
 // ============================================
-export const getRolePrefix = (role: UserRole): string => {
+export const getRolePrefix = (role?: UserRole): string => {
+  if (!role) return 'login';
   switch (role) {
     case UserRole.ADMIN: return 'admin';
     case UserRole.PRESTADOR: return 'prestador';
     case UserRole.TECNICO: return 'tecnico';
     case UserRole.CLIENTE: return 'cliente';
-    default: return 'cliente';
+    default: return 'login';
   }
 };
 
@@ -56,11 +57,14 @@ export const getRolePrefix = (role: UserRole): string => {
 // ============================================
 const RoleRouteGuard: React.FC<{ children: React.ReactNode; user: User | null; expectedRole: UserRole }> =
   ({ children, user, expectedRole }) => {
-    if (!user) {
+    if (!user || !user.role) {
       return <Navigate to="/login" replace />;
     }
     if (user.role !== expectedRole) {
-      return <Navigate to={`/${getRolePrefix(user.role)}`} replace />;
+      const prefix = getRolePrefix(user.role);
+      // If the role is invalid/unknown, go to login to avoid loops
+      if (prefix === 'login') return <Navigate to="/login" replace />;
+      return <Navigate to={`/${prefix}`} replace />;
     }
     return <>{children}</>;
   };
@@ -271,7 +275,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
       {/* Default redirect */}
       <Route path="/" element={
-        currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Navigate to="/login" replace />
+        currentUser?.role ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Navigate to="/login" replace />
       } />
 
       {/* ============================================ */}

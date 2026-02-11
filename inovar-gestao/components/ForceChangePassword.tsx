@@ -49,10 +49,8 @@ export const ForceChangePassword: React.FC<ForceChangePasswordProps> = ({ onLogo
             }
 
             // Navigate to dashboard
-             // The parent App component should handle the redirect based on the updated user state,
-             // but we can force a reload or navigate to root to trigger the check.
-             // Best practice: Reload the window to ensure clean state or navigate to root.
-             window.location.href = '/';
+             // Best practice: Navigate to root to trigger the auth check.
+             navigate('/', { replace: true });
 
         } catch (err: any) {
             setError(err.message || 'Erro ao alterar senha');

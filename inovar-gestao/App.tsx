@@ -34,6 +34,12 @@ const App: React.FC = () => {
 
   // Check auth on mount
   useEffect(() => {
+    // Sync API service state clears with App user state
+    apiService.onUnauthorized = () => {
+      setCurrentUser(null);
+      navigate('/login');
+    };
+
     const storedUser = apiService.getStoredUser();
     if (storedUser && apiService.isAuthenticated()) {
       setCurrentUser(storedUser);
@@ -43,7 +49,11 @@ const App: React.FC = () => {
       }
     }
     setIsLoading(false);
-  }, []);
+
+    return () => {
+      apiService.onUnauthorized = null;
+    };
+  }, [navigate]);
 
   // Load requests when authenticated
   const loadRequests = useCallback(async () => {
