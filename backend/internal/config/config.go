@@ -40,7 +40,7 @@ func Load() *Config {
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
-		CorsOrigins:       getEnv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,https://inovar-gestao.vercel.app,https://inovar-gestao-893228897791.southamerica-east1.run.app"),
+		CorsOrigins:       getEnv("CORS_ORIGINS", "*"),
 		SMTPHost:          getEnv("SMTP_HOST", ""),
 		SMTPPort:          getEnvInt("SMTP_PORT", 587),
 		SMTPUser:          getEnv("SMTP_USER", ""),
