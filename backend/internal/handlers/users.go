@@ -72,15 +72,8 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	// Hash password (keep for local legacy/reporting if needed, but not for auth)
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 
-	// SYNC TO SUPABASE FIRST
-	var supabaseID *string
-	if h.SupabaseService != nil {
-		sID, err := h.SupabaseService.AdminCreateUser(req.Email, req.Password)
-		if err != nil {
-			return BadRequest(c, fmt.Sprintf("Erro ao criar usuário no Supabase: %v", err))
-		}
-		supabaseID = &sID
-	}
+	// SYNC TO SUPABASE REMOVED
+	// var supabaseID *string = nil
 
 	// Set company ID for non-admin creators
 	companyID := req.CompanyID
@@ -99,15 +92,11 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		MustChangePassword: true,
 		CompanyID:          &companyID,
 		AvatarURL:          req.AvatarURL,
-		SupabaseID:         supabaseID,
-		CreatedAt:          time.Now(),
+		// SupabaseID:         supabaseID,
+		CreatedAt: time.Now(),
 	}
 
 	if err := h.DB.Create(&user).Error; err != nil {
-		// Cleanup Supabase if local DB fails
-		if supabaseID != nil && h.SupabaseService != nil {
-			h.SupabaseService.AdminDeleteUser(*supabaseID)
-		}
 		return ServerError(c, err)
 	}
 
@@ -172,10 +161,7 @@ func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 
 	h.DB.Save(&user)
 
-	// SYNC TO SUPABASE
-	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
-		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, user.Email, nil, nil)
-	}
+	// SYNC TO SUPABASE REMOVED
 
 	h.Hub.Broadcast("user:updated", user)
 
@@ -198,10 +184,7 @@ func (h *Handler) BlockUser(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
-	// SYNC TO SUPABASE
-	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
-		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", nil, &user.Active)
-	}
+	// SYNC TO SUPABASE REMOVED
 
 	action := "user:blocked"
 	if user.Active {
@@ -230,10 +213,7 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
-	// SYNC TO SUPABASE
-	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
-		h.SupabaseService.AdminUpdateUser(*user.SupabaseID, "", &tempPassword, nil)
-	}
+	// SYNC TO SUPABASE REMOVED
 
 	return Success(c, fiber.Map{
 		"message":      "Senha resetada com sucesso",
@@ -297,9 +277,7 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	// 7. SYNC TO SUPABASE
-	if user.SupabaseID != nil && *user.SupabaseID != "" && h.SupabaseService != nil {
-		h.SupabaseService.AdminDeleteUser(*user.SupabaseID)
-	}
+	// SYNC TO SUPABASE REMOVED
 
 	// Broadcast event
 	h.Hub.Broadcast("user:deleted", fiber.Map{"id": id})
@@ -402,43 +380,7 @@ func (h *Handler) UpdateCompany(c *fiber.Ctx) error {
 	return Success(c, company)
 }
 
-// SyncGoogleTokensRequest represents the payload for syncing Google tokens
-type SyncGoogleTokensRequest struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
-	ExpiresAt    int64  `json:"expiresAt"` // Unix timestamp
-}
-
-// SyncGoogleTokens updates the authenticated user's Google OAuth tokens
+// SyncGoogleTokens Removed
 func (h *Handler) SyncGoogleTokens(c *fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
-
-	var req SyncGoogleTokensRequest
-	if err := c.BodyParser(&req); err != nil {
-		return BadRequest(c, "Dados inválidos")
-	}
-
-	var user models.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
-		return NotFound(c, "Usuário não encontrado")
-	}
-
-	// Update tokens
-	user.GoogleAccessToken = req.AccessToken
-	if req.RefreshToken != "" {
-		user.GoogleRefreshToken = req.RefreshToken
-	}
-	if req.ExpiresAt > 0 {
-		user.GoogleTokenExpiry = time.Unix(req.ExpiresAt, 0)
-	}
-	user.UpdatedAt = time.Now()
-
-	if err := h.DB.Save(&user).Error; err != nil {
-		return ServerError(c, err)
-	}
-
-	// Log Audit
-	h.LogAudit(c, "User", user.ID, "SYNC_TOKENS", fmt.Sprintf("Synced Google tokens for user %s", user.Email), nil, nil)
-
-	return Success(c, fiber.Map{"message": "Tokens sincronizados com sucesso"})
+	return NotFound(c, "Google Auth Disabled")
 }

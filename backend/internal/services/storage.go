@@ -1,11 +1,10 @@
 package services
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -20,53 +19,35 @@ func NewStorageService(cfg *config.Config) *StorageService {
 	return &StorageService{Config: cfg}
 }
 
-// UploadFile uploads a file to Supabase Storage
+// UploadFile uploads a file to Local Storage
 func (s *StorageService) UploadFile(file *multipart.FileHeader, folder string) (string, error) {
-	if s.Config.SupabaseURL == "" {
-		return "", fmt.Errorf("supabase not configured")
+	// Create destination path
+	destPath := filepath.Join("storage", folder)
+	if err := os.MkdirAll(destPath, 0755); err != nil {
+		return "", err
 	}
 
+	// Generate unique filename
+	ext := filepath.Ext(file.Filename)
+	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	fullPath := filepath.Join(destPath, filename)
+
+	// Save file
 	src, err := file.Open()
 	if err != nil {
 		return "", err
 	}
 	defer src.Close()
 
-	// Read file content
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, src); err != nil {
+	if out, err := os.Create(fullPath); err == nil {
+		defer out.Close()
+		if _, err := io.Copy(out, src); err != nil {
+			return "", err
+		}
+	} else {
 		return "", err
 	}
 
-	// Generate unique filename
-	ext := filepath.Ext(file.Filename)
-	filename := fmt.Sprintf("%s/%d%s", folder, time.Now().UnixNano(), ext)
-
-	// Supabase Storage API URL
-	url := fmt.Sprintf("%s/storage/v1/object/attachments/%s", s.Config.SupabaseURL, filename)
-
-	req, err := http.NewRequest("POST", url, buf)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+s.Config.SupabaseKey)
-	req.Header.Set("Content-Type", file.Header.Get("Content-Type"))
-	// x-upsert header might be useful, but unique names avoid conflict
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("supabase upload failed (%d): %s", resp.StatusCode, string(body))
-	}
-
-	// Return public URL (assuming public bucket)
-	publicURL := fmt.Sprintf("%s/storage/v1/object/public/attachments/%s", s.Config.SupabaseURL, filename)
-	return publicURL, nil
+	// Return relative URL path
+	return fmt.Sprintf("/storage/%s/%s", folder, filename), nil
 }

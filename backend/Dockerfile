@@ -15,7 +15,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 # Final stage
 FROM alpine:latest
 
-# Add certificates for HTTPS calls (Supabase)
+# Add certificates for HTTPS calls
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/

@@ -30,8 +30,9 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 
 	subfolder := "geral"
 
-	// Upload to Supabase Storage (no local fallback)
-	url, err := h.StorageService.UploadFile(file, category+"/"+subfolder)
+	// Upload to Local Storage
+	urlPath, err := h.StorageService.UploadFile(file, category+"/"+subfolder)
+	url := c.BaseURL() + urlPath
 	if err != nil {
 		return ServerError(c, err)
 	}

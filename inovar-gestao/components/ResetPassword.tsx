@@ -14,17 +14,11 @@ export const ResetPassword: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Supabase recovery flow automatically sets a session via URL hash.
-        // We check if we have a session or if the URL contains recovery info.
-        const checkSession = async () => {
-            const { supabase } = await import('../services/supabase');
-            const { data } = await supabase.auth.getSession();
-            if (!data.session && !window.location.hash.includes('type=recovery')) {
-                setError('Link de recuperação inválido ou expirado. Por favor, solicite um novo.');
-            }
-        };
-        checkSession();
-    }, []);
+        // If no token is present in the URL, the link is invalid or expired.
+        if (!token) {
+            setError('Link de recuperação inválido ou expirado. Por favor, solicite um novo.');
+        }
+    }, [token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

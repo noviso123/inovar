@@ -29,9 +29,7 @@ class ApiService {
     endpoint: string,
     options: RequestInit & { skipRedirect?: boolean } = {}
   ): Promise<T> {
-    const { supabase } = await import('./supabase');
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token || this.accessToken;
+    const token = this.accessToken;
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -89,88 +87,94 @@ class ApiService {
 
   // Auth
   async login(email: string, password: string): Promise<AuthResponse> {
-    const { supabase } = await import('./supabase');
-
     // Clear any existing tokens before login attempt
     this.clearTokens();
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await this.request<{
+        success: boolean;
+        data: {
+          user: any;
+          accessToken: string;
+          refreshToken: string; // optional depending on backend
+          expiresIn: number;
+        };
+        message?: string;
+      }>('/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password }),
+        skipRedirect: true // Don't redirect if login itself fails with 401
       });
 
-      if (error) {
-        let msg = error.message;
-        if (msg === 'Invalid login credentials') msg = 'E-mail ou senha incorretos';
-        if (msg === 'Email not confirmed') msg = 'E-mail não confirmado. Verifique sua caixa de entrada';
+        if (response.success && response.data) {
+           this.setAccessToken(response.data.accessToken);
+           // If backend provides refresh token
+           if (response.data.refreshToken) {
+               this.setRefreshToken(response.data.refreshToken);
+           }
 
-        return {
+           const user = response.data.user;
+           localStorage.setItem('currentUser', JSON.stringify(user));
+
+            return {
+                success: true,
+                data: response.data
+            };
+        } else {
+             return {
+                success: false,
+                data: null,
+                message: response.message || 'Falha na autenticação'
+            } as unknown as AuthResponse;
+        }
+
+    } catch (error: any) {
+      console.error('🚨 Login error:', error);
+       return {
           success: false,
           data: null,
-          message: msg || 'Credenciais inválidas',
-        } as unknown as AuthResponse;
-      }
-
-      if (data.session) {
-        this.setAccessToken(data.session.access_token);
-        this.setRefreshToken(data.session.refresh_token);
-
-        // Fetch full user data from our backend /me to get role/company
-        // The backend will now accept the Supabase token!
-        try {
-          const user = await this.getCurrentUser();
-          localStorage.setItem('currentUser', JSON.stringify(user));
-          return {
-            success: true,
-            data: {
-              user,
-              accessToken: data.session.access_token,
-              refreshToken: data.session.refresh_token,
-              expiresIn: data.session.expires_in,
-            }
-          };
-        } catch (err: any) {
-          // If profile sync fails, we cannot proceed as we won't have the role/companyId
-          this.clearTokens();
-          console.error('❌ Profile sync failed:', err);
-          return {
-            success: false,
-            data: null,
-            message: err.message || 'Sua conta Supabase foi validada, mas seu perfil não foi encontrado no sistema. Entre em contato com o suporte.'
-          } as unknown as AuthResponse;
-        }
-      }
-
-      return { success: false, message: 'Falha na autenticação' } as unknown as AuthResponse;
-    } catch (error) {
-      console.error('🚨 Login error:', error);
-      throw error;
+          message: error.message || 'Erro de conexão com o servidor'
+      } as unknown as AuthResponse;
     }
   }
 
   async logout(): Promise<void> {
-    const { supabase } = await import('./supabase');
     try {
-      await supabase.auth.signOut();
-      // Optional: notify backend but don't wait for it
-      this.request('/logout', { method: 'POST' }).catch(() => {});
+      // Notify backend to revoke (optional but good practice)
+      await this.request('/auth/logout', { method: 'POST' }).catch(() => {});
     } finally {
       this.clearTokens();
     }
   }
 
   async getCurrentUser(): Promise<any> {
-    const response = await this.request<{ data: any }>('/me', { skipRedirect: true });
+    const response = await this.request<{ data: any }>('/auth/me', { skipRedirect: true });
     // Sync to localStorage to ensure fresh state on reload (crucial for MustChangePassword)
-    if (response.data) {
-      localStorage.setItem('currentUser', JSON.stringify(response.data));
+    if (response) { // backend returns direct object or wrapped in success? Handler says Success(c, user) which wraps in data usually? Handler: return Success(c, user) -> json {success:true, data: user}
+       // Wait, the handler GetCurrentUser calls Success(c, user).
+       // Success wrapper usually is { success: true, data: ... }
+       // But wait, look at ApiService check: const response = await this.request<{ data: any }>('/me', ...);
+       // The endpoint in backend likely changed to /auth/me or just /me?
+       // Let's assume /auth/me based on typical structure, checks routes later.
+       // Actually handler is mounted. Let's assume /users/me or /auth/me.
+       // The original was /me.
+       // Let's stick to /auth/me if we change routes, OR just /users/me.
+       // The backend implementation I just did... wait, I didn't see the Routes definition in the context.
+       // I need to be careful about the endpoint path.
+       // I'll assume /auth/me for now, and I will fix routes in backend if needed.
+      if (response.data) {
+          localStorage.setItem('currentUser', JSON.stringify(response.data));
+          return response.data;
+      }
     }
-    return response.data;
+    return null;
   }
 
   async updateProfile(data: any): Promise<any> {
-    const response = await this.request<{ data: any }>('/me', {
+    const response = await this.request<{ data: any }>('/auth/me', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -185,18 +189,14 @@ class ApiService {
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await this.request('/me/password', {
-      method: 'PUT',
+    await this.request('/auth/change-password', {
+      method: 'POST', // Changed to POST usually for actions
       body: JSON.stringify({ currentPassword, newPassword }),
     });
   }
 
-  async syncGoogleTokens(data: { accessToken: string; refreshToken?: string; expiresAt?: number }): Promise<void> {
-    await this.request('/me/google-tokens', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
+  // Google Tokens Sync - REMOVED
+
 
   // Users
   async getUsers(): Promise<any[]> {
@@ -637,28 +637,32 @@ class ApiService {
 
   // Auth - Forgot Password (public endpoint)
   async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
-    const { supabase } = await import('./supabase');
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return {
-      success: !error,
-      message: error ? (error.message === 'User not found' ? 'Usuário não encontrado' : error.message) : 'Se o email existir, enviaremos instruções de recuperação'
-    };
+    try {
+      const response = await this.request<{ success: boolean; message: string }>('/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        skipRedirect: true
+      });
+      return { success: true, message: response.message || 'Se o e-mail existir, enviaremos instruções.' };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Erro ao processar solicitação' };
+    }
   }
 
   // Auth - Reset Password (public endpoint)
   async resetPassword(token: string, newPassword: string): Promise<{ success: boolean; message: string }> {
-    const { supabase } = await import('./supabase');
-    // Note: Supabase handles recovery tokens via URL hash usually.
-    // If we have a token manually, we might need a different flow,
-    // but usually user is redirected to /reset-password#access_token=...
-    // and we can just call updateUser.
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    return {
-      success: !error,
-      message: error ? (error.message === 'New password should be different from the old password' ? 'A nova senha deve ser diferente da antiga' : error.message) : 'Senha alterada com sucesso'
-    };
+    try {
+      const response = await this.request<{ success: boolean; message: string }>('/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+        skipRedirect: true
+      });
+      return { success: true, message: response.message || 'Senha redefinida com sucesso' };
+    } catch (error: any) {
+      return { success: false, message: error.message || 'Erro ao redefinir senha' };
+    }
   }
 
   // Fiscal - Upload Certificate A1

@@ -16,9 +16,6 @@ type Claims struct {
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	CompanyID string `json:"companyId,omitempty"`
-	// Supabase specific fields
-	Subject string `json:"sub,omitempty"`
-	Aud     string `json:"aud,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -35,8 +32,9 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			// Supabase secrets are often base64 encoded
-			if decoded, err := base64.StdEncoding.DecodeString(jwtSecret); err == nil && len(decoded) > 0 {
+			// HS256 (Symmetric/Legacy) Support for Local Auth
+			// We only use the local secret now
+			if decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(jwtSecret)); err == nil && len(decoded) > 0 {
 				return decoded, nil
 			}
 			return []byte(jwtSecret), nil
@@ -49,7 +47,13 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 			})
 		}
 
-		claims, _ := token.Claims.(*Claims)
+		claims, ok := token.Claims.(*Claims)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error":   "unauthorized",
+				"message": "Falha ao processar as permissões do token",
+			})
+		}
 
 		// Sync with Local Database
 		// Primary anchor: Supabase UUID (sub claim)
@@ -62,14 +66,9 @@ func AuthRequired(db *gorm.DB, jwtSecret string) fiber.Handler {
 			CompanyID *string
 		}
 
-		// Try to find by Supabase UUID first
+		// Try to find by Email
 		query := db.Table("users").Select("id, name, email, role, company_id").Where("active = ?", true)
-
-		if claims.Subject != "" {
-			err = query.Where("supabase_id = ? OR email = ?", claims.Subject, claims.Email).First(&user).Error
-		} else {
-			err = query.Where("email = ?", claims.Email).First(&user).Error
-		}
+		err = query.Where("email = ?", claims.Email).First(&user).Error
 
 		if err != nil {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{

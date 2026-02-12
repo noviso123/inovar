@@ -91,25 +91,22 @@ func main() {
 	// API routes
 	api := app.Group("/api")
 
-	// Auth routes (public)
+	// Auth routes (Public)
 	auth := api.Group("/auth")
 	auth.Post("/login", h.Login)
-	auth.Post("/refresh", h.RefreshToken)
+	auth.Post("/refresh-token", h.RefreshToken)
 	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
-	// Google OAuth
-	auth.Get("/google/login", h.GoogleLogin)
-	auth.Get("/google/callback", h.GoogleCallback)
+
+	// Auth routes (Protected)
+	authProtected := auth.Group("", middleware.AuthRequired(db, os.Getenv("JWT_SECRET")))
+	authProtected.Get("/me", h.GetCurrentUser)
+	authProtected.Put("/me", h.UpdateCurrentUser)
+	authProtected.Post("/change-password", h.ChangePassword)
+	authProtected.Post("/logout", h.Logout)
 
 	// Protected routes
-	protected := api.Group("", middleware.AuthRequired(db, cfg.JWTSecret))
-
-	// User profile
-	protected.Get("/me", h.GetCurrentUser)
-	protected.Put("/me", h.UpdateCurrentUser)
-	protected.Put("/me/password", h.ChangePassword)
-	protected.Post("/me/google-tokens", h.SyncGoogleTokens)
-	protected.Post("/logout", h.Logout) // Changed from /auth/logout to prevent middleware collision with public /auth
+	protected := api.Group("", middleware.AuthRequired(db, os.Getenv("JWT_SECRET")))
 	protected.Post("/upload", h.UploadFile)
 
 	// Company profile
@@ -227,7 +224,8 @@ func main() {
 	system.Get("/tables/:name", h.GetTableData)
 	system.Get("/whatsapp", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.GetWhatsAppStatus)
 
-	// Storage is handled by Supabase Storage - no local file serving needed
+	// Local Storage - Serve files from ./storage directory
+	app.Static("/storage", "./storage")
 
 	// WebSocket for real-time updates
 	app.Get("/ws", websocket.Upgrade(), websocket.Handler(h.Hub))

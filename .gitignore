@@ -39,3 +39,9 @@ backend/inovar.db
 inovar-gestao-34293-e7b9d6c86924.json
 
 backend/env-vars.yaml
+
+# Binaries
+*.exe
+*.o
+*.a
+bin/
