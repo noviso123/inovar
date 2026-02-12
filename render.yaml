@@ -2,26 +2,20 @@ services:
   - type: web
     name: inovar-backend
     env: docker
-    repo: https://github.com/noviso123/inovar.git
-    rootDir: backend
-    plan: free
     region: oregon
+    plan: free
+    branch: main
+    healthCheckPath: /api/health
     envVars:
-      - key: ENVIRONMENT
-        value: production
+      - key: PORT
+        value: 8080
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        generateValue: true
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
         sync: false
-      - key: FRONTEND_URL
-        sync: false
-      - key: GOOGLE_CLIENT_ID
-        sync: false
-      - key: GOOGLE_CLIENT_SECRET
-        sync: false
-      - key: GOOGLE_REDIRECT_URL
+      - key: SUPABASE_SERVICE_KEY
         sync: false
