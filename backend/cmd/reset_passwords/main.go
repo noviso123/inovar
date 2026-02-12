@@ -42,12 +42,16 @@ func main() {
 		user.MustChangePassword = true
 		user.UpdatedAt = time.Now()
 
-		if err := db.Save(&user).Error; err != nil {
+		if err := db.Model(&user).Updates(map[string]interface{}{
+			"password_hash":        user.PasswordHash,
+			"must_change_password": user.MustChangePassword,
+			"updated_at":           user.UpdatedAt,
+		}).Error; err != nil {
 			fmt.Printf("❌ Falha ao salvar no banco local para %s: %v\n", user.Email, err)
 			continue
 		}
 
-		fmt.Printf("✅ DB Local resetado para %s\n", user.Email)
+		fmt.Printf("✅ DB Local resetado para %s (Senha: %s)\n", user.Email, newPassword)
 	}
 
 	fmt.Println("\n🏁 RESET DE SENHAS 100% CONCLUÍDO!")
