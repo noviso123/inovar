@@ -30,3 +30,4 @@ go.sum
 *.o
 *.a
 bin/
+.env*.local

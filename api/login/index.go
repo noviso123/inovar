@@ -1,8 +1,8 @@
 ﻿package handler
 
 import (
-	"inovar/lib/shared"
 	"encoding/json"
+	"inovar/lib/shared"
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,8 +14,13 @@ type LoginRequest struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	// CORS
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	// CORS - allow frontend domain
+	origin := r.Header.Get("Origin")
+	if origin == "https://inovar-gestao.vercel.app" || origin == "http://localhost:5173" {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	} else {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
