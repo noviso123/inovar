@@ -4,26 +4,12 @@
         {
             "src": "api/index.go",
             "use": "@vercel/go"
-        },
-        {
-            "src": "package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
         }
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "/api/index.go"
-        },
-        {
             "src": "/(.*)",
-            "dest": "/index.html"
+            "dest": "/api/index.go"
         }
-    ],
-    "env": {
-        "GO_IMPORT_PATH": "github.com/inovar/backend"
-    }
+    ]
 }
