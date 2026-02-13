@@ -1,7 +1,7 @@
 // API Service for INOVAR Backend
 // Replaces localStorage with real API calls
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://inovar-gestao-893228897791.southamerica-east1.run.app/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api'; // Use relative path for Vercel monorepo
 
 import { ServiceRequest, User, UserRole } from '../types';
 
@@ -96,17 +96,17 @@ class ApiService {
         data: {
           user: any;
           accessToken: string;
-          refreshToken: string; // optional depending on backend
+          refreshToken: string;
           expiresIn: number;
         };
         message?: string;
-      }>('/auth/login', {
+      }>('/login', { // Changed from /auth/login to /login
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email, password }),
-        skipRedirect: true // Don't redirect if login itself fails with 401
+        skipRedirect: true
       });
 
         if (response.success && response.data) {
