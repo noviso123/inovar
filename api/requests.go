@@ -1,7 +1,7 @@
 ﻿package handler
 
 import (
-	"api/shared"
+	"lib/shared"
 	"encoding/json"
 	"net/http"
 )
