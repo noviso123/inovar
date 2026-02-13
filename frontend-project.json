@@ -1,0 +1,12 @@
+{
+    "name": "inovar-frontend",
+    "framework": "vite",
+    "gitRepository": {
+        "type": "github",
+        "repo": "noviso123/inovar"
+    },
+    "rootDirectory": "inovar-gestao",
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "installCommand": "npm install"
+}

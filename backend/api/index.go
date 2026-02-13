@@ -44,12 +44,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 		// Create Fiber App
 		app = fiber.New(fiber.Config{
-			AppName: "Inovar Middleware",
+			AppName: "Inovar API",
 		})
 
 		app.Use(logger.New())
 		app.Use(cors.New(cors.Config{
-			AllowOrigins:     "*", // Vercel handles CORS usually, but safety
+			AllowOrigins:     "*",
 			AllowCredentials: true,
 			AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS,PATCH",
 			AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
@@ -58,6 +58,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		// Setup Routes
 		routes.SetupRoutes(app, h)
 
+		log.Println("✅ Inovar Backend initialized")
 	}
 
 	// Adapt Fiber to Net/HTTP
