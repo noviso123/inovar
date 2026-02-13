@@ -37,12 +37,19 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// List clients
+		// List clients - optimized query
 		var clients []shared.Client
-		if err := shared.GetDB().Find(&clients).Error; err != nil {
+		if err := shared.GetDB().
+			Where("active = ?", true).
+			Order("name ASC"). // Alphabetical order
+			Limit(200).        // Prevent huge responses
+			Find(&clients).Error; err != nil {
 			shared.ErrorResponse(w, http.StatusInternalServerError, "Query failed")
 			return
 		}
+
+		// Cache for 2 minutes (clients don't change frequently)
+		w.Header().Set("Cache-Control", "public, max-age=120")
 		shared.SuccessResponse(w, clients)
 
 	case "POST":

@@ -37,12 +37,19 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// List requests
+		// List requests - optimized with status priority
 		var requests []shared.Request
-		if err := shared.GetDB().Find(&requests).Error; err != nil {
+		if err := shared.GetDB().
+			Where("status != ?", "completed").       // Exclude completed (most queries)
+			Order("priority DESC, created_at DESC"). // High priority + recent first
+			Limit(100).
+			Find(&requests).Error; err != nil {
 			shared.ErrorResponse(w, http.StatusInternalServerError, "Query failed")
 			return
 		}
+
+		// Short cache (real-time updates needed)
+		w.Header().Set("Cache-Control", "public, max-age=30")
 		shared.SuccessResponse(w, requests)
 
 	case "POST":

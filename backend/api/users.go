@@ -35,12 +35,20 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get users
+	// Get users - optimized with Select and Order
 	var users []shared.User
-	if err := shared.GetDB().Select("id, name, email, role, company_id, active, created_at").Find(&users).Error; err != nil {
+	if err := shared.GetDB().
+		Select("id, name, email, role, company_id, active, created_at").
+		Where("active = ?", true). // Only active users
+		Order("created_at DESC").  // Most recent first
+		Limit(100).                // Prevent huge responses
+		Find(&users).Error; err != nil {
 		shared.ErrorResponse(w, http.StatusInternalServerError, "Query failed")
 		return
 	}
+
+	// Add cache header for CDN (5 minutes)
+	w.Header().Set("Cache-Control", "public, max-age=300")
 
 	shared.SuccessResponse(w, users)
 	_ = userID // Use userID for auth check if needed

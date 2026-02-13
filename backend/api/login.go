@@ -42,16 +42,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find user
+	// Find user - optimized query with index (email) and minimal fields
 	var user shared.User
-	if err := shared.GetDB().Where("email = ?", req.Email).First(&user).Error; err != nil {
+	if err := shared.GetDB().
+		Select("id, name, email, password_hash, role, company_id, must_change_password, active").
+		Where("email = ? AND active = ?", req.Email, true). // Use index + filter active
+		First(&user).Error; err != nil {
 		shared.ErrorResponse(w, http.StatusUnauthorized, "Credenciais inválidas")
-		return
-	}
-
-	// Check if active
-	if !user.Active {
-		shared.ErrorResponse(w, http.StatusUnauthorized, "Conta inativa")
 		return
 	}
 
