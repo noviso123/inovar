@@ -132,7 +132,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         <meta property="og:title" content="Inovar Gestão - Manutenção Inteligente" />
         <meta property="og:description" content="Sistema de gestão de manutenção em tempo real para climatização." />
         <meta property="og:image" content="/logo.png" />
-        <meta property="og:url" content="https://inovar-gestao.vercel.app/" />
+        <meta property="og:url" content="https://inovar.com.br/" />
       </Helmet>
 
       {/* APP CONTAINER */}

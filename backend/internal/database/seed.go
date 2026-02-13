@@ -2,80 +2,15 @@ package database
 
 import (
 	"log"
-	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"github.com/inovar/backend/internal/models"
 )
 
 func Seed(db *gorm.DB) {
-	// Check if already seeded
-	// Hash password
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
-
-	// Create Admin
-	admin := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Admin Inovar",
-		Email:        "admin@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleAdmin,
-		Phone:        "(11) 99999-0000",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	if err := db.Create(&admin).Error; err != nil {
-		log.Println("❌ Error creating admin:", err)
-	} else {
-		log.Println("✅ Created admin:", admin.Email)
-	}
-
-	// Create Prestador
-	prestador := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Prestador Exemplo",
-		Email:        "prestador@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RolePrestador,
-		Phone:        "(11) 99999-1111",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&prestador)
-	log.Println("✅ Created provider:", prestador.Email)
-
-	// Create Tecnico
-	tecnico := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Técnico Campo",
-		Email:        "tecnico@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleTecnico,
-		Phone:        "(11) 99999-2222",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&tecnico)
-	log.Println("✅ Created technician:", tecnico.Email)
-
-	// Create Client
-	cliente := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Cliente Cliente",
-		Email:        "cliente@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleCliente,
-		Phone:        "(11) 99999-3333",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&cliente)
-	log.Println("✅ Created client:", cliente.Email)
-
-	log.Println("🎉 All initial users created successfully!")
+	// Users seeding removed per request (Real data only)
+	// Create initial admin manually or via registration if enabled.
 
 	// Default settings
 	settings := []models.Setting{

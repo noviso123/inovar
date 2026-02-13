@@ -32,7 +32,6 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelect }
         setTimeout(() => processedRef.current.delete(dedupKey), 5000);
     }
 
-    console.log('🔔 Notification triggered:', { title, message, severity, requestId });
     const id = Math.random().toString(36).substr(2, 9);
     setNotifications(prev => [{ id, title, message, severity, requestId }, ...prev]);
     setTimeout(() => removeNotification(id), 8000);
@@ -42,12 +41,10 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelect }
     // Integração com o Hub Real-time
     // Listen for real-time events
     const unsubCreate = wsService.on('request:created', (data: any) => {
-      console.log('🔔 WS Event: request:created', data);
       addNotification('Nova Solicitação', `Cliente ${data.clientName} abriu um novo chamado.`, 'warning', data.id);
     });
 
     const unsubStatus = wsService.on('request:status_changed', (data: any) => {
-      console.log('🔔 WS Event: request:status_changed', data);
 
       let title = 'Status Atualizado';
       let message = `A OS agora está ${data.newStatus}.`;
@@ -71,7 +68,6 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ onSelect }
     });
 
     const unsubAssign = wsService.on('request:assigned', (data: any) => {
-      console.log('🔔 WS Event: request:assigned', data);
       addNotification('Técnico Atribuído', `Chamado atribuído a ${data.responsibleName}.`, 'info', data.id);
     });
 

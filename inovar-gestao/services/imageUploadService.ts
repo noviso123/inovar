@@ -23,9 +23,7 @@ class ImageUploadService {
     // Skip compression for non-images
     if (file.type.startsWith('image/')) {
        try {
-         console.log(`📉 Processing image (${this.formatFileSize(file.size)}) Mode: ${mode}...`);
          fileToUpload = await this.compressImage(file, mode);
-         console.log(`✅ Processed to ${this.formatFileSize(fileToUpload.size)}`);
        } catch (e) {
          console.warn('Compression failed, trying original file', e);
        }
@@ -61,7 +59,6 @@ class ImageUploadService {
         fullUrl = baseUrl + data.url;
     }
 
-    console.log('📸 Upload successful:', { dataUrl: data.url, fullUrl });
 
     return {
       success: true,

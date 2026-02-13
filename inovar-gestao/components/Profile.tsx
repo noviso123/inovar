@@ -200,22 +200,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser, rolePrefix
         </div>
       </div>
 
-      {/* Google Calendar Integration */}
-      <div className="mt-6 px-0">
-        <button
-           onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/auth/google/login?userId=${user.id}`}
-           className="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all text-left group active:scale-[0.98]"
-        >
-             <div className="w-10 h-10 bg-blue-50/50 rounded-xl flex items-center justify-center text-blue-600">
-               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M7 11h2v2H7v-2zm14-5v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h1V2h2v2h8V2h2v2h1a2 2 0 012 2zM5 8h14V6H5v2zm14 12V10H5v10h14z"/></svg>
-             </div>
-             <div>
-                <span className="font-bold text-slate-700 text-sm block">Conectar Google Calendar</span>
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sincronizar OS Automaticamente</span>
-             </div>
-             <svg className="w-4 h-4 text-slate-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-        </button>
-      </div>
+
 
       {/* WhatsApp Integration */}
       <div className="mt-4 px-0">

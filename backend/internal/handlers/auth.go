@@ -84,7 +84,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 func generateTokens(user *models.User) (string, error) {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "default-secret-change-me"
+		return "", fmt.Errorf("JWT_SECRET is not set")
 	}
 
 	companyID := ""
@@ -93,14 +93,13 @@ func generateTokens(user *models.User) (string, error) {
 	}
 
 	// Generate Access Token
-	return middleware.GenerateToken(user.ID, user.Email, user.Role, companyID, jwtSecret, 60*24) // 24 hours for now
+	return middleware.GenerateToken(user.ID, user.Email, user.Role, companyID, jwtSecret, 60*24) // 24 hours
 }
 
 func generateRefreshToken(user *models.User) (string, error) {
-	// Simple refresh token implementation re-using generate token with longer expiry
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "default-secret-change-me"
+		return "", fmt.Errorf("JWT_SECRET is not set")
 	}
 	companyID := ""
 	if user.CompanyID != nil {
@@ -124,7 +123,7 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 	token, err := jwt.ParseWithClaims(req.RefreshToken, &middleware.Claims{}, func(token *jwt.Token) (interface{}, error) {
 		jwtSecret := os.Getenv("JWT_SECRET")
 		if jwtSecret == "" {
-			return []byte("default-secret-change-me"), nil
+			return nil, fmt.Errorf("JWT_SECRET missing")
 		}
 		return []byte(jwtSecret), nil
 	})
@@ -182,6 +181,7 @@ type ForgotPasswordRequest struct {
 }
 
 // ForgotPassword - TODO: Implement email sending
+// ForgotPassword initiates password reset flow
 func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	var req ForgotPasswordRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -191,15 +191,42 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 	var user models.User
 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		// Do not leak user existence
+		// Artificial delay to prevent timing attacks
+		time.Sleep(200 * time.Millisecond)
 		return Success(c, fiber.Map{"message": "Se o e-mail existir, enviaremos instruções."})
 	}
 
-	// Generate reset token
-	token, _ := middleware.GenerateToken(user.ID, user.Email, "reset_password", "", os.Getenv("JWT_SECRET"), 60)
+	if !user.Active {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "Conta inativa. Contate o administrador.",
+		})
+	}
 
-	// Save token hash/expiration if we wanted stateful reset, or just trust the JWT signature.
-	// For now, let's just log it effectively as we don't have email service setup in this snippet context
-	log.Printf("[TODO] Send Password Reset Email to %s with token: %s", user.Email, token)
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("FATAL: JWT_SECRET is not set. Cannot generate reset token.")
+	}
+
+	// Generate reset token (expires in 15 minutes)
+	// We use a shorter expiration for security
+	token, err := middleware.GenerateToken(user.ID, user.Email, "reset_password", "", jwtSecret, 15)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	// Send Email
+	if h.EmailService != nil {
+		// Run in goroutine to not block response? No, simpler to be synchronous for now to ensure delivery,
+		// or at least error handling. But typical API should be fast.
+		// Gomail DialAndSend might take a second. Let's do it sync for reliability.
+		if err := h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name); err != nil {
+			log.Printf("[ERROR] Failed to send reset email to %s: %v", user.Email, err)
+			// Return success to user anyway to avoid enumeration, but log internal error
+		}
+	} else {
+		log.Printf("[WARN] EmailService not initialized. Token: %s", token)
+	}
 
 	return Success(c, fiber.Map{"message": "Se o e-mail existir, enviaremos instruções."})
 }
@@ -210,10 +237,63 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"newPassword"`
 }
 
-// ResetPassword implementation
+// ResetPassword finalizes password reset
 func (h *Handler) ResetPassword(c *fiber.Ctx) error {
-	// TODO: Verify token and reset password
-	return Success(c, fiber.Map{"message": "Senha redefinida com sucesso"})
+	var req ResetPasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return BadRequest(c, "Token e nova senha são obrigatórios")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return ServerError(c, fmt.Errorf("server misconfiguration"))
+	}
+
+	// Verify Token
+	token, err := jwt.ParseWithClaims(req.Token, &middleware.Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtSecret), nil
+	})
+
+	if err != nil || !token.Valid {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "Link inválido ou expirado. Solicite uma nova redefinição.",
+		})
+	}
+
+	claims, ok := token.Claims.(*middleware.Claims)
+	if !ok || claims.Role != "reset_password" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"success": false,
+			"message": "Token inválido para esta operação.",
+		})
+	}
+
+	// Find user
+	var user models.User
+	if err := h.DB.First(&user, "id = ?", claims.UserID).Error; err != nil {
+		return BadRequest(c, "Usuário não encontrado")
+	}
+
+	// Hash new password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	user.PasswordHash = string(hashedPassword)
+	user.MustChangePassword = false // Reset enforced change flag
+	user.UpdatedAt = time.Now()
+
+	if err := h.DB.Save(&user).Error; err != nil {
+		return ServerError(c, err)
+	}
+
+	// Ideally we should blacklist the old token, but since it expires in 15m, risk is low.
+	// Changing password invalidates old sessions IF we check password hash/version on refresh.
+	// (Current implementation doesn't, but this is a standard gap in simple JWT).
+
+	return Success(c, fiber.Map{"message": "Senha redefinida com sucesso. Faça login com a nova senha."})
 }
 
 // GetCurrentUser returns the authenticated user

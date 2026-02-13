@@ -183,13 +183,6 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 			osNum := strconv.Itoa(solicitacao.Numero)
 			h.EmailService.SendOSCreated(cliente.Email, cliente.Name, osNum, solicitacao.Description)
 		}
-
-		// WhatsApp
-		if h.WhatsAppService != nil && cliente.Phone != "" {
-			osNum := strconv.Itoa(solicitacao.Numero)
-			msg := fmt.Sprintf("🔧 *Inovar Gestão*\n\nOlá %s! 👋\nUma nova Ordem de Serviço foi aberta para você.\n\n*OS #%s*\n📄 %s\n\nAcompanhe o status pelo nosso sistema.", cliente.Name, osNum, solicitacao.Description)
-			h.WhatsAppService.SendMessage(cliente.Phone, msg)
-		}
 	}()
 
 	return Created(c, solicitacao)

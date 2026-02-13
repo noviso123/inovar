@@ -8,11 +8,7 @@ interface NotificationsPageProps {
 
 export const NotificationsPage: React.FC<NotificationsPageProps> = ({ currentUser }) => {
     const navigate = useNavigate();
-    // Mock notifications for now, or fetch from API if available
-    const [notifications, setNotifications] = useState([
-        { id: 1, title: 'Bem-vindo ao Sistema', message: 'Sua conta foi criada com sucesso.', date: new Date().toISOString(), read: false },
-        { id: 2, title: 'Atualização de Segurança', message: 'Lembre-se de trocar sua senha periodicamente.', date: new Date(Date.now() - 86400000).toISOString(), read: true },
-    ]);
+    const [notifications, setNotifications] = useState<any[]>([]);
 
     return (
         <div className="animate-in fade-in duration-500 pb-8">

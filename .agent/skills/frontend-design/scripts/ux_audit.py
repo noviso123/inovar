@@ -113,8 +113,7 @@ class UXAuditor:
 
         # Pre-calculate common flags
         has_long_text = bool(re.search(r'<p|<div.*class=.*text|article|<span.*text', content, re.IGNORECASE))
-        # Strict check for actual form elements or specific keywords in TAG context
-        has_form = bool(re.search(r'<form|<input|<select|<textarea|type=["\']password["\']|type=["\']email["\']', content, re.IGNORECASE))
+        has_form = bool(re.search(r'<form|<input|<select|<textarea', content, re.IGNORECASE))
         complex_elements = len(re.findall(r'<input|<select|<textarea|<option', content, re.IGNORECASE))
 
         # --- 1. PSYCHOLOGY LAWS ---
@@ -673,12 +672,10 @@ class UXAuditor:
             self.issues.append(f"[Accessibility] {filename}: Missing img alt text")
 
     def audit_directory(self, directory: str) -> None:
-        extensions = {'.tsx', '.jsx', '.html', '.vue', '.svelte'}
-        SKIP_FILES = {'constants.tsx', 'setupTests.ts', 'reportWebVitals.ts', 'vite-env.d.ts', 'types.ts'}
+        extensions = {'.tsx', '.jsx', '.html', '.vue', '.svelte', '.css'}
         for root, dirs, files in os.walk(directory):
             dirs[:] = [d for d in dirs if d not in {'node_modules', '.git', 'dist', 'build', '.next'}]
             for file in files:
-                if file in SKIP_FILES: continue
                 if Path(file).suffix in extensions:
                     self.audit_file(os.path.join(root, file))
 

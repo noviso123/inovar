@@ -20,14 +20,7 @@ go run main.go
 
 Server starts at `http://localhost:8080`
 
-## Demo Users
 
-| Email | Password | Role |
-|-------|----------|------|
-| admin@inovar.com | 123456 | ADMIN_SISTEMA |
-| contato@climamaster.com | 123456 | PRESTADOR |
-| ricardo@tecnico.com | 123456 | TECNICO |
-| solar@cliente.com | 123456 | CLIENTE |
 
 ## API Endpoints
 

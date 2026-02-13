@@ -1,0 +1,8 @@
+
+{
+  "name": "Inovar - Real-Time Air Conditioning Maintenance",
+  "description": "A high-performance SaaS for air conditioning maintenance featuring real-time updates, RBAC, SLA tracking, and multi-equipment service orders.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

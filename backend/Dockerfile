@@ -1,36 +1,37 @@
+# Build Stage
 FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies first for caching
+# Install dependencies for CGO (SQLite)
+RUN apk add --no-cache gcc musl-dev
+
+# Copy dependency files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy the rest of the code
+# Copy source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+# Build binary
+# CGO_ENABLED=1 is required for go-sqlite3/glebarez
+RUN CGO_ENABLED=1 GOOS=linux go build -o main .
 
-# Final stage
+# Runtime Stage
 FROM alpine:latest
 
-# Add certificates for HTTPS calls
-RUN apk --no-cache add ca-certificates
+WORKDIR /app
 
-WORKDIR /root/
+# Install runtime dependencies (Certificates, Timezone)
+RUN apk --no-cache add ca-certificates tzdata
 
-# Copy the binary from the builder stage
+# Copy binary from builder
 COPY --from=builder /app/main .
+# Copy necessary assets (e.g. templates, config if any)
+COPY --from=builder /app/.env.example .env.example
 
-# Copy .env if needed (though environment variables are preferred on Cloud Run)
-# COPY --from=builder /app/.env .
-
-# Ensure storage directory exists
-RUN mkdir -p storage
-
-# Expose port (Render provides $PORT)
+# Expose port
 EXPOSE 8080
 
-# Run the application
+# Command to run (Use shell form to allow signal handling)
 CMD ["./main"]

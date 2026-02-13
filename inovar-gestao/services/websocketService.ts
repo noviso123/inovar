@@ -20,7 +20,6 @@ class WebSocketService {
     this.socket = new WebSocket(`${wsBase}/ws?${params}`);
 
     this.socket.onopen = () => {
-      console.log('🔌 WebSocket connected');
       this.reconnectAttempts = 0;
       this.emit('connected', {});
     };
@@ -35,7 +34,6 @@ class WebSocketService {
     };
 
     this.socket.onclose = () => {
-      console.log('🔌 WebSocket disconnected');
       this.emit('disconnected', {});
       this.attemptReconnect(userId, role, companyId);
     };
@@ -50,7 +48,6 @@ class WebSocketService {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
-      console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
       setTimeout(() => this.connect(userId, role, companyId), delay);
     }
   }

@@ -76,9 +76,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="password-input" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
-              Senha de Acesso
-            </label>
+            <div className="flex justify-between items-center ml-1">
+              <label htmlFor="password-input" className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                Senha de Acesso
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-[10px] font-bold text-cyan-600 hover:text-cyan-400 uppercase tracking-widest transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
             <input
               id="password-input"
               type="password"

@@ -1,0 +1,4 @@
+# Development files
+.env.local
+*.log
+node_modules/
