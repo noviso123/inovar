@@ -1,7 +1,7 @@
 ﻿package handler
 
 import (
-	"lib/shared"
+	"inovar/lib/shared"
 	"encoding/json"
 	"net/http"
 )
