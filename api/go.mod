@@ -1,4 +1,4 @@
-module backend/api
+module api
 
 go 1.21
 
