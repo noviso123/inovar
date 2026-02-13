@@ -1,0 +1,35 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "api/**/*.go",
+            "use": "@vercel/go"
+        },
+        {
+            "src": "inovar-gestao/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "inovar-gestao/dist"
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/inovar-gestao/dist/$1"
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/((?!api).*)",
+            "destination": "/inovar-gestao/dist/index.html"
+        }
+    ]
+}
