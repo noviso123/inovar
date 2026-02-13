@@ -2,24 +2,24 @@
     "version": 2,
     "builds": [
         {
-            "src": "inovar-gestao/package.json",
+            "src": "frontend/package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "inovar-gestao/dist"
+                "distDir": "frontend/dist"
             }
         }
     ],
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "dest": "/backend/api/$1"
         },
         {
             "handle": "filesystem"
         },
         {
             "src": "/(.*)",
-            "dest": "/inovar-gestao/dist/index.html"
+            "dest": "/frontend/dist/index.html"
         }
     ]
 }

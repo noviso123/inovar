@@ -1,0 +1,20 @@
+{
+    "name": "inovar-gestao",
+    "version": "1.0.0",
+    "description": "Sistema de Gestão Inovar - Fullstack (React + Go Serverless)",
+    "scripts": {
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "vercel dev",
+        "build:frontend": "cd frontend && npm run build",
+        "build": "npm run build:frontend",
+        "test": "echo \"Tests not configured yet\"",
+        "deploy": "vercel --prod"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/noviso123/inovar"
+    },
+    "keywords": [ "fullstack", "react", "golang", "serverless", "vercel" ],
+    "author": "Inovar Team",
+    "license": "MIT"
+}

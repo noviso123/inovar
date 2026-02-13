@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"api/shared"
+	"backend/api/shared"
 	"encoding/json"
 	"net/http"
 )
@@ -25,7 +25,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := shared.ValidateToken(token); err != nil {
-		shared.ErrorResponse(w, http.StatusUnauthorized, "Unauthorized")
+		shared.ErrorResponse(w, http.StatusUnauthorized, "Invalid token")
 		return
 	}
 
@@ -37,28 +37,28 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		// List clients
-		var clients []shared.Client
-		if err := shared.GetDB().Find(&clients).Error; err != nil {
+		// List requests
+		var requests []shared.Request
+		if err := shared.GetDB().Find(&requests).Error; err != nil {
 			shared.ErrorResponse(w, http.StatusInternalServerError, "Query failed")
 			return
 		}
-		shared.SuccessResponse(w, clients)
+		shared.SuccessResponse(w, requests)
 
 	case "POST":
-		// Create client
-		var client shared.Client
-		if err := json.NewDecoder(r.Body).Decode(&client); err != nil {
+		// Create request
+		var req shared.Request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			shared.ErrorResponse(w, http.StatusBadRequest, "Invalid data")
 			return
 		}
 
-		if err := shared.GetDB().Create(&client).Error; err != nil {
+		if err := shared.GetDB().Create(&req).Error; err != nil {
 			shared.ErrorResponse(w, http.StatusInternalServerError, "Create failed")
 			return
 		}
 
-		shared.SuccessResponse(w, client)
+		shared.SuccessResponse(w, req)
 
 	default:
 		shared.ErrorResponse(w, http.StatusMethodNotAllowed, "Method not allowed")
