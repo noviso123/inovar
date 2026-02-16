@@ -28,10 +28,24 @@ func main() {
 	var err error
 
 	if os.Getenv("FORCE_SUPABASE") == "true" {
-		// Try Supabase directly with the known password
-		dbURL = "postgres://postgres.bxbupbnjcingfvjszrau:Inovar2025-Admin@aws-0-sa-east-1.pooler.supabase.com:6543/postgres"
-		fmt.Println("🚀 Attempting Supabase Production Purge...")
-		db, err = gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+		// Try multiple connection strings for Supabase
+		conns := []string{
+			"postgres://postgres.bxbupbnjcingfvjszrau:Inovar2025-Admin@aws-0-sa-east-1.pooler.supabase.com:6543/postgres", // Transaction
+			"postgres://postgres.bxbupbnjcingfvjszrau:Inovar2025-Admin@aws-0-sa-east-1.pooler.supabase.com:5432/postgres", // Session
+			"postgres://postgres:Inovar2025-Admin@db.bxbupbnjcingfvjszrau.supabase.co:5432/postgres?sslmode=require",      // Direct
+			"postgres://postgres.bxbupbnjcingfvjszrau:Inovar2025-Admin@db.bxbupbnjcingfvjszrau.supabase.co:5432/postgres", // Direct Ref
+			"postgres://postgres:Inovar2025-Admin@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=disable",      // Direct No SSL
+		}
+
+		for _, conn := range conns {
+			fmt.Printf("🚀 Attempting Supabase connection: %s\n", conn)
+			db, err = gorm.Open(postgres.Open(conn), &gorm.Config{})
+			if err == nil {
+				fmt.Println("✅ Connected to Supabase!")
+				break
+			}
+			fmt.Printf("⚠️  Failed: %v\n", err)
+		}
 	} else {
 		fmt.Println("🏠 Purging LOCAL database...")
 		db, err = gorm.Open(sqlite.Open("inovar.db"), &gorm.Config{})
