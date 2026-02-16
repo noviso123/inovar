@@ -45,12 +45,12 @@ class ImageUploadService {
       body: formData,
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Upload failed: ${response.statusText}`);
+    const responseData = await response.json();
+
+    if (!response.ok || (responseData && responseData.success === false)) {
+      throw new Error(responseData.message || `Upload failed: ${response.statusText}`);
     }
 
-    const responseData = await response.json();
     const data = responseData.data;
 
     let fullUrl = data.url;
