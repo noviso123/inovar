@@ -57,9 +57,11 @@ func main() {
 		AllowOrigins:     cfg.CorsOrigins,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-		AllowCredentials: true,
+		AllowCredentials: false, // Must be false if AllowOrigins is "*"
 	}))
-	app.Use(helmet.New())
+	app.Use(helmet.New(helmet.Config{
+		ContentSecurityPolicy: "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: *; connect-src 'self' *;",
+	}))
 	/*
 		app.Use(limiter.New(limiter.Config{
 			Max:        100,
