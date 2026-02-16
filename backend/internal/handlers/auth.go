@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -320,19 +321,23 @@ type ChangePasswordRequest struct {
 // ChangePassword changes the authenticated user's password
 func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
+	log.Printf("🔐 Tentativa de alteração de senha para UserID: %s", userID)
 
 	var req ChangePasswordRequest
 	if err := c.BodyParser(&req); err != nil {
+		log.Printf("❌ Falha no BodyParser para alteração de senha: %v", err)
 		return BadRequest(c, "Dados inválidos")
 	}
 
 	var user models.User
 	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
+		log.Printf("❌ Usuário %s não encontrado no banco para alteração de senha", userID)
 		return NotFound(c, "Usuário não encontrado")
 	}
 
 	// Verify current password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		log.Printf("❌ Senha atual incorreta para o usuário %s", user.Email)
 		return BadRequest(c, "Senha atual incorreta")
 	}
 
@@ -342,10 +347,19 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	user.PasswordHash = string(hashedPassword)
-	user.MustChangePassword = false
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
+	log.Printf("🔄 Atualizando senha no banco para %s (ID: %s)...", user.Email, user.ID)
 
+	updates := map[string]interface{}{
+		"password_hash":        string(hashedPassword),
+		"must_change_password": false,
+		"updated_at":           time.Now(),
+	}
+
+	if err := h.DB.Model(&user).Updates(updates).Error; err != nil {
+		log.Printf("❌ Erro ao salvar usuário no banco: %v", err)
+		return ServerError(c, err)
+	}
+
+	log.Printf("✅ Senha alterada com sucesso para %s. MustChangePassword agora é false.", user.Email)
 	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
 }

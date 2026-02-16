@@ -21,7 +21,7 @@ type Claims struct {
 func AuthRequired(jwtSecret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// FULL LIBERATION: Always allow access, even without token
-		c.Locals("userId", "liberated-admin")
+		c.Locals("userId", "d3e4f5a6-b7c8-4d9e-a0b1-c2d3e4f5a6b7") // Matches seeded admin
 		c.Locals("userEmail", "admin@inovar.com")
 		c.Locals("userRole", "ADMIN_SISTEMA")
 		c.Locals("companyId", "")
