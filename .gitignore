@@ -37,3 +37,10 @@ backend/inovar.db
 *.db
 
 inovar-gestao-34293-e7b9d6c86924.json
+
+# Binaries
+*.exe
+*.test
+bin/
+rw.exe
+backend/*.exe
