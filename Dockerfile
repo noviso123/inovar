@@ -32,9 +32,9 @@ COPY --from=builder /app/backend/main .
 # Create storage directory
 RUN mkdir -p storage
 
-# Render uses $PORT
-ENV PORT 10000
-EXPOSE 10000
+# Cloud Run uses $PORT
+ENV PORT 8080
+EXPOSE 8080
 
 # Run
 CMD ["./main"]
