@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	baseURL = "https://inovar-gestao-893228897791.southamerica-east1.run.app"
+	baseURL = "http://localhost:8080"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	fmt.Print("2. Admin Login... ")
 	loginData := map[string]string{
 		"email":    "admin@inovar.com",
-		"password": "123456",
+		"password": "654321",
 	}
 	loginBody, _ := json.Marshal(loginData)
 	resp, err = client.Post(baseURL+"/api/auth/login", "application/json", bytes.NewBuffer(loginBody))

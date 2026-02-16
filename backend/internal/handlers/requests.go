@@ -235,7 +235,8 @@ func (h *Handler) UpdateRequest(c *fiber.Ctx) error {
 	// Check lock
 	if solicitacao.LockedBy != nil && *solicitacao.LockedBy != userID {
 		if solicitacao.LockedAt != nil && time.Since(*solicitacao.LockedAt).Seconds() < float64(h.Config.LockTimeoutSecs) {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"success":  false,
 				"error":    "locked",
 				"message":  "Solicitação está sendo editada por outro usuário",
 				"lockedBy": *solicitacao.LockedBy,
@@ -382,7 +383,7 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 	// Find request
 	var solicitacao models.Solicitacao
 	// Preload everything deeply
-	err := h.DB.
+	if err := h.DB.
 		Preload("Client").
 		Preload("Client.Endereco"). // <--- CRITICAL: Load the address!
 		Preload("Equipments").
@@ -660,7 +661,8 @@ func (h *Handler) AcquireLock(c *fiber.Ctx) error {
 		if solicitacao.LockedAt != nil && time.Since(*solicitacao.LockedAt) < timeout {
 			var lockedUser models.User
 			h.DB.First(&lockedUser, "id = ?", *solicitacao.LockedBy)
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"success":    false,
 				"error":      "locked",
 				"message":    lockedUser.Name + " está editando esta solicitação",
 				"lockedBy":   *solicitacao.LockedBy,

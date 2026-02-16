@@ -104,7 +104,7 @@ func (h *Handler) GoogleCallback(c *fiber.Ctx) error {
 			Email:     googleUser.Email,
 			Role:      models.RoleCliente, // Default to Client
 			Active:    true,
-			AvatarURL: &googleUser.Picture,
+			AvatarURL: googleUser.Picture,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		}

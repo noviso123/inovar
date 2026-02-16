@@ -29,7 +29,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	// Find user
 	var user models.User
 	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": false,
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
@@ -37,7 +38,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Check if active
 	if !user.Active {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": false,
 			"error":   "user_blocked",
 			"message": "Usuário bloqueado. Contate o administrador.",
 		})
@@ -45,7 +47,8 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": false,
 			"error":   "invalid_credentials",
 			"message": "Email ou senha incorretos",
 		})
@@ -117,7 +120,8 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 	// Find refresh token
 	var refreshToken models.RefreshToken
 	if err := h.DB.Where("token = ? AND revoked = ?", req.RefreshToken, false).First(&refreshToken).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": false,
 			"error":   "invalid_token",
 			"message": "Refresh token inválido",
 		})
@@ -125,7 +129,8 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 
 	// Check expiration
 	if refreshToken.ExpiresAt.Before(time.Now()) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"success": false,
 			"error":   "token_expired",
 			"message": "Refresh token expirado",
 		})

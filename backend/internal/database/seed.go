@@ -12,8 +12,7 @@ import (
 )
 
 func Seed(db *gorm.DB) {
-	// Check if already seeded
-	// Hash password
+	// Hash password 123456
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 
 	// Create Admin
@@ -28,54 +27,29 @@ func Seed(db *gorm.DB) {
 		CreatedAt:    time.Now(),
 	}
 	if err := db.Create(&admin).Error; err != nil {
-		log.Println("❌ Error creating admin:", err)
+		log.Println("⚠️ Admin already exists or error:", err)
 	} else {
 		log.Println("✅ Created admin:", admin.Email)
 	}
 
-	// Create Prestador
-	prestador := models.User{
+	// Create Example Client
+	client := models.User{
 		ID:           uuid.New().String(),
-		Name:         "Prestador Exemplo",
-		Email:        "prestador@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RolePrestador,
-		Phone:        "(11) 99999-1111",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&prestador)
-	log.Println("✅ Created provider:", prestador.Email)
-
-	// Create Tecnico
-	tecnico := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Técnico Campo",
-		Email:        "tecnico@inovar.com",
-		PasswordHash: string(hashedPassword),
-		Role:         models.RoleTecnico,
-		Phone:        "(11) 99999-2222",
-		Active:       true,
-		CreatedAt:    time.Now(),
-	}
-	db.Create(&tecnico)
-	log.Println("✅ Created technician:", tecnico.Email)
-
-	// Create Client
-	cliente := models.User{
-		ID:           uuid.New().String(),
-		Name:         "Cliente Cliente",
-		Email:        "cliente@inovar.com",
+		Name:         "Cliente Teste",
+		Email:        "clientets@teste.com",
 		PasswordHash: string(hashedPassword),
 		Role:         models.RoleCliente,
-		Phone:        "(11) 99999-3333",
+		Phone:        "(11) 98888-8888",
 		Active:       true,
 		CreatedAt:    time.Now(),
 	}
-	db.Create(&cliente)
-	log.Println("✅ Created client:", cliente.Email)
+	if err := db.Create(&client).Error; err != nil {
+		log.Println("⚠️ Client already exists or error:", err)
+	} else {
+		log.Println("✅ Created client:", client.Email)
+	}
 
-	log.Println("🎉 All initial users created successfully!")
+	log.Println("🎉 Database seeded with requested users.")
 
 	// Default settings
 	settings := []models.Setting{
@@ -87,7 +61,7 @@ func Seed(db *gorm.DB) {
 		{Key: "confirm_days", Value: "7", Description: "Dias para confirmação do cliente"},
 	}
 	for _, s := range settings {
-		db.Create(&s)
+		db.FirstOrCreate(&s, models.Setting{Key: s.Key})
 	}
 
 	log.Println("✅ Seed completed")

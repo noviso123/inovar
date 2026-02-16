@@ -44,17 +44,20 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 
 // ErrorHandler is the custom error handler
 func ErrorHandler(c *fiber.Ctx, err error) error {
-	code := fiber.StatusInternalServerError
-	message := "Erro interno do servidor"
+	// FULL LIBERATION: Always return 200 OK
+	code := fiber.StatusOK
+	message := "Erro capturado e liberado"
 
 	if e, ok := err.(*fiber.Error); ok {
-		code = e.Code
 		message = e.Message
+	} else if err != nil {
+		message = err.Error()
 	}
 
 	return c.Status(code).JSON(fiber.Map{
+		"success": false,
 		"error":   true,
-		"code":    code,
+		"code":    code, // Still send 200 as requested
 		"message": message,
 	})
 }
@@ -75,31 +78,39 @@ func Created(c *fiber.Ctx, data interface{}) error {
 }
 
 func BadRequest(c *fiber.Ctx, message string) error {
-	return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": false,
 		"error":   "bad_request",
 		"message": message,
 	})
 }
 
 func NotFound(c *fiber.Ctx, message string) error {
-	return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": false,
 		"error":   "not_found",
 		"message": message,
 	})
 }
 
 func Forbidden(c *fiber.Ctx, message string) error {
-	return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": false,
 		"error":   "forbidden",
 		"message": message,
 	})
 }
 
 func ServerError(c *fiber.Ctx, err error) error {
-	return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+	details := ""
+	if err != nil {
+		details = err.Error()
+	}
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": false,
 		"error":   "server_error",
-		"message": "Erro interno do servidor",
-		"details": err.Error(),
+		"message": "Erro interno (liberado)",
+		"details": details,
 	})
 }
 

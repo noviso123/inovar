@@ -27,13 +27,13 @@ func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
 	dbLog := waLog.Stdout("Database", "ERROR", true)
 
 	// Determine driver based on DB URL
-	dbDriver := "sqlite3"
+	dbDriver := "sqlite" // Use modernc CGO-free driver
 	if len(cfg.DatabaseURL) > 10 && (cfg.DatabaseURL[:8] == "postgres" || cfg.DatabaseURL[:5] == "pgsql") {
 		dbDriver = "pgx"
 	}
 
-	// Initialize container
-	container, err := sqlstore.New(context.Background(), dbDriver, cfg.DatabaseURL, dbLog)
+	// Initialize container - Use dedicated wadata.db for WhatsApp session
+	container, err := sqlstore.New(context.Background(), dbDriver, "file:wadata.db?_pragma=foreign_keys(1)", dbLog)
 	if err != nil {
 		fmt.Printf("Falha ao conectar no banco do WhatsApp (%s): %v\n", dbDriver, err)
 		// Don't return nil, return a service that knows it's broken?

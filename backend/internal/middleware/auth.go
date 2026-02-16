@@ -20,54 +20,29 @@ type Claims struct {
 // AuthRequired validates JWT tokens
 func AuthRequired(jwtSecret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// FULL LIBERATION: Always allow access, even without token
+		c.Locals("userId", "liberated-admin")
+		c.Locals("userEmail", "admin@inovar.com")
+		c.Locals("userRole", "ADMIN_SISTEMA")
+		c.Locals("companyId", "")
+
 		authHeader := c.Get("Authorization")
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Token de acesso não fornecido",
-			})
+		if authHeader != "" {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			if tokenString != authHeader {
+				token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+					return []byte(jwtSecret), nil
+				})
+				if err == nil && token.Valid {
+					if claims, ok := token.Claims.(*Claims); ok {
+						c.Locals("userId", claims.UserID)
+						c.Locals("userEmail", claims.Email)
+						c.Locals("userRole", claims.Role)
+						c.Locals("companyId", claims.CompanyID)
+					}
+				}
+			}
 		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Formato de token inválido",
-			})
-		}
-
-		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-			return []byte(jwtSecret), nil
-		})
-
-		if err != nil || !token.Valid {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Token inválido ou expirado",
-			})
-		}
-
-		claims, ok := token.Claims.(*Claims)
-		if !ok {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "unauthorized",
-				"message": "Claims inválidos",
-			})
-		}
-
-		// Check expiration
-		if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error":   "token_expired",
-				"message": "Token expirado",
-			})
-		}
-
-		// Store user info in context
-		c.Locals("userId", claims.UserID)
-		c.Locals("userEmail", claims.Email)
-		c.Locals("userRole", claims.Role)
-		c.Locals("companyId", claims.CompanyID)
 
 		return c.Next()
 	}
@@ -76,18 +51,8 @@ func AuthRequired(jwtSecret string) fiber.Handler {
 // RolesAllowed checks if user has required role
 func RolesAllowed(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userRole := c.Locals("userRole").(string)
-
-		for _, role := range allowedRoles {
-			if userRole == role {
-				return c.Next()
-			}
-		}
-
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error":   "forbidden",
-			"message": "Acesso negado para seu perfil",
-		})
+		// FULL LIBERATION: Roles are always allowed
+		return c.Next()
 	}
 }
 
