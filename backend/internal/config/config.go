@@ -32,10 +32,27 @@ type Config struct {
 func Load() *Config {
 	env := getEnv("ENVIRONMENT", "development")
 	jwtSecret := loadJWTSecret(env)
+	dbURL := getEnv("DATABASE_URL", "")
+	supabaseURL := getEnv("SUPABASE_URL", "")
+	supabaseKey := getEnv("SUPABASE_KEY", "")
+
+	if env == "production" || env == "staging" {
+		if dbURL == "" {
+			log.Fatal("❌ ERRO FATAL: DATABASE_URL não definido!")
+		}
+		if supabaseURL == "" || supabaseKey == "" {
+			log.Fatal("❌ ERRO FATAL: SUPABASE_URL ou SUPABASE_KEY não definidos!")
+		}
+	} else {
+		// Default to local sqlite for development if missing
+		if dbURL == "" {
+			dbURL = "inovar.db"
+		}
+	}
 
 	return &Config{
 		Environment:       env,
-		DatabaseURL:       getEnv("DATABASE_URL", "inovar.db"), // Default to inovar.db only if env is missing
+		DatabaseURL:       dbURL,
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
@@ -50,8 +67,8 @@ func Load() *Config {
 		LockTimeoutSecs: getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
 		ConfirmDays:     getEnvInt("CONFIRM_DAYS", 7),
 		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
-		SupabaseURL:     getEnv("SUPABASE_URL", ""),
-		SupabaseKey:     getEnv("SUPABASE_KEY", ""),
+		SupabaseURL:     supabaseURL,
+		SupabaseKey:     supabaseKey,
 	}
 }
 

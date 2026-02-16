@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -15,12 +16,16 @@ import (
 func main() {
 	godotenv.Load()
 
-	projectRef := "bxbupbnjcingfvjszrau"
-	supabaseURL := fmt.Sprintf("https://%s.supabase.co/rest/v1", projectRef)
-	supabaseKey := os.Getenv("SUPABASE_KEY") // This is the service_role key found in .env
+	supabaseURL := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_KEY")
 
-	if supabaseKey == "" {
-		log.Fatal("❌ SUPABASE_KEY is empty in .env!")
+	if supabaseURL == "" || supabaseKey == "" {
+		log.Fatal("❌ SUPABASE_URL ou SUPABASE_KEY não definidos no ambiente!")
+	}
+
+	// Ensure REST suffix if missing
+	if !strings.HasSuffix(supabaseURL, "/rest/v1") {
+		supabaseURL = fmt.Sprintf("%s/rest/v1", strings.TrimSuffix(supabaseURL, "/"))
 	}
 
 	fmt.Println("🚀 SUPABASE API WIPE - FINAL MISSION")
