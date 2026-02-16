@@ -27,6 +27,7 @@ type Config struct {
 	DefaultPassword string
 	SupabaseURL     string
 	SupabaseKey     string
+	FrontendURL     string
 }
 
 func Load() *Config {
@@ -35,6 +36,7 @@ func Load() *Config {
 	dbURL := getEnv("DATABASE_URL", "")
 	supabaseURL := getEnv("SUPABASE_URL", "")
 	supabaseKey := getEnv("SUPABASE_KEY", "")
+	frontendURL := getEnv("FRONTEND_URL", "http://localhost:3000")
 
 	if env == "production" || env == "staging" {
 		if dbURL == "" {
@@ -42,6 +44,9 @@ func Load() *Config {
 		}
 		if supabaseURL == "" || supabaseKey == "" {
 			log.Fatal("❌ ERRO FATAL: SUPABASE_URL ou SUPABASE_KEY não definidos!")
+		}
+		if getEnv("FRONTEND_URL", "") == "" {
+			log.Fatal("❌ ERRO FATAL: FRONTEND_URL não definido em produção!")
 		}
 	} else {
 		// Default to local sqlite for development if missing
@@ -69,6 +74,7 @@ func Load() *Config {
 		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
 		SupabaseURL:     supabaseURL,
 		SupabaseKey:     supabaseKey,
+		FrontendURL:     frontendURL,
 	}
 }
 

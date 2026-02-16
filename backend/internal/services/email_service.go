@@ -3,15 +3,15 @@ package services
 import (
 	"crypto/tls"
 	"fmt"
-	"os"
 
 	"github.com/inovar/backend/internal/config"
 	"gopkg.in/gomail.v2"
 )
 
 type EmailService struct {
-	dialer *gomail.Dialer
-	from   string
+	dialer      *gomail.Dialer
+	from        string
+	frontendURL string
 }
 
 func NewEmailService(cfg *config.Config) *EmailService {
@@ -32,8 +32,9 @@ func NewEmailService(cfg *config.Config) *EmailService {
 	d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
 
 	return &EmailService{
-		dialer: d,
-		from:   user,
+		dialer:      d,
+		from:        user,
+		frontendURL: cfg.FrontendURL,
 	}
 }
 
@@ -55,7 +56,7 @@ func (s *EmailService) SendWelcomeEmail(toEmail, userName, password string) erro
 			<br>
 			<a href="%s" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Acessar Sistema</a>
 		</div>
-	`, userName, toEmail, password, os.Getenv("FRONTEND_URL")))
+	`, userName, toEmail, password, s.frontendURL))
 
 	return s.dialer.DialAndSend(m)
 }
@@ -82,7 +83,7 @@ func (s *EmailService) SendOSCreated(toEmail, clientName, osNumber, description 
 }
 
 func (s *EmailService) SendPasswordResetEmail(toEmail, token, userName string) error {
-	resetLink := fmt.Sprintf("%s/reset-password?token=%s", os.Getenv("FRONTEND_URL"), token)
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", s.frontendURL, token)
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.from)

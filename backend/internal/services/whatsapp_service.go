@@ -32,13 +32,15 @@ func NewWhatsAppService(cfg *config.Config) *WhatsAppService {
 		dbDriver = "pgx"
 	}
 
-	// Initialize container - Use dedicated wadata.db for WhatsApp session
-	container, err := sqlstore.New(context.Background(), dbDriver, "file:wadata.db?_pragma=foreign_keys(1)", dbLog)
+	// Initialize container - Use primary DB if postgres for persistence on Cloud Run
+	dbAddress := "file:wadata.db?_pragma=foreign_keys(1)"
+	if dbDriver == "pgx" {
+		dbAddress = cfg.DatabaseURL
+	}
+
+	container, err := sqlstore.New(context.Background(), dbDriver, dbAddress, dbLog)
 	if err != nil {
 		fmt.Printf("Falha ao conectar no banco do WhatsApp (%s): %v\n", dbDriver, err)
-		// Don't return nil, return a service that knows it's broken?
-		// Actually, if we can't store session, we are doomed.
-		// But let's verify if we can fallback to memory for testing? No, sqlstore needs DB.
 		return nil
 	}
 
