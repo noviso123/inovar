@@ -1,40 +1,34 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Build Stage 1: React Frontend
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
-WORKDIR /app
-
-# Copy go.mod and go.sum from backend folder
-COPY backend/go.mod backend/go.sum ./backend/
-
-# Download dependencies
+# Build Stage 2: Go Backend
+FROM golang:1.23-alpine AS backend-builder
 WORKDIR /app/backend
+COPY backend/go.mod backend/go.sum ./
 RUN go mod download
+COPY backend/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
-# Copy the rest of the backend source
-WORKDIR /app
-COPY backend/ ./backend/
-
-# Build the application
-WORKDIR /app/backend
-RUN CGO_ENABLED=0 GOOS=linux go build -o main main.go
-
-# Run stage
+# Final Stage: Run
 FROM alpine:latest
-
-# Add certificates for HTTPS calls
+WORKDIR /app
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+# Copy static assets from frontend builder
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
-# Copy binary from builder
-COPY --from=builder /app/backend/main .
+# Copy binary from backend builder
+COPY --from=backend-builder /app/backend/main ./backend/main
 
-# Create storage directory
-RUN mkdir -p storage
-
-# Cloud Run uses $PORT
-ENV PORT 8080
+# Configuration
+ENV PORT=8080
 EXPOSE 8080
 
-# Run
+# Run the app from the backend directory to ensure relative paths work
+WORKDIR /app/backend
 CMD ["./main"]

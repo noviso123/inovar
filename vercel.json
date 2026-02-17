@@ -1,7 +1,0 @@
-{
-    "buildCommand": "cd inovar-gestao && npm install && npm run build",
-    "outputDirectory": "inovar-gestao/dist",
-    "rewrites": [
-        { "source": "/((?!api/|.*\\.).*)", "destination": "/index.html" }
-    ]
-}

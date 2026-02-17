@@ -233,13 +233,12 @@ func main() {
 	// WebSocket for real-time updates
 	app.Get("/ws", websocket.Upgrade(), websocket.Handler(h.Hub))
 
-	// Root API Handler
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"status":       "online",
-			"service":      "INOVAR API",
-			"frontend_url": os.Getenv("FRONTEND_URL"),
-		})
+	// Serve static files from React build
+	app.Static("/", "../frontend/dist")
+
+	// Catch-all route to serve React's index.html (SPA fallback)
+	app.Get("/*", func(c *fiber.Ctx) error {
+		return c.SendFile("../frontend/dist/index.html")
 	})
 
 	// Start server
