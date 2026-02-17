@@ -38,21 +38,8 @@ func Load() *Config {
 	supabaseKey := getEnv("SUPABASE_KEY", "")
 	frontendURL := getEnv("FRONTEND_URL", "http://localhost:3000")
 
-	if env == "production" || env == "staging" {
-		if dbURL == "" {
-			log.Fatal("❌ ERRO FATAL: DATABASE_URL não definido!")
-		}
-		if supabaseURL == "" || supabaseKey == "" {
-			log.Fatal("❌ ERRO FATAL: SUPABASE_URL ou SUPABASE_KEY não definidos!")
-		}
-		if getEnv("FRONTEND_URL", "") == "" {
-			log.Printf("⚠️ AVISO: FRONTEND_URL não definido em produção! Links de e-mail podem não funcionar.")
-		}
-	} else {
-		// Default to local sqlite for development if missing
-		if dbURL == "" {
-			dbURL = "inovar.db"
-		}
+	if dbURL == "" {
+		log.Fatal("❌ ERRO FATAL: DATABASE_URL não definido! O Supabase é obrigatório agora.")
 	}
 
 	return &Config{

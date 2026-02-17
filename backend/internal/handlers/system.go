@@ -33,10 +33,8 @@ func (h *Handler) ListRoutes(c *fiber.Ctx) error {
 func (h *Handler) ListTables(c *fiber.Ctx) error {
 	var tables []string
 
-	// Query depends on DB driver (SQLite vs Postgres)
-	// Assuming SQLite for now based on previous context (inovar.db), but GORM generic way:
-	// For SQLite: SELECT name FROM sqlite_master WHERE type='table'
-	// For Postgres: SELECT table_name FROM information_schema.tables WHERE table_schema='public'
+	// Query the list of tables from the database (strictly PostgreSQL/Supabase)
+	// Query: SELECT table_name FROM information_schema.tables WHERE table_schema='public'
 
 	// We can try GORM's Migrator which is database agnostic
 	tableList, err := h.DB.Migrator().GetTables()
