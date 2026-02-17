@@ -9,7 +9,7 @@ type Cliente struct {
 	Name       string    `gorm:"size:255;not null" json:"name"`
 	Document   string    `gorm:"size:20" json:"document,omitempty"`
 	Email      string    `gorm:"size:255" json:"email"`
-	Phone      string    `gorm:"size:20" json:"phone"`
+	Phone      string    `gorm:"size:20" json:"phone,omitempty"`
 	EnderecoID *string   `gorm:"size:36" json:"enderecoId,omitempty"`
 	CompanyID  string    `gorm:"size:36;not null;index" json:"companyId"`
 	CreatedAt  time.Time `json:"createdAt"`

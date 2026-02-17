@@ -125,6 +125,7 @@ export interface ServiceRequest {
   dataAssinatura?: string;
   materialsUsed?: string;
   nextMaintenanceAt?: string;
+  preventive?: boolean;
 }
 
 export interface OrcamentoItem {
@@ -236,6 +237,7 @@ export interface Attachment {
   createdAt: string;
   thumbnailUrl?: string;
   externalUrl?: string;
+  url?: string; // Virtual field for frontend convenience
 }
 
 export interface AgendaEntry {

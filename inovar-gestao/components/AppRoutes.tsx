@@ -24,7 +24,6 @@ import { ClientForm } from './ClientForm';
 import { EquipmentForm } from './EquipmentForm';
 import { TechnicianForm } from './TechnicianForm';
 import { UserForm } from './UserForm';
-import { QRCodeGenerator } from './QRCodeGenerator';
 import { Login } from './Login';
 import { NotificationsPage } from './NotificationsPage';
 import { PrivacyPage } from './PrivacyPage';
@@ -36,7 +35,6 @@ import { ServiceOrderPrint } from './ServiceOrderPrint';
 import { BudgetPrint } from './BudgetPrint';
 import SystemStatus from './SystemStatus';
 import { FiscalSettings } from './FiscalSettings';
-import { GoogleAuthCallback } from './GoogleAuthCallback';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -260,11 +258,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           currentUser ? <ForceChangePassword onLogout={onLogout} onUpdateUser={onUpdateUser} /> : <Navigate to="/login" replace />
       } />
 
-      {/* Google OAuth Callback - receives token from backend redirect */}
-      <Route path="/auth/callback" element={
-        <GoogleAuthCallback />
-      } />
-
       {/* Print Routes */}
       <Route path="/print/os/:id" element={<ServiceOrderPrint />} />
       <Route path="/print/budget/:id" element={<BudgetPrint />} />
@@ -349,7 +342,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="fiscal" element={<FiscalSettings currentUser={currentUser!} />} />
         <Route path="auditoria" element={<AuditPanel />} />
         <Route path="configuracoes" element={<SystemSettings />} />
-        <Route path="qrcode" element={<QRCodeGenerator />} />
         <Route path="system" element={<SystemStatus />} />
       </Route>
 

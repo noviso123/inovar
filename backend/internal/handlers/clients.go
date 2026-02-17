@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -144,17 +143,11 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 
 	h.Hub.Broadcast("client:created", cliente)
 
-	// Send Notifications (Email & WhatsApp)
+	// Send Notifications (Email)
 	go func() {
 		// Email
 		if h.EmailService != nil && user.Email != "" {
 			h.EmailService.SendWelcomeEmail(user.Email, user.Name, req.Password)
-		}
-
-		// WhatsApp
-		if h.WhatsAppService != nil && user.Phone != "" {
-			msg := fmt.Sprintf("👋 Olá *%s*!\n\nSeu acesso à área do *Inovar Gestão* foi criado.\n\n🔗 Link: %s\n📧 Usuário: %s\n🔑 Senha: %s\n\nQualquer dúvida, estamos à disposição.", user.Name, os.Getenv("FRONTEND_URL"), user.Email, req.Password)
-			h.WhatsAppService.SendMessage(user.Phone, msg)
 		}
 	}()
 

@@ -15,12 +15,11 @@ import (
 
 // Handler contains all HTTP handlers
 type Handler struct {
-	DB              *gorm.DB
-	Config          *config.Config
-	Hub             *websocket.Hub
-	EmailService    *services.EmailService
-	WhatsAppService *services.WhatsAppService
-	StorageService  *services.StorageService
+	DB             *gorm.DB
+	Config         *config.Config
+	Hub            *websocket.Hub
+	EmailService   *services.EmailService
+	StorageService *services.StorageService
 }
 
 // New creates a new Handler instance
@@ -29,16 +28,14 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 	go hub.Run()
 
 	emailService := services.NewEmailService(cfg)
-	whatsappService := services.NewWhatsAppService(cfg)
 	storageService := services.NewStorageService(cfg)
 
 	return &Handler{
-		DB:              db,
-		Config:          cfg,
-		Hub:             hub,
-		EmailService:    emailService,
-		WhatsAppService: whatsappService,
-		StorageService:  storageService,
+		DB:             db,
+		Config:         cfg,
+		Hub:            hub,
+		EmailService:   emailService,
+		StorageService: storageService,
 	}
 }
 

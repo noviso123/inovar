@@ -2,6 +2,7 @@
 // Replaces localStorage with real API calls
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
+console.log('🚀 INOVAR API_BASE:', API_BASE);
 
 import { ServiceRequest, User, UserRole } from '../types';
 
@@ -492,6 +493,7 @@ class ApiService {
   // Attachments
   async getAttachments(requestId: string): Promise<any[]> {
     const response = await this.request<{ data: any[] }>(`/requests/${requestId}/attachments`);
+    console.log('📂 Attachments:', response.data);
     return response.data;
   }
 
@@ -714,11 +716,6 @@ class ApiService {
     return response.data;
   }
 
-  // WhatsApp
-  async getWhatsAppStatus(): Promise<{ enabled: boolean; connected: boolean; qrCode: string }> {
-    const response = await this.request<{ data: any }>('/system/whatsapp');
-    return response.data;
-  }
 }
 
 export const apiService = new ApiService();

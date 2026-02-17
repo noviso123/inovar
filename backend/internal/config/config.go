@@ -46,7 +46,7 @@ func Load() *Config {
 			log.Fatal("❌ ERRO FATAL: SUPABASE_URL ou SUPABASE_KEY não definidos!")
 		}
 		if getEnv("FRONTEND_URL", "") == "" {
-			log.Fatal("❌ ERRO FATAL: FRONTEND_URL não definido em produção!")
+			log.Printf("⚠️ AVISO: FRONTEND_URL não definido em produção! Links de e-mail podem não funcionar.")
 		}
 	} else {
 		// Default to local sqlite for development if missing

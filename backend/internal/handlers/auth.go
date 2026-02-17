@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -211,13 +209,6 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 		// Email
 		if h.EmailService != nil {
 			h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name)
-		}
-
-		// WhatsApp
-		if h.WhatsAppService != nil && user.Phone != "" {
-			resetLink := fmt.Sprintf("%s/reset-password?token=%s", os.Getenv("FRONTEND_URL"), token)
-			msg := fmt.Sprintf("🔒 *Recuperação de Senha*\n\nOlá %s,\nRecebemos uma solicitação para redefinir sua senha.\n\nClique no link abaixo:\n%s\n\n(Se não foi você, ignore esta mensagem)", user.Name, resetLink)
-			h.WhatsAppService.SendMessage(user.Phone, msg)
 		}
 	}()
 

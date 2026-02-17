@@ -15,7 +15,6 @@ import (
 	"github.com/inovar/backend/internal/handlers"
 	"github.com/inovar/backend/internal/middleware"
 	"github.com/inovar/backend/internal/websocket"
-	_ "github.com/jackc/pgx/v5/stdlib" // Register pgx driver for whatsmeow
 	"github.com/joho/godotenv"
 )
 
@@ -53,6 +52,7 @@ func main() {
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] ${status} ${method} ${path} ${latency}\n",
 	}))
+	log.Printf("🔒 CORS Origins: %s", cfg.CorsOrigins)
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CorsOrigins,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
@@ -88,15 +88,21 @@ func main() {
 	// API routes
 	api := app.Group("/api")
 
+	// API Root Handler (to fix 404 on /api)
+	api.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"status":  "online",
+			"service": "INOVAR API V1",
+			"cors":    cfg.CorsOrigins,
+		})
+	})
+
 	// Auth routes (public)
 	auth := api.Group("/auth")
 	auth.Post("/login", h.Login)
 	auth.Post("/refresh", h.RefreshToken)
 	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
-	// Google OAuth
-	auth.Get("/google/login", h.GoogleLogin)
-	auth.Get("/google/callback", h.GoogleCallback)
 
 	// Protected routes
 	protected := api.Group("", middleware.AuthRequired(cfg.JWTSecret))
@@ -221,7 +227,6 @@ func main() {
 	system.Get("/routes", h.ListRoutes)
 	system.Get("/tables", h.ListTables)
 	system.Get("/tables/:name", h.GetTableData)
-	system.Get("/whatsapp", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.GetWhatsAppStatus)
 
 	// Storage is handled by Supabase Storage - no local file serving needed
 
