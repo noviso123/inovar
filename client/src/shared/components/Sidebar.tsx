@@ -71,16 +71,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 key={item.path}
                 to={fullPath}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-4 py-2.5 transition-all ${isActive
-                  ? 'bg-cyan-50 text-cyan-600 border-r-4 border-cyan-600'
+                className={`flex items-center gap-2 px-3 py-1.5 transition-all ${isActive
+                  ? 'bg-cyan-50 text-cyan-600 border-r-2 border-cyan-600'
                   : 'text-slate-600 hover:bg-slate-50'
                   }`}
               >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-cyan-100' : 'bg-slate-100'
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-cyan-100' : 'bg-slate-100'
                   }`}>
-                   {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-4 h-4" })}
+                   {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-3.5 h-3.5" })}
                 </div>
-                <span className="font-bold text-xs truncate">{item.label}</span>
+                <span className="font-bold text-[11px] truncate leading-none">{item.label}</span>
               </NavLink>
             );
           })}

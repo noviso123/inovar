@@ -37,8 +37,8 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <nav className="grid grid-cols-2 gap-4">
+      <div className="flex-1 overflow-y-auto p-4">
+        <nav className="grid grid-cols-2 gap-2">
           {menuItems.map(item => {
             const isActive = locationPath === item.path;
             return (
@@ -46,15 +46,15 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`p-6 rounded-[2rem] text-left transition-all group flex flex-col gap-4 ${isActive
-                  ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40'
+                className={`p-4 rounded-[1.5rem] text-left transition-all group flex flex-col gap-2 ${isActive
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
                   : 'bg-white/5 text-slate-400 hover:bg-white/10'
                   }`}
               >
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-white/5'}`}>
-                  {item.icon}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-white/5'}`}>
+                  {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-4 h-4" })}
                 </div>
-                <span className="font-black text-[10px] uppercase tracking-widest leading-tight block">{item.label}</span>
+                <span className="font-black text-[9px] uppercase tracking-tight leading-tight block truncate">{item.label}</span>
               </NavLink>
             );
           })}
