@@ -41,6 +41,62 @@ const defaultNotifications = [
     { id: '1', title: 'Bem-vindo', message: 'Sistema atualizado com sucesso.', severity: 'info' as const }
 ];
 
+// Navigation items for bottom bar
+const navItems = [
+  {
+    path: '', label: 'Início', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-6 h-6" />
+  },
+  {
+    path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-6 h-6" />
+  },
+  {
+    path: '/maquinas', label: 'Máquinas', roles: [UserRole.CLIENTE, UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <AirConditionerIcon className="w-6 h-6" />
+  },
+  {
+    path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-6 h-6" />
+  },
+  {
+    path: '/perfil', label: 'Perfil', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <UserIcon className="w-6 h-6" />
+  },
+];
+
+// Categorized menu items for the main menu
+const menuCategories = [
+  {
+    title: 'Operacional',
+    roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE],
+    items: [
+      { path: '', label: 'Dashboard', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-5 h-5" /> },
+      { path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-5 h-5" /> },
+      { path: '/maquinas', label: 'Máquinas', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <AirConditionerIcon className="w-5 h-5" /> },
+      { path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-5 h-5" /> },
+    ]
+  },
+  {
+    title: 'Gestão',
+    roles: [UserRole.ADMIN, UserRole.PRESTADOR],
+    items: [
+      { path: '/clientes', label: 'Clientes', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Users className="w-5 h-5" /> },
+      { path: '/tecnicos', label: 'Técnicos', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Wrench className="w-5 h-5" /> },
+      { path: '/financeiro', label: 'Financeiro', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <DollarSign className="w-5 h-5" /> },
+      { path: '/fiscal', label: 'Fiscal', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <FileSpreadsheet className="w-5 h-5" /> },
+    ]
+  },
+  {
+    title: 'Sistema',
+    roles: [UserRole.ADMIN],
+    items: [
+      { path: '/usuarios', label: 'Usuários', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Users className="w-5 h-5" /> },
+      { path: '/qrcode', label: 'QR Code', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <QrCode className="w-5 h-5" /> },
+      { path: '/empresa', label: 'Minha Empresa', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Building className="w-5 h-5" /> },
+      { path: '/auditoria', label: 'Auditoria', roles: [UserRole.ADMIN], icon: <ShieldCheck className="w-5 h-5" /> },
+      { path: '/configuracoes', label: 'Configurações', roles: [UserRole.ADMIN], icon: <Settings className="w-5 h-5" /> },
+    ]
+  }
+];
+
+const allMenuItems = menuCategories.flatMap(c => c.items);
+
 export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = [], rolePrefix = '' }) => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -70,63 +126,6 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
   // Helper to get full path with role prefix
   const getPath = (path: string) => `/${rolePrefix}${path === '/' ? '' : path}`;
 
-  // Navigation items for bottom bar
-  const navItems = [
-    {
-      path: '', label: 'Início', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-6 h-6" />
-    },
-    {
-      path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-6 h-6" />
-    },
-    {
-      path: '/maquinas', label: 'Máquinas', roles: [UserRole.CLIENTE, UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <AirConditionerIcon className="w-6 h-6" />
-    },
-    {
-      path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-6 h-6" />
-    },
-    {
-      path: '/perfil', label: 'Perfil', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <UserIcon className="w-6 h-6" />
-    },
-  ];
-
-  // Categorized menu items for the main menu
-  const menuCategories = [
-    {
-      title: 'Operacional',
-      roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE],
-      items: [
-        { path: '', label: 'Dashboard', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-5 h-5" /> },
-        { path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-5 h-5" /> },
-        { path: '/maquinas', label: 'Máquinas', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <AirConditionerIcon className="w-5 h-5" /> },
-        { path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-5 h-5" /> },
-      ]
-    },
-    {
-      title: 'Gestão',
-      roles: [UserRole.ADMIN, UserRole.PRESTADOR],
-      items: [
-        { path: '/clientes', label: 'Clientes', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Users className="w-5 h-5" /> },
-        { path: '/tecnicos', label: 'Técnicos', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Wrench className="w-5 h-5" /> },
-        { path: '/financeiro', label: 'Financeiro', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <DollarSign className="w-5 h-5" /> },
-        { path: '/fiscal', label: 'Fiscal', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <FileSpreadsheet className="w-5 h-5" /> },
-      ]
-    },
-    {
-      title: 'Sistema',
-      roles: [UserRole.ADMIN],
-      items: [
-        { path: '/usuarios', label: 'Usuários', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Users className="w-5 h-5" /> },
-        { path: '/qrcode', label: 'QR Code', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <QrCode className="w-5 h-5" /> },
-        { path: '/empresa', label: 'Minha Empresa', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Building className="w-5 h-5" /> },
-        { path: '/auditoria', label: 'Auditoria', roles: [UserRole.ADMIN], icon: <ShieldCheck className="w-5 h-5" /> },
-        { path: '/configuracoes', label: 'Configurações', roles: [UserRole.ADMIN], icon: <Settings className="w-5 h-5" /> },
-      ]
-    }
-  ];
-
-  // Flat list for simple checks
-  const allMenuItems = menuCategories.flatMap(c => c.items);
-
   const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
   const filteredCategories = menuCategories
     .filter(cat => cat.roles.includes(user.role))
@@ -138,7 +137,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
 
 
   const getPageTitle = () => {
-    const item = menuItems.find(i => i.path === location.pathname);
+    const item = allMenuItems.find(i => getPath(i.path) === location.pathname);
     return item?.label || 'Inovar';
   };
 

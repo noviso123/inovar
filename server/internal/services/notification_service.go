@@ -2,34 +2,41 @@ package services
 
 import (
 	"inovar/internal/domain"
+	"inovar/internal/websocket"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type NotificationService struct {
-	db *gorm.DB
+	db  *gorm.DB
+	hub *websocket.Hub
 }
 
-func NewNotificationService(db *gorm.DB) *NotificationService {
-	return &NotificationService{db: db}
+func NewNotificationService(db *gorm.DB, hub *websocket.Hub) *NotificationService {
+	return &NotificationService{db: db, hub: hub}
 }
 
 // CreateNotification creates a new notification for a user
 func (s *NotificationService) CreateNotification(userID, title, message, notifType, link string) (*domain.Notification, error) {
 	notification := &domain.Notification{
-		ID:      uuid.New().String(),
-		UserID:  userID,
-		Title:   title,
-		Message: message,
-		Type:    notifType,
-		Link:    link,
-		Read:    false,
+		ID:        uuid.New().String(),
+		UserID:    userID,
+		Title:     title,
+		Message:   message,
+		Type:      notifType,
+		Link:      link,
+		Read:      false,
+		CreatedAt: time.Now(),
 	}
 
 	if err := s.db.Create(notification).Error; err != nil {
 		return nil, err
 	}
+
+	// Broadcast notification to user
+	s.hub.Broadcast("notification:new", notification)
 
 	return notification, nil
 }

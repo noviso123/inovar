@@ -40,10 +40,15 @@ export const GlobalNotifications: React.FC = () => {
       addToast('Orçamento Aprovado', `O orçamento do chamado #${data.numero} foi aprovado.`, 'success');
     });
 
+    const unsubNotification = wsService.on('notification:new', (data) => {
+      addToast(data.title, data.message, data.type === 'ERROR' ? 'error' : data.type === 'WARNING' ? 'warning' : data.type === 'SUCCESS' ? 'success' : 'info');
+    });
+
     return () => {
       unsubCreated();
       unsubUpdated();
       unsubBudget();
+      unsubNotification();
     };
   }, []);
 

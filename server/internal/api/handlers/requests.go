@@ -176,8 +176,19 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 
 	h.Hub.Broadcast("request:created", solicitacao)
 
-	// Send Notifications (Email & WhatsApp)
+	// Send Notifications (Email & WhatsApp & In-App)
 	go func() {
+		// In-App Notification for Client
+		if role != domain.RoleCliente {
+			h.NotificationService.CreateNotification(
+				clientID,
+				"Nova Solicitação",
+				fmt.Sprintf("Sua solicitação #%d foi criada com sucesso.", solicitacao.Numero),
+				"SUCCESS",
+				"/chamados/"+solicitacao.ID,
+			)
+		}
+
 		// Email
 		if h.EmailService != nil && cliente.Email != "" {
 			osNum := strconv.Itoa(solicitacao.Numero)
@@ -516,15 +527,26 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		"userId":    userID,
 	})
 
-	// Auto-Email on Finalization
-	if isTerminal {
-		go func() {
-			if h.EmailService != nil && solicitacao.ClientName != "" {
-				// We need to ensure solicitacao has Client loaded. Preload used earlier should have it.
-				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, fmt.Sprint(solicitacao.Numero), os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
-			}
-		}()
-	}
+	// Auto-Email on Finalization and In-App Notifications
+	go func() {
+		// Calculate notification message based on status
+		title := "Status Atualizado"
+		msg := fmt.Sprintf("O status da solicitação #%d mudou para %s.", solicitacao.Numero, req.Status)
+
+		// Notify Client
+		h.NotificationService.CreateNotification(
+			solicitacao.ClientID,
+			title,
+			msg,
+			"INFO",
+			"/chamados/"+solicitacao.ID,
+		)
+
+		if h.EmailService != nil && solicitacao.ClientName != "" && isTerminal {
+			// We need to ensure solicitacao has Client loaded. Preload used earlier should have it.
+			h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, fmt.Sprint(solicitacao.Numero), os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
+		}
+	}()
 
 	// Final Audit
 	h.LogAudit(c, "Request", solicitacao.ID, "UPDATE_STATUS", fmt.Sprintf("Changed status from %s to %s", oldStatus, solicitacao.Status), before, solicitacao)
@@ -609,6 +631,19 @@ func (h *Handler) AssignRequest(c *fiber.Ctx) error {
 		"responsibleId":   responsibleID,
 		"responsibleName": responsibleName,
 	})
+
+	// Notify Assigned Technician
+	if responsibleID != "" && responsibleID != userID {
+		go func() {
+			h.NotificationService.CreateNotification(
+				responsibleID,
+				"Nova Atribuição",
+				fmt.Sprintf("Você foi atribuído à solicitação #%d.", solicitacao.Numero),
+				"INFO",
+				"/chamados/"+solicitacao.ID,
+			)
+		}()
+	}
 
 	return Success(c, solicitacao)
 }

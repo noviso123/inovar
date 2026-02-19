@@ -50,7 +50,7 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 		Hub:                 hub,
 		EmailService:        emailService,
 		StorageService:      storageService,
-		NotificationService: services.NewNotificationService(db),
+		NotificationService: services.NewNotificationService(db, hub),
 	}
 }
 

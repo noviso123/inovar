@@ -26,6 +26,7 @@ import { EquipmentForm } from '@/features/resources/equipments/EquipmentForm';
 import { TechnicianForm } from '@/features/resources/technicians/TechnicianForm';
 import { UserForm } from '@/features/resources/users/UserForm';
 import { Login } from '@/features/auth/Login';
+import { Register } from '@/features/auth/Register';
 import { NotificationsPage } from '@/shared/pages/NotificationsPage';
 import { PrivacyPage } from '@/shared/pages/PrivacyPage';
 import { HelpPage } from '@/shared/pages/HelpPage';
@@ -187,6 +188,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       {/* Public Routes */}
       <Route path="/login" element={
         currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Login onLogin={onLogin} />
+      } />
+      <Route path="/register" element={
+        currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <Register />
       } />
       <Route path="/forgot-password" element={
         currentUser ? <Navigate to={`/${getRolePrefix(currentUser.role)}`} replace /> : <ForgotPassword />

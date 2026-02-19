@@ -109,6 +109,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
           </button>
 
+          <div className="pt-4 text-center">
+            <Link
+              to="/register"
+              className="w-full py-4 bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500 hover:text-white rounded-2xl font-black uppercase tracking-widest text-[10px] transition-all hover:scale-[1.02] active:scale-95 border border-cyan-500/20 hover:border-cyan-500 flex items-center justify-center gap-2 group"
+            >
+              <span>Criar minha conta de cliente</span>
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            </Link>
+          </div>
         </form>
 
         {/* Footer */}

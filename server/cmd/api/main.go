@@ -104,6 +104,7 @@ func main() {
 	auth.Post("/refresh", h.RefreshToken)
 	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
+	auth.Post("/register", h.PublicRegister)
 
 	// Protected routes
 	protected := api.Group("", middleware.AuthRequired(cfg.JWTSecret))

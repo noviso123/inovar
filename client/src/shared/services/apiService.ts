@@ -684,6 +684,21 @@ class ApiService {
     return { success: response.ok, message: data.message || 'Senha alterada com sucesso' };
   }
 
+  // Auth - Public Registration
+  async register(data: any): Promise<{ success: boolean; message: string; user?: any }> {
+    const response = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    return {
+      success: response.ok,
+      message: result.message || (response.ok ? 'Cadastro realizado!' : 'Falha no cadastro'),
+      user: result.data?.user
+    };
+  }
+
   // Fiscal - Upload Certificate A1
   async uploadCertificate(file: File, password: string): Promise<any> {
     const formData = new FormData();
