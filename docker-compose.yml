@@ -1,5 +1,5 @@
 # ==============================================================
-# INOVAR - Docker Compose
+# INOVAR - Docker Compose (Refatorado)
 # Uso: docker-compose up -d
 # ==============================================================
 version: '3.9'
@@ -14,19 +14,19 @@ services:
     ports:
       - "${APP_PORT:-8080}:8080"
     volumes:
-      # Persistent data - survives container restarts and updates
-      - ./data/db:/app/data/db           # SQLite database
-      - ./data/uploads:/app/data/uploads  # File uploads (photos, docs)
-      - ./data/certs:/app/data/certs      # Digital certificates (NFS-e A1)
+      # Persistent data - bind mounts to infra/data
+      - ./infra/data/db:/app/data/db # SQLite database
+      - ./infra/data/uploads:/app/data/uploads # File uploads
+      - ./infra/data/certs:/app/data/certs # Digital certificates
     env_file:
       - .env.docker
     environment:
       # Override specific paths for Docker environment
       - DATABASE_URL=/app/data/db/inovar.db
       - UPLOAD_DIR=/app/data/uploads
-      - FRONTEND_DIST=/app/frontend/dist
+      - FRONTEND_DIST=/app/client/dist
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -36,6 +36,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-# Named volumes are NOT used here - we use bind mounts (./data/)
-# so the data stays in a predictable local folder alongside the project

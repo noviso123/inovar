@@ -1,5 +1,5 @@
 # ==============================================================
-# INOVAR - Dockerfile Multi-Stage
+# INOVAR - Dockerfile Multi-Stage (Refatorado)
 # Build: docker build -t inovar .
 # Run:   docker-compose up -d
 # ==============================================================
@@ -7,35 +7,36 @@
 # ─────────────────────────────────────────────
 # Stage 1: Frontend Build (React + Vite)
 # ─────────────────────────────────────────────
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app/frontend
+FROM node:20-alpine AS client-builder
+WORKDIR /app/client
 
 # Copy dependency files first for layer caching
-COPY frontend/package*.json ./
+COPY client/package*.json ./
 RUN npm ci --production=false
 
 # Copy source and build
-COPY frontend/ ./
+COPY client/ ./
 RUN npm run build
 
 # ─────────────────────────────────────────────
 # Stage 2: Backend Build (Go)
 # ─────────────────────────────────────────────
-FROM golang:1.23-alpine AS backend-builder
-WORKDIR /app/backend
+FROM golang:1.23-alpine AS server-builder
+WORKDIR /app/server
 
 # Install git for go modules that require it
 RUN apk add --no-cache git
 
 # Copy dependency files first for layer caching
-COPY backend/go.mod backend/go.sum ./
+COPY server/go.mod server/go.sum ./
 RUN go mod download
 
-# Copy source and build a static binary (no CGO needed for pure-go sqlite)
-COPY backend/ ./
+# Copy source and build a static binary
+COPY server/ ./
+# Build from the new location (server/main.go)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -ldflags="-w -s" \
-    -o inovar .
+  -ldflags="-w -s" \
+  -o inovar .
 
 # ─────────────────────────────────────────────
 # Stage 3: Final Runtime Image (minimal)
@@ -43,17 +44,28 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 FROM alpine:3.19
 
 # Install runtime dependencies
-RUN apk --no-cache add ca-certificates tzdata wget
+RUN apk --no-cache add \
+  ca-certificates \
+  tzdata \
+  wget \
+  python3 \
+  py3-pip \
+  bash
 
 # Create non-root user for security
 RUN addgroup -S inovar && adduser -S inovar -G inovar
 
 WORKDIR /app
 
-# Copy build artifacts
-COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
-COPY --from=backend-builder  /app/backend/inovar ./inovar
-COPY docker/entrypoint.sh ./entrypoint.sh
+# Copy Python requirements first
+COPY infra/requirements.txt ./infra/requirements.txt
+RUN pip install --break-system-packages -r ./infra/requirements.txt
+
+# Copy build artifacts and runtime scripts
+COPY --from=client-builder /app/client/dist ./client/dist
+COPY --from=server-builder /app/server/inovar ./inovar
+COPY infra/ ./infra/
+COPY infra/docker/entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 
 # Create persistent data directories

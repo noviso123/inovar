@@ -1,0 +1,8 @@
+{
+    "id": "d457f419-8210-47ed-9329-838300df76b8",
+    "to": "jtsatiro@hotmail.com",
+    "subject": "Recupera\u00e7\u00e3o de Senha - Inovar",
+    "body": "<h1>Redefini\u00e7\u00e3o de Senha</h1><p>Clique no link para resetar: <a href='http://localhost:3000/reset'>Resetar Senha</a></p>",
+    "created_at": "2026-02-19 12:58:10",
+    "retries": 0
+}

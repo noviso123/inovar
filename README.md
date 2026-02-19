@@ -1,159 +1,86 @@
-# INOVAR - Sistema de Gestão
+# INOVAR GESTÃO - Sistema Integrado 🚀
 
-Sistema de gerenciamento de ordens de serviço (OS), clientes, técnicos e faturamento com NFS-e.
+Sistema completo para gestão de manutenção, ordens de serviço, técnicos e ativos.
 
 ---
 
-## 🚀 Início Rápido (Docker)
+## 🏗️ Arquitetura do Projeto (Monorepo)
+
+O projeto foi reestruturado para seguir as melhores práticas de desenvolvimento moderno:
+
+```
+inovar/
+├── server/       # Backend (Go + Fiber + GORM + SQLite)
+│   ├── cmd/      # Entrypoints da aplicação
+│   ├── internal/ # Lógica de negócio, domínios e infra
+│   └── ...
+├── client/       # Frontend (React + Vite + Tailwind + TypeScript)
+│   ├── src/
+│   │   ├── features/ # Módulos funcionais (Auth, Dashboard, Requests...)
+│   │   └── shared/   # Componentes, hooks e serviços reutilizáveis
+│   └── ...
+└── infra/        # Configurações de infraestrutura
+    ├── docker/   # Dockerfiles e Docker Compose
+    └── scripts/  # Utilitários de automação
+```
+
+---
+
+## ⚡ Guia de Início Rápido (Desenvolvimento Local)
+
+Se você **NÃO TEM Docker** instalado, use este método.
 
 ### Pré-requisitos
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) instalado e em execução
+- [Go](https://go.dev/dl/) (1.23+)
+- [Node.js](https://nodejs.org/) (20+)
 
-### Windows
+### Como Rodar (Windows)
+Basta executar o script de inicialização que abrirá o Backend e Frontend automaticamente:
+
 ```bat
-scripts\start.bat
+infra\scripts\start_dev.bat
 ```
 
-### Linux / Mac
-```bash
-bash scripts/start.sh
-```
-
-Após iniciar, acesse: **http://localhost:8080**
-
-- **Login inicial:** `admin@inovar.com`
-- **Senha inicial:** `123456`
-
-> ⚠️ **Troque a senha** no primeiro acesso. O sistema solicitará automaticamente.
+Isso irá:
+1. Instalar dependências se necessário.
+2. Iniciar o servidor Go na porta **8080**.
+3. Iniciar o cliente React na porta **3001** (ou similar).
+4. O navegador deve abrir ou ficar disponível em `http://localhost:3001`.
 
 ---
 
-## ⚙️ Configuração
+## 🐳 Guia de Início Rápido (Docker)
 
-Edite o arquivo `.env.docker` antes de iniciar em produção:
-
-```env
-JWT_SECRET=<gere com: openssl rand -hex 32>
-CORS_ORIGINS=https://seudominio.com
-SMTP_HOST=smtp.gmail.com
-SMTP_USER=seu@email.com
-SMTP_PASSWORD=sua_senha_app
-```
-
----
-
-## 📁 Estrutura de Dados
-
-```
-data/
-├── db/        → Banco de dados SQLite (inovar.db)
-├── uploads/   → Arquivos enviados (fotos, documentos)
-└── certs/     → Certificados digitais A1 (NFS-e)
-```
-
-> 💡 **Portabilidade:** Para mover o sistema para outro servidor, copie a pasta inteira e execute `docker-compose up -d --build`. Seus dados estarão em `data/`.
-
----
-
-## 🛠️ Comandos Disponíveis
-
-### Makefile (Linux/Mac com `make` instalado)
-
-| Comando | Descrição |
-|---|---|
-| `make up` | Iniciar sistema |
-| `make down` | Parar sistema |
-| `make restart` | Reiniciar sistema |
-| `make logs` | Ver logs em tempo real |
-| `make build` | Build da imagem |
-| `make rebuild` | Rebuild sem cache |
-| `make shell` | Terminal dentro do container |
-| `make backup` | Fazer backup dos dados |
-| `make reset` | Resetar dados (cuidado!) |
-| `make dev` | Modo desenvolvimento |
-
-### Docker Compose direto
+Se você tem o Docker Desktop instalado, esta é a maneira mais limpa de rodar.
 
 ```bash
-# Iniciar
-docker-compose up -d
-
-# Parar
-docker-compose down
-
-# Ver logs
-docker-compose logs -f
-
-# Rebuild
-docker-compose up -d --build
+docker compose -f infra/docker/docker-compose.yml up --build
 ```
+O sistema estará disponível em `http://localhost:3000`.
 
 ---
 
-## 🔄 Atualização do Sistema
+## 🛡️ Credenciais Padrão (Ambiente Dev)
 
+- **Admin**: `admin@inovar.com` / `admin123`
+- **Técnico**: `tech@inovar.com` / `tech123`
+- **Cliente**: `client@inovar.com` / `client123`
+
+---
+
+## 🔧 Comandos Úteis
+
+### Backend
 ```bash
-# 1. Fazer backup primeiro
-bash scripts/backup.sh
-
-# 2. Parar o sistema
-docker-compose down
-
-# 3. Aplicar novas mudanças no código
-
-# 4. Rebuild e reiniciar
-docker-compose up -d --build
+cd server
+go run ./cmd/api/main.go   # Rodar servidor
+go test ./...              # Rodar testes
 ```
 
----
-
-## 💾 Backup e Restauração
-
-### Backup
+### Frontend
 ```bash
-bash scripts/backup.sh
-# Gera: backups/inovar_backup_YYYYMMDD_HHMMSS.tar.gz
+cd client
+npm run dev      # Rodar servidor de desenvolvimento
+npm run build    # Compilar para produção
+npm run preview  # Testar build de produção
 ```
-
-### Restauração
-```bash
-# Parar o sistema
-docker-compose down
-
-# Extrair backup
-tar -xzf backups/inovar_backup_YYYYMMDD_HHMMSS.tar.gz
-
-# Reiniciar
-docker-compose up -d
-```
-
----
-
-## 🏗️ Arquitetura
-
-```
-Backend:  Go + Fiber v2 + GORM + SQLite
-Frontend: React + TypeScript + Vite + TailwindCSS
-Infra:    Docker (single container) + Volumes persistentes
-```
-
-### Módulos
-- **Autenticação** — JWT com refresh token, roles (ADMIN, PRESTADOR, TÉCNICO)
-- **Clientes & Equipamentos** — Cadastro completo com endereço
-- **Ordens de Serviço** — Fluxo completo com histórico e WebSocket
-- **Checklists & Anexos** — Listas de verificação e upload de arquivos
-- **Orçamento & Assinatura** — Aprovação de orçamento e assinatura digital
-- **NFS-e Nacional** — Integração com sistema GOV.BR
-- **Agenda** — Agendamento de atendimentos
-- **Financeiro** — Resumo e exportação
-- **Auditoria** — Log de todas as ações
-
----
-
-## 🔒 Segurança
-
-- Container roda com usuário não-root
-- JWT com expiração configurável
-- CORS configurável por domínio
-- Health check automático
-- Logs com rotação (máx 10MB × 3 arquivos)

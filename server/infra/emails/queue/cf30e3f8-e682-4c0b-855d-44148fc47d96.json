@@ -1,0 +1,8 @@
+{
+    "id": "cf30e3f8-e682-4c0b-855d-44148fc47d96",
+    "to": "jtsatiro@hotmail.com",
+    "subject": "OS #1234 Finalizada - Inovar Gest\u00e3o \u2705",
+    "body": "<h1>Servi\u00e7o Conclu\u00eddo!</h1><p>A OS #1234 foi finalizada. <a href='http://localhost:3000/chamados/123'>Clique aqui para ver o laudo.</a></p>",
+    "created_at": "2026-02-19 12:58:16",
+    "retries": 0
+}
