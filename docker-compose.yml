@@ -10,7 +10,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: inovar-app
-    restart: unless-stopped
+    restart: always
     ports:
       - "${APP_PORT:-8080}:8080"
     volumes:

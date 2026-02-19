@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, UserRole, ServiceRequest, RequestStatus, TimelineEvent } from '@/shared/types';
 import { apiService } from '@/shared/services/apiService';
 import { wsService } from '@/shared/services/websocketService';
+import { notificationService } from '@/shared/services/notificationService';
 import { NotificationToast } from '@/shared/components/NotificationToast';
 import { AppRoutes, getRolePrefix } from '@/shared/components/AppRoutes';
 
@@ -18,14 +19,7 @@ const App: React.FC = () => {
   const [logs, setLogs] = useState<TimelineEvent[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Array<{ id: string, title: string, message: string, severity: 'info' | 'warning' | 'success' }>>(() => {
-    const saved = localStorage.getItem('app_notifications');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  useEffect(() => {
-    localStorage.setItem('app_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+  const [notifications, setNotifications] = useState<Array<{ id: string, title: string, message: string, severity: 'info' | 'warning' | 'success' }>>([]);
 
   // Check auth on mount
   useEffect(() => {
@@ -40,22 +34,34 @@ const App: React.FC = () => {
     setIsLoading(false);
   }, []);
 
-  // Load requests when authenticated
-  const loadRequests = useCallback(async () => {
+  // Load requests and notifications when authenticated
+  const loadData = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const data = await apiService.getRequests();
-      setRequests(data);
+      const [reqs, notifs] = await Promise.all([
+        apiService.getRequests(),
+        notificationService.getAll()
+      ]);
+      setRequests(reqs);
+
+      // Map backend notifications to UI format
+      const mappedNotifs = notifs.map(n => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        severity: (n.type === 'SUCCESS' ? 'success' : n.type === 'WARNING' ? 'warning' : 'info') as 'info' | 'warning' | 'success'
+      }));
+      setNotifications(mappedNotifs);
     } catch (err) {
-      console.error('Failed to load requests:', err);
+      console.error('Failed to load data:', err);
     }
   }, [currentUser]);
 
   useEffect(() => {
     if (currentUser) {
-      loadRequests();
+      loadData();
     }
-  }, [currentUser, loadRequests]);
+  }, [currentUser, loadData]);
 
   // WebSocket connection
   useEffect(() => {
