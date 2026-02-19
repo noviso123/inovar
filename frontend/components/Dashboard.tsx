@@ -19,9 +19,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
   const isProvider = currentUser.role === UserRole.PRESTADOR || currentUser.role === UserRole.ADMIN;
 
   // Stats
-  const openRequests = requests.filter(r => r.status === RequestStatus.ABERTA || r.status === RequestStatus.PENDENTE).length;
-  const inProgressRequests = requests.filter(r => r.status === RequestStatus.EM_ANDAMENTO).length;
-  const completedRequests = requests.filter(r => r.status === RequestStatus.CONCLUIDA).length;
+  const openRequests = (requests || []).filter(r => r.status === RequestStatus.ABERTA || r.status === RequestStatus.PENDENTE).length;
+  const inProgressRequests = (requests || []).filter(r => r.status === RequestStatus.EM_ANDAMENTO).length;
+  const completedRequests = (requests || []).filter(r => r.status === RequestStatus.CONCLUIDA).length;
 
   // Load earnings for providers
   useEffect(() => {
@@ -167,7 +167,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
             </button>
           </div>
           <div className="space-y-3">
-            {requests
+            {(requests || [])
               .filter(r => (r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA) && r.scheduledAt)
               .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime())
               .slice(0, 3)
@@ -176,7 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
                 Nenhum agendamento próximo
               </div>
             ) : (
-              requests
+              (requests || [])
                 .filter(r => (r.status === RequestStatus.EM_ANDAMENTO || r.status === RequestStatus.ATRIBUIDA || r.status === RequestStatus.AGENDADA) && r.scheduledAt)
                 .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime())
                 .slice(0, 3)
@@ -229,12 +229,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
       <div className="mt-6">
         <h3 className="text-sm font-black text-slate-800 mb-4">Atividade Recente</h3>
         <div className="space-y-3">
-          {requests.slice(0, 3).length === 0 ? (
+          {(requests || []).slice(0, 3).length === 0 ? (
             <div className="text-center py-8 text-slate-300 text-xs font-bold uppercase bg-white rounded-2xl border border-slate-100">
               Nenhuma atividade recente
             </div>
           ) : (
-            requests.slice(0, 3).map(r => (
+            (requests || []).slice(0, 3).map(r => (
               <div
                 key={r.id}
                 onClick={() => onSelectRequest(r)}

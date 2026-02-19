@@ -1,0 +1,41 @@
+# ==============================================================
+# INOVAR - Docker Compose
+# Uso: docker-compose up -d
+# ==============================================================
+version: '3.9'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inovar-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      # Persistent data - survives container restarts and updates
+      - ./data/db:/app/data/db           # SQLite database
+      - ./data/uploads:/app/data/uploads  # File uploads (photos, docs)
+      - ./data/certs:/app/data/certs      # Digital certificates (NFS-e A1)
+    env_file:
+      - .env.docker
+    environment:
+      # Override specific paths for Docker environment
+      - DATABASE_URL=/app/data/db/inovar.db
+      - UPLOAD_DIR=/app/data/uploads
+      - FRONTEND_DIST=/app/frontend/dist
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes are NOT used here - we use bind mounts (./data/)
+# so the data stays in a predictable local folder alongside the project

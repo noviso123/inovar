@@ -38,6 +38,10 @@ func NewEmailService(cfg *config.Config) *EmailService {
 	}
 }
 
+func (s *EmailService) send(m *gomail.Message) error {
+	return s.dialer.DialAndSend(m)
+}
+
 func (s *EmailService) SendWelcomeEmail(toEmail, userName, password string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", s.from)
@@ -58,7 +62,7 @@ func (s *EmailService) SendWelcomeEmail(toEmail, userName, password string) erro
 		</div>
 	`, userName, toEmail, password, s.frontendURL))
 
-	return s.dialer.DialAndSend(m)
+	return s.send(m)
 }
 
 func (s *EmailService) SendOSCreated(toEmail, clientName, osNumber, description string) error {
@@ -79,7 +83,7 @@ func (s *EmailService) SendOSCreated(toEmail, clientName, osNumber, description 
 		</div>
 	`, clientName, osNumber, description))
 
-	return s.dialer.DialAndSend(m)
+	return s.send(m)
 }
 
 func (s *EmailService) SendPasswordResetEmail(toEmail, token, userName string) error {
@@ -101,7 +105,7 @@ func (s *EmailService) SendPasswordResetEmail(toEmail, token, userName string) e
 		</div>
 	`, userName, resetLink))
 
-	return s.dialer.DialAndSend(m)
+	return s.send(m)
 }
 
 func (s *EmailService) SendOSFinalized(toEmail, clientName, osNumber, pdfLink string) error {
@@ -122,5 +126,5 @@ func (s *EmailService) SendOSFinalized(toEmail, clientName, osNumber, pdfLink st
 		</div>
 	`, clientName, osNumber, pdfLink))
 
-	return s.dialer.DialAndSend(m)
+	return s.send(m)
 }

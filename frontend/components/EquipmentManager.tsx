@@ -125,14 +125,21 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({ currentUser 
         </div>
       )}
 
-      {!loading && equipments.length === 0 && (
+      {!loading && (equipments || []).length === 0 && (
         <div className="py-24 text-center bg-slate-50 rounded-[3.5rem] border-2 border-dashed border-slate-200">
-          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Nenhuma máquina cadastrada</p>
+           <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <rect x="2" y="4" width="20" height="14" rx="2" strokeWidth="2" />
+                    <circle cx="9" cy="11" r="4" strokeWidth="2" />
+                </svg>
+            </div>
+          <h4 className="text-xl font-black text-slate-400 tracking-tight mb-2">Nenhuma máquina cadastrada</h4>
+          <p className="text-slate-400/60 font-medium text-sm">Registre os ativos para começar a monitorar preventivas.</p>
         </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
-        {equipments.map(e => {
+        {(equipments || []).map(e => {
           return (
           <div key={e.id} className={`group relative p-10 bg-white/80 backdrop-blur-xl rounded-[3.5rem] border-2 transition-all duration-500 hover:shadow-[0_30px_60px_rgba(0,0,0,0.12)] hover:-translate-y-3 ${e.active ? 'border-slate-50 hover:border-blue-200' : 'border-slate-100 opacity-60 saturate-0 shadow-inner'}`}>
             <div className="flex justify-between items-start mb-8">
@@ -250,7 +257,7 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({ currentUser 
               )}
             </div>
           </div>
-        );
+          );
         })}
       </div>
     </div>

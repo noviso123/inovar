@@ -1,0 +1,52 @@
+# ==============================================================
+# INOVAR - .dockerignore
+# Melhora a velocidade do build excluindo arquivos desnecessários
+# ==============================================================
+
+# Node modules (rebuilt inside container)
+frontend/node_modules
+frontend/.vite
+
+# Build artifacts (rebuilt inside container)
+frontend/dist
+
+# Local data (never include in image - use volumes)
+data/
+backend/storage/
+backend/inovar.db
+backend/*.db
+
+# Environment files (passed via docker-compose)
+.env
+.env.local
+.env.docker
+backend/.env
+frontend/.env
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Agent configs
+.agent/
+
+# Scripts (not needed in container)
+scripts/
+
+# Test files
+**/*.test.*
+**/*.spec.*
+
+# IDE configs
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

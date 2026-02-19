@@ -1,7 +1,9 @@
 // Image Upload Service with Auto-Optimization
 // Uses backend /upload endpoint
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+import { apiService } from './apiService';
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 interface UploadResponse {
   success: boolean;
@@ -34,31 +36,24 @@ class ImageUploadService {
     const formData = new FormData();
     formData.append('file', fileToUpload);
 
-    // Get token from localStorage
-    const token = localStorage.getItem('accessToken');
-
-    const response = await fetch(`${API_BASE}/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData,
-    });
-
-    const responseData = await response.json();
-
-    if (!response.ok || (responseData && responseData.success === false)) {
-      throw new Error(responseData.message || `Upload failed: ${response.statusText}`);
-    }
+    console.log(`📤 Uploading to ${API_BASE}/upload...`);
+    const responseData = await apiService.upload('/upload', formData);
 
     const data = responseData.data;
+    if (!data || !data.url) {
+        throw new Error('Servidor não retornou a URL do arquivo');
+    }
 
     let fullUrl = data.url;
 
-    // Only prepend base URL if it's a relative path (starts with / and not http)
+    // Robustly handle relative vs absolute URLs
     if (data.url.startsWith('/') && !data.url.startsWith('http')) {
-        const baseUrl = API_BASE.replace('/api', '');
-        fullUrl = baseUrl + data.url;
+        // Remove /api from end of VITE_API_URL or use origin if relative API base
+        let baseUrl = API_BASE.split('/api')[0];
+        if (!baseUrl.startsWith('http')) {
+            baseUrl = window.location.origin;
+        }
+        fullUrl = `${baseUrl}${data.url}`;
     }
 
     console.log('📸 Upload successful:', { dataUrl: data.url, fullUrl });

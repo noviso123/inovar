@@ -11,8 +11,8 @@ export const Agenda: React.FC<AgendaProps> = ({ requests, onSelectRequest }) => 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(new Date());
 
-  // Filter requests that are in progress (scheduled)
-  const scheduledRequests = requests.filter(r =>
+  // Filter requests that are in progress (scheduled) safely
+  const scheduledRequests = (requests || []).filter(r =>
     r.status === RequestStatus.EM_ANDAMENTO ||
     r.status === RequestStatus.ACEITA ||
     r.status === RequestStatus.AGENDADA ||

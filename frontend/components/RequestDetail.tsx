@@ -951,7 +951,7 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
                               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                  <p className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-                                    Ambiente: {request.equipments.map(e => e.location || (e.equipamento && e.equipamento.location)).join(', ')}
+                                     Ambiente: {request.equipments.map(e => e.equipamento?.location).filter(Boolean).join(', ')}
                                  </p>
                               </div>
                            )}

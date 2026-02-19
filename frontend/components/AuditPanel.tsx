@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { TimelineEvent } from '../types';
 import { apiService } from '../services/apiService';
+import { Download } from 'lucide-react';
 
 interface AuditPanelProps {
   logs?: TimelineEvent[]; // Optional now
@@ -57,7 +58,7 @@ export const AuditPanel: React.FC<AuditPanelProps> = () => {
              onClick={() => window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}/audit/export`, '_blank')}
              className="px-6 py-3 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl hover:bg-blue-600 transition-all font-black uppercase tracking-widest group flex items-center gap-2"
            >
-             <FileDown className="w-4 h-4" />
+             <Download className="w-4 h-4" />
              Exportar Logs (.csv)
            </button>
         </div>

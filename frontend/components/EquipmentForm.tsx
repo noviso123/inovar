@@ -26,6 +26,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({ currentUser }) => 
   });
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [allEquipments, setAllEquipments] = useState<Equipment[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,6 +38,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({ currentUser }) => 
         setLoading(true);
         await Promise.all([
           loadClients(),
+          loadSuggestions(),
           isEditing && id ? loadEquipment(id) : Promise.resolve()
         ]);
       } catch (err: any) {
@@ -60,11 +62,21 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({ currentUser }) => 
     }
   };
 
+  const loadSuggestions = async () => {
+    try {
+      const data = await apiService.getEquipments();
+      setAllEquipments(data);
+    } catch (err) {
+      console.error('Failed to load suggestions', err);
+    }
+  };
+
   const loadEquipment = async (equipId: string) => {
     try {
       // Assuming we fetch all and find, or backend has getById.
       // Using getEquipments for consistency with previous pattern.
       const allEquips = await apiService.getEquipments();
+      setAllEquipments(allEquips);
       const equip = allEquips.find(e => e.id === equipId);
 
       if (equip) {
@@ -176,11 +188,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({ currentUser }) => 
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Suggestions for Brand/Model */}
+            <datalist id="brands">
+              {Array.from(new Set(allEquipments.map(e => e.brand))).sort().map(brand => (
+                <option key={brand} value={brand} />
+              ))}
+            </datalist>
+            <datalist id="models">
+              {Array.from(new Set(allEquipments.map(e => e.model))).sort().map(model => (
+                <option key={model} value={model} />
+              ))}
+            </datalist>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Marca *</label>
               <input
                 required
+                list="brands"
                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
                 value={formData.brand}
                 onChange={e => setFormData({...formData, brand: e.target.value})}
@@ -191,6 +216,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({ currentUser }) => 
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Modelo / Linha *</label>
               <input
                 required
+                list="models"
                 className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-cyan-500"
                 value={formData.model}
                 onChange={e => setFormData({...formData, model: e.target.value})}

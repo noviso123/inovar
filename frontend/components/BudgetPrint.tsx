@@ -39,7 +39,7 @@ export const BudgetPrint: React.FC = () => {
         }
     }, [request, company]);
 
-    if (!request) return <div>Carregando...</div>;
+    if (!request || !company) return <div>Carregando...</div>;
 
     const total = request.orcamentoItens?.reduce((acc, item) => acc + item.valorTotal, 0) || 0;
 

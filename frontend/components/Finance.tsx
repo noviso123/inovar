@@ -66,9 +66,9 @@ export const Finance: React.FC = () => {
 
   const taxes = summary ? summary.totalRevenue * (taxRate / 100) : 0;
 
-  // Process data for charts
-  const chartData = summary?.transactions ?
-    Object.values(summary.transactions.reduce((acc: any, t) => {
+  // Process data for charts safely
+  const chartData = (summary?.transactions || []).length > 0 ?
+    Object.values((summary?.transactions || []).reduce((acc: any, t) => {
       const date = new Date(t.date).toLocaleDateString('pt-BR');
       if (!acc[date]) acc[date] = { date, income: 0, expense: 0 };
       if (t.type === 'income') acc[date].income += t.amount;
@@ -83,18 +83,25 @@ export const Finance: React.FC = () => {
     </div>
   );
 
+  // Fallback if summary is null to prevent further crashes
+  const safeSummary = summary || {
+    totalRevenue: 0,
+    netProfit: 0,
+    pendingRevenue: 0,
+    expenses: 0,
+    transactions: []
+  };
+
   if (error) return (
     <div className="p-10 text-center bg-rose-50 rounded-[2.5rem] border border-rose-100 max-w-2xl mx-auto mt-10">
       <div className="w-16 h-16 bg-rose-100 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <AlertCircle className="w-8 h-8" />
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
       </div>
       <h3 className="text-rose-900 font-black text-lg mb-2">Erro de Acesso</h3>
       <p className="text-rose-700/80 mb-6 font-medium">{error}</p>
       <button onClick={loadFinance} className="px-6 py-3 bg-rose-600 text-white rounded-xl font-black uppercase tracking-widest text-xs hover:bg-rose-700 transition-all">Tentar Novamente</button>
     </div>
   );
-
-  if (!summary) return null;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700 text-left -mx-4">
@@ -160,14 +167,14 @@ export const Finance: React.FC = () => {
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-blue-50 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           <TrendingUp className="absolute right-4 top-4 w-5 h-5 text-blue-500" />
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 relative z-10">Total pago</p>
-          <p className="text-2xl font-black text-slate-800 tracking-tighter relative z-10">R$ {summary.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-black text-slate-800 tracking-tighter relative z-10">R$ {safeSummary.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-1">Acumulado do mês</p>
         </div>
         <div className="bg-white p-6 rounded-[2rem] border-2 border-slate-50 shadow-sm relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-50 rounded-full group-hover:scale-110 transition-transform duration-500"></div>
           <Wallet className="absolute right-4 top-4 w-5 h-5 text-amber-500" />
           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-2 relative z-10">Total pendente</p>
-          <p className="text-2xl font-black text-amber-600 tracking-tighter relative z-10">R$ {summary.pendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-black text-amber-600 tracking-tighter relative z-10">R$ {safeSummary.pendingRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-[9px] text-slate-300 font-black uppercase tracking-widest mt-1">Aguardando validação</p>
         </div>
       </div>
@@ -176,12 +183,12 @@ export const Finance: React.FC = () => {
       <div className="grid grid-cols-2 gap-4 px-4">
         <div className="bg-emerald-50 p-6 rounded-[2rem] border-2 border-emerald-100 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-2">Lucro líquido est.</p>
-          <p className="text-2xl font-black text-emerald-800 tracking-tighter">R$ {(summary.totalRevenue - taxes - summary.expenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-black text-emerald-800 tracking-tighter">R$ {(safeSummary.totalRevenue - taxes - safeSummary.expenses).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-1">Livre de impostos & despesas</p>
         </div>
         <div className="bg-rose-50 p-6 rounded-[2rem] border-2 border-rose-100 shadow-sm flex flex-col justify-center items-center text-center">
           <p className="text-[10px] text-rose-600 font-black uppercase tracking-widest mb-2">Despesas Reais</p>
-          <p className="text-2xl font-black text-rose-800 tracking-tighter">R$ {summary.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+          <p className="text-2xl font-black text-rose-800 tracking-tighter">R$ {safeSummary.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
           <p className="text-[9px] text-rose-400 font-bold uppercase tracking-widest mt-1">Materiais & Logística</p>
         </div>
       </div>
@@ -189,10 +196,10 @@ export const Finance: React.FC = () => {
       {/* Transaction List */}
       <div className="space-y-4 px-4 pb-20">
         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-4">Últimas Movimentações</h4>
-        {summary.transactions.length === 0 ? (
+        {(safeSummary.transactions || []).length === 0 ? (
           <div className="py-24 text-center text-slate-300 font-black uppercase text-xs">Aguardando movimentação</div>
         ) : (
-          [...summary.transactions].reverse().map(t => (
+          [...safeSummary.transactions].reverse().map(t => (
             <div key={t.id} className="bg-white p-6 rounded-[2rem] border border-slate-50 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${

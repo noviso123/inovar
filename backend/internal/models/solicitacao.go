@@ -61,6 +61,7 @@ type Solicitacao struct {
 	Checklists     []Checklist              `gorm:"foreignKey:SolicitacaoID" json:"checklists,omitempty"`
 	Attachments    []Anexo                  `gorm:"foreignKey:SolicitacaoID" json:"attachments,omitempty"`
 	OrcamentoItens []OrcamentoItem          `gorm:"foreignKey:SolicitacaoID" json:"orcamentoItens,omitempty"`
+	NotaFiscal     *NotaFiscal              `gorm:"foreignKey:SolicitacaoID" json:"notaFiscal,omitempty"`
 }
 
 func (Solicitacao) TableName() string { return "solicitacoes" }

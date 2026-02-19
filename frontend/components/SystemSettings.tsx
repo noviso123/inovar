@@ -36,12 +36,12 @@ export const SystemSettings: React.FC = () => {
     }
   };
 
-  // Helper to extract SLA hours
+  // Helper to extract SLA hours with safe access
   const slas = {
-      'BAIXA': settings['sla_baixa'] || '72',
-      'MEDIA': settings['sla_media'] || '48',
-      'ALTA': settings['sla_alta'] || '24',
-      'EMERGENCIAL': settings['sla_emergencial'] || '6'
+      'BAIXA': (settings || {})['sla_baixa'] || '72',
+      'MEDIA': (settings || {})['sla_media'] || '48',
+      'ALTA': (settings || {})['sla_alta'] || '24',
+      'EMERGENCIAL': (settings || {})['sla_emergencial'] || '6'
   };
 
   if (loading) return <p className="text-center p-10 text-slate-400">Carregando configurações...</p>;

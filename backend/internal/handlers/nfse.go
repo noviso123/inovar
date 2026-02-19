@@ -33,8 +33,8 @@ func (h *Handler) UploadCertificate(c *fiber.Ctx) error {
 		return BadRequest(c, "Senha do certificado obrigatória")
 	}
 
-	// Save certificate using Supabase Storage
-	url, err := h.StorageService.UploadFile(file, "certificados/"+*user.CompanyID)
+	// Save certificate using Local Storage
+	url, err := h.StorageService.Upload(file)
 	if err != nil {
 		return ServerError(c, err)
 	}

@@ -215,9 +215,9 @@ export const CompanyEdit: React.FC<CompanyEditProps> = ({ currentUser }) => {
                 if (response.success) {
                     setFormData(prev => ({ ...prev, logoUrl: response.data.url }));
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Upload failed', err);
-                alert('Erro ao fazer upload da logo.');
+                alert('Erro ao fazer upload da logo: ' + (err.message || 'Erro desconhecido'));
             } finally {
                 setUploading(false);
             }

@@ -25,7 +25,7 @@ export const ServiceOrderPrint: React.FC = () => {
         }
     }, [request, company]);
 
-    if (!request) return <div>Carregando...</div>;
+    if (!request || !company) return <div>Carregando...</div>;
 
     return (
         <div className="bg-white p-8 max-w-[210mm] mx-auto text-black print:p-0">

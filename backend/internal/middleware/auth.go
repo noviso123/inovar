@@ -20,28 +20,29 @@ type Claims struct {
 // AuthRequired validates JWT tokens
 func AuthRequired(jwtSecret string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// FULL LIBERATION: Always allow access, even without token
-		c.Locals("userId", "d3e4f5a6-b7c8-4d9e-a0b1-c2d3e4f5a6b7") // Matches seeded admin
-		c.Locals("userEmail", "admin@inovar.com")
-		c.Locals("userRole", "ADMIN_SISTEMA")
-		c.Locals("companyId", "")
-
 		authHeader := c.Get("Authorization")
-		if authHeader != "" {
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-			if tokenString != authHeader {
-				token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-					return []byte(jwtSecret), nil
-				})
-				if err == nil && token.Valid {
-					if claims, ok := token.Claims.(*Claims); ok {
-						c.Locals("userId", claims.UserID)
-						c.Locals("userEmail", claims.Email)
-						c.Locals("userRole", claims.Role)
-						c.Locals("companyId", claims.CompanyID)
-					}
-				}
-			}
+		if authHeader == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Unauthorized",
+			})
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte(jwtSecret), nil
+		})
+
+		if err != nil || !token.Valid {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Mismatched Token",
+			})
+		}
+
+		if claims, ok := token.Claims.(*Claims); ok {
+			c.Locals("userId", claims.UserID)
+			c.Locals("userEmail", claims.Email)
+			c.Locals("userRole", claims.Role)
+			c.Locals("companyId", claims.CompanyID)
 		}
 
 		return c.Next()
@@ -49,10 +50,18 @@ func AuthRequired(jwtSecret string) fiber.Handler {
 }
 
 // RolesAllowed checks if user has required role
+// RolesAllowed checks if user has required role
 func RolesAllowed(allowedRoles ...string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// FULL LIBERATION: Roles are always allowed
-		return c.Next()
+		userRole := GetUserRole(c)
+		for _, role := range allowedRoles {
+			if role == userRole {
+				return c.Next()
+			}
+		}
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "Acesso negado: privilégios insuficientes",
+		})
 	}
 }
 

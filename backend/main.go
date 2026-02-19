@@ -228,17 +228,26 @@ func main() {
 	system.Get("/tables", h.ListTables)
 	system.Get("/tables/:name", h.GetTableData)
 
-	// Storage is handled by Supabase Storage - no local file serving needed
-
 	// WebSocket for real-time updates
 	app.Get("/ws", websocket.Upgrade(), websocket.Handler(h.Hub))
 
+	// Serve uploaded files from local storage
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./storage/uploads"
+	}
+	app.Static("/uploads", uploadDir)
+
 	// Serve static files from React build
-	app.Static("/", "../frontend/dist")
+	frontendDist := os.Getenv("FRONTEND_DIST")
+	if frontendDist == "" {
+		frontendDist = "../frontend/dist"
+	}
+	app.Static("/", frontendDist)
 
 	// Catch-all route to serve React's index.html (SPA fallback)
 	app.Get("/*", func(c *fiber.Ctx) error {
-		return c.SendFile("../frontend/dist/index.html")
+		return c.SendFile(frontendDist + "/index.html")
 	})
 
 	// Start server

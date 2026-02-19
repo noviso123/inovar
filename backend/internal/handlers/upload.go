@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -19,19 +18,21 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx 10MB)")
 	}
 
-	// Determine category based on extension
-	category := "outros"
-	ext := strings.ToLower(filepath.Ext(file.Filename))
-	if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
-		category = "imagens"
-	} else if ext == ".pdf" {
-		category = "documentos"
-	}
+	/*
+		// Determine category based on extension
+		category := "outros"
+		ext := strings.ToLower(filepath.Ext(file.Filename))
+		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
+			category = "imagens"
+		} else if ext == ".pdf" {
+			category = "documentos"
+		}
 
-	subfolder := "geral"
+		subfolder := "geral"
+	*/
 
-	// Upload to Supabase Storage (no local fallback)
-	url, err := h.StorageService.UploadFile(file, category+"/"+subfolder)
+	// Upload to Local Storage
+	url, err := h.StorageService.Upload(file)
 	if err != nil {
 		return ServerError(c, err)
 	}

@@ -1,14 +1,12 @@
 package services
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 	"mime/multipart"
-	"net/http"
+	"os"
 	"path/filepath"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/inovar/backend/internal/config"
 )
 
@@ -17,56 +15,47 @@ type StorageService struct {
 }
 
 func NewStorageService(cfg *config.Config) *StorageService {
+	// Ensure storage directory exists
+	if _, err := os.Stat("storage/uploads"); os.IsNotExist(err) {
+		os.MkdirAll("storage/uploads", 0755)
+	}
 	return &StorageService{Config: cfg}
 }
 
-// UploadFile uploads a file to Supabase Storage
-func (s *StorageService) UploadFile(file *multipart.FileHeader, folder string) (string, error) {
-	if s.Config.SupabaseURL == "" {
-		return "", fmt.Errorf("supabase not configured")
-	}
-
+func (s *StorageService) Upload(file *multipart.FileHeader) (string, error) {
 	src, err := file.Open()
 	if err != nil {
 		return "", err
 	}
 	defer src.Close()
 
-	// Read file content
-	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, src); err != nil {
-		return "", err
-	}
-
 	// Generate unique filename
 	ext := filepath.Ext(file.Filename)
-	filename := fmt.Sprintf("%s/%d%s", folder, time.Now().UnixNano(), ext)
+	filename := uuid.New().String() + ext
+	dstPath := filepath.Join("storage", "uploads", filename)
 
-	// Supabase Storage API URL
-	url := fmt.Sprintf("%s/storage/v1/object/attachments/%s", s.Config.SupabaseURL, filename)
-
-	req, err := http.NewRequest("POST", url, buf)
+	// Create destination file
+	dst, err := os.Create(dstPath)
 	if err != nil {
 		return "", err
 	}
+	defer dst.Close()
 
-	req.Header.Set("Authorization", "Bearer "+s.Config.SupabaseKey)
-	req.Header.Set("Content-Type", file.Header.Get("Content-Type"))
-	// x-upsert header might be useful, but unique names avoid conflict
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
+	// Copy content
+	if _, err = io.Copy(dst, src); err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("supabase upload failed (%d): %s", resp.StatusCode, string(body))
-	}
+	// Return relative path or URL
+	// Assuming static file serving is set up for /storage or similar
+	// For now, return a path that the frontend can use if we serve /uploads
+	return "/uploads/" + filename, nil
+}
 
-	// Return public URL (assuming public bucket)
-	publicURL := fmt.Sprintf("%s/storage/v1/object/public/attachments/%s", s.Config.SupabaseURL, filename)
-	return publicURL, nil
+func (s *StorageService) Delete(path string) error {
+	// Path comes in as /uploads/filename.ext or full URL
+	// We need to extract just the filename or correct relative path
+	// Simple clean: remove /uploads/ prefix if present
+	cleanPath := filepath.Join("storage", path)
+	return os.Remove(cleanPath)
 }

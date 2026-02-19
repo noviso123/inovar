@@ -172,7 +172,7 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 	h.DB.Create(&history)
 
 	// Reload with associations
-	h.DB.Preload("Equipments.Equipamento").First(&solicitacao, "id = ?", solicitacao.ID)
+	h.DB.Preload("Equipments.Equipamento").Preload("Client.Endereco").First(&solicitacao, "id = ?", solicitacao.ID)
 
 	h.Hub.Broadcast("request:created", solicitacao)
 
@@ -382,7 +382,7 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		Preload("Equipments").
 		Preload("History").
 		Preload("Attachments").
-		Preload("OrcamentoItems").
+		Preload("OrcamentoItens").
 		Preload("NotaFiscal").
 		First(&solicitacao, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Solicitação não encontrada")
@@ -830,8 +830,8 @@ func (h *Handler) UploadAttachment(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx "+strconv.FormatInt(h.Config.MaxUploadSize/1024/1024, 10)+"MB)")
 	}
 
-	// Save file using Supabase Storage (no local fallback)
-	url, err := h.StorageService.UploadFile(file, "requests/"+requestID)
+	// Save file using Local Storage
+	url, err := h.StorageService.Upload(file)
 	if err != nil {
 		return ServerError(c, err)
 	}
@@ -976,8 +976,8 @@ func (h *Handler) SalvarAssinatura(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 
 	var req struct {
-		Assinatura string `json:"assinatura"` // Base64 encoded signature image
-		Tipo       string `json:"tipo"`       // "cliente" or "tecnico"
+		Assinatura string `json:"assinatura"`
+		Tipo       string `json:"tipo"`
 	}
 	if err := c.BodyParser(&req); err != nil {
 		return BadRequest(c, "Dados inválidos")

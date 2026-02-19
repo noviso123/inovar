@@ -26,16 +26,25 @@ dist-ssr
 
 # Secrets & Environment
 .env
+.env.local
 backend/.env
-*.env.local
+frontend/.env
+.env.docker
+# keep .env.docker.example and backend/.env.example in repo
 
-# Local storage & database (Supabase handles all)
+# Local storage & database
 storage/
-# database/
 backend/storage/
 backend/inovar.db
 *.db
 
+# Docker persistent data (use volumes/bind mounts)
+data/
+
+# Backups (generated locally)
+backups/
+
+# Legacy credential files
 inovar-gestao-34293-e7b9d6c86924.json
 
 # Binaries
@@ -44,3 +53,4 @@ inovar-gestao-34293-e7b9d6c86924.json
 bin/
 rw.exe
 backend/*.exe
+backend/inovar

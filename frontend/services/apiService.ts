@@ -55,6 +55,8 @@ class ApiService {
           ...options,
           headers,
         });
+
+        if (retryResponse.status === 204) return {} as T;
         return retryResponse.json();
       } else {
         // Clear tokens and redirect to login
@@ -64,6 +66,7 @@ class ApiService {
       }
     }
 
+    if (response.status === 204) return {} as T;
     const data = await response.json();
 
     if (!response.ok || (data && data.success === false)) {
@@ -100,6 +103,10 @@ class ApiService {
     localStorage.setItem('accessToken', token);
   }
 
+  getAccessToken(): string | null {
+    return this.accessToken || localStorage.getItem('accessToken');
+  }
+
   private setRefreshToken(token: string) {
     this.refreshToken = token;
     localStorage.setItem('refreshToken', token);
@@ -117,8 +124,6 @@ class ApiService {
   async login(email: string, password: string): Promise<AuthResponse> {
     // Clear any existing tokens before login attempt
     // This prevents "Session expired" error from stale tokens
-    this.clearTokens();
-
     this.clearTokens();
 
     try {
@@ -234,7 +239,7 @@ class ApiService {
   // Clients
   async getClients(): Promise<any[]> {
     const response = await this.request<{ data: any[] }>('/clients');
-    return response.data;
+    return response.data || [];
   }
 
   async createClient(data: any): Promise<any> {
@@ -276,7 +281,7 @@ class ApiService {
     params.append('activeOnly', String(activeOnly));
 
     const response = await this.request<{ data: any[] }>(`/equipments?${params}`);
-    return response.data;
+    return response.data || [];
   }
 
   async createEquipment(data: any): Promise<any> {
@@ -321,7 +326,7 @@ class ApiService {
     if (filters?.clientId) params.append('clientId', filters.clientId);
 
     const response = await this.request<{ data: ServiceRequest[] }>(`/requests?${params}`);
-    return response.data;
+    return response.data || [];
   }
 
   async createRequest(data: Partial<ServiceRequest>): Promise<ServiceRequest> {
@@ -357,7 +362,7 @@ class ApiService {
   // Checklists
   async getChecklists(requestId: string): Promise<any[]> {
       const response = await this.request<{ data: any[] }>(`/requests/${requestId}/checklists`);
-      return response.data;
+      return response.data || [];
   }
 
   async createChecklist(requestId: string, item: { description: string }): Promise<any> {
@@ -399,7 +404,7 @@ class ApiService {
 
   async getRequestHistory(id: string): Promise<any[]> {
     const response = await this.request<{ data: any[] }>(`/requests/${id}/history`);
-    return response.data;
+    return response.data || [];
   }
 
   // Budget/Orcamento
@@ -494,27 +499,53 @@ class ApiService {
   async getAttachments(requestId: string): Promise<any[]> {
     const response = await this.request<{ data: any[] }>(`/requests/${requestId}/attachments`);
     console.log('📂 Attachments:', response.data);
-    return response.data;
+    return response.data || [];
   }
 
   async uploadAttachment(requestId: string, file: File): Promise<any> {
-    // Upload to backend directly (Local Storage)
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE}/requests/${requestId}/attachments`, {
+    const response = await this.upload(`/requests/${requestId}/attachments`, formData);
+    return response.data;
+  }
+
+  // Public Upload Method with Auth and Refresh Handling
+  async upload<T = any>(endpoint: string, formData: FormData): Promise<T> {
+    const headers: Record<string, string> = {};
+
+    if (this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    }
+
+    const performRequest = () => fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-      },
+      headers,
       body: formData,
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Erro ao enviar anexo');
+    let response = await performRequest();
+
+    // Handle 401 (Token Expired)
+    if (response.status === 401) {
+      const refreshed = await this.tryRefreshToken();
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
+        response = await performRequest();
+      } else {
+        this.clearTokens();
+        window.location.reload();
+        throw new Error('Session expired');
+      }
     }
-    return data.data;
+
+    const data = await response.json();
+
+    if (!response.ok || (data && data.success === false)) {
+      throw new Error(data.message || data.error || 'Upload failed');
+    }
+
+    return data;
   }
 
   async deleteAttachment(requestId: string, id: string): Promise<void> {
@@ -529,7 +560,7 @@ class ApiService {
     if (filters?.technicianId) params.append('technicianId', filters.technicianId);
 
     const response = await this.request<{ data: any[] }>(`/agenda?${params}`);
-    return response.data;
+    return response.data || [];
   }
 
   async createAgendaEntry(data: any): Promise<any> {
@@ -555,7 +586,7 @@ class ApiService {
   // Finance
   async getFinanceSummary(): Promise<any> {
     const response = await this.request<{ data: any }>('/finance/summary');
-    return response.data;
+    return response.data || {};
   }
 
   // Audit
@@ -566,13 +597,13 @@ class ApiService {
     if (filters?.limit) params.append('limit', String(filters.limit));
 
     const response = await this.request<{ data: any[] }>(`/audit?${params}`);
-    return response.data;
+    return response.data || [];
   }
 
   // Settings
   async getSettings(): Promise<Record<string, string>> {
     const response = await this.request<{ data: Record<string, string> }>('/settings');
-    return response.data;
+    return response.data || {};
   }
 
   async updateSettings(settings: Record<string, string>): Promise<void> {
@@ -585,7 +616,7 @@ class ApiService {
   // Company (Prestador)
   async getCompany(): Promise<any> {
     const response = await this.request<{ data: any }>('/company');
-    return response.data;
+    return response.data || {};
   }
 
   async updateCompany(data: any): Promise<any> {
@@ -593,7 +624,7 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.data;
+    return response.data || {};
   }
 
   // Check if authenticated
@@ -614,19 +645,19 @@ class ApiService {
   // Users - Get by ID
   async getUser(id: string): Promise<any> {
     const response = await this.request<{ data: any }>(`/users/${id}`);
-    return response.data;
+    return response.data || {};
   }
 
   // Clients - Get by ID
   async getClient(id: string): Promise<any> {
     const response = await this.request<{ data: any }>(`/clients/${id}`);
-    return response.data;
+    return response.data || {};
   }
 
   // Equipments - Get by ID
   async getEquipment(id: string): Promise<any> {
     const response = await this.request<{ data: any }>(`/equipments/${id}`);
-    return response.data;
+    return response.data || {};
   }
 
   // Auth - Forgot Password (public endpoint)
@@ -664,18 +695,18 @@ class ApiService {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || 'Erro ao enviar certificado');
-    return data.data;
+    return data.data || {};
   }
 
   async getTaxRegimes(): Promise<any> {
     const response = await this.request<{ data: any }>('/fiscal/regimes');
     // Backend returns { regimes: [...], motivosCancelamento: [...] }
-    return response.data;
+    return response.data || {};
   }
 
   async lookupCNPJ(cnpj: string): Promise<any> {
     const response = await this.request<{ data: any }>(`/fiscal/lookup/${cnpj}`);
-    return response.data;
+    return response.data || {};
   }
 
   // Finance - List Transactions
@@ -685,7 +716,7 @@ class ApiService {
     if (response.data && !Array.isArray(response.data) && response.data.transactions) {
       return response.data.transactions;
     }
-    return response.data as any[];
+    return (response.data as any[]) || [];
   }
 
   // Utils
@@ -703,17 +734,17 @@ class ApiService {
   // System Visibility
   async getSystemRoutes(): Promise<any[]> {
     const response = await this.request<{ data: any[] }>('/system/routes');
-    return response.data;
+    return response.data || [];
   }
 
   async getSystemTables(): Promise<string[]> {
     const response = await this.request<{ data: string[] }>('/system/tables');
-    return response.data;
+    return response.data || [];
   }
 
   async getSystemTableData(tableName: string): Promise<any[]> {
     const response = await this.request<{ data: any[] }>(`/system/tables/${tableName}`);
-    return response.data;
+    return response.data || [];
   }
 
 }

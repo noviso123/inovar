@@ -2,9 +2,10 @@ package database
 
 import (
 	"errors"
+
 	"log"
 
-	"gorm.io/driver/postgres"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -13,11 +14,11 @@ import (
 
 func Connect(databaseURL string) (*gorm.DB, error) {
 	if databaseURL == "" {
-		return nil, errors.New("DATABASE_URL is required for Supabase connection")
+		return nil, errors.New("DATABASE_URL is required")
 	}
 
-	log.Println("ðŸ”Œ Connecting to Supabase (PostgreSQL)...")
-	dialector := postgres.Open(databaseURL)
+	log.Println("📂 Connecting to SQLite...")
+	dialector := sqlite.Open(databaseURL)
 
 	db, err := gorm.Open(dialector, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
@@ -26,7 +27,7 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	log.Println("âœ… Database connected successfully")
+	log.Println("✅ Database connected successfully")
 	return db, nil
 }
 

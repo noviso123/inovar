@@ -1,0 +1,43 @@
+# ==============================================================
+# INOVAR - Docker Compose (Desenvolvimento)
+# Uso: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Ou via Makefile: make dev
+# ==============================================================
+version: '3.9'
+
+services:
+  # Backend dev with hot-reload (using Air)
+  backend:
+    image: golang:1.23-alpine
+    container_name: inovar-backend-dev
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - ./data/db:/app/data/db
+      - ./data/uploads:/app/data/uploads
+      - ./data/certs:/app/data/certs
+    env_file:
+      - .env.docker
+    environment:
+      - DATABASE_URL=/app/data/db/inovar.db
+      - UPLOAD_DIR=/app/data/uploads
+      - FRONTEND_DIST=/app/../frontend/dist
+      - ENVIRONMENT=development
+    command: >
+      sh -c "go install github.com/air-verse/air@latest && air -c .air.toml || go run ."
+
+  # Frontend dev with Vite hot-module-replacement
+  frontend:
+    image: node:20-alpine
+    container_name: inovar-frontend-dev
+    working_dir: /app
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "npm install && npm run dev"
+    environment:
+      - VITE_API_URL=http://localhost:8080/api

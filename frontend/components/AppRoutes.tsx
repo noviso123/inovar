@@ -155,9 +155,9 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  const filteredRequests = currentUser?.role === UserRole.CLIENTE
-    ? requests.filter(r => r.clientId === currentUser.id)
-    : requests;
+  const filteredRequests = (currentUser?.role === UserRole.CLIENTE && currentUser?.id)
+    ? (requests || []).filter(r => r.clientId === currentUser.id)
+    : (requests || []);
 
   const renderCommonRoutes = (prefix: string) => [
     <React.Fragment key="dashboard">
