@@ -210,7 +210,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </div>
 
         {/* BOTTOM NAVIGATION (PILL) with integrated menu button */}
-        <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2.5rem] px-8 py-4 flex items-center gap-6 z-[70] transition-all duration-500 hover:scale-[1.02] hover:bg-slate-900">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] px-4 sm:px-8 py-3 flex items-center gap-2 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02]">
           {visibleNavItems.map(item => {
             const fullPath = getPath(item.path);
             const isActive = location.pathname === fullPath || (item.path !== '' && location.pathname.startsWith(fullPath));
