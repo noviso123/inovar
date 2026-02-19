@@ -8,6 +8,7 @@ import { Layout } from '@/shared/components/Layout';
 import { Dashboard } from '@/features/dashboard/Dashboard';
 import { RequestFlow } from '@/features/requests/RequestFlow';
 import { RequestDetail } from '@/features/requests/RequestDetail';
+import { RequestListPage } from '@/features/requests/RequestListPage';
 import { EquipmentManager } from '@/features/resources/equipments/EquipmentManager';
 import { ClientManager } from '@/features/resources/clients/ClientManager';
 import { UserManager } from '@/features/resources/users/UserManager';
@@ -66,67 +67,7 @@ const RoleRouteGuard: React.FC<{ children: React.ReactNode; user: User | null; e
 // ============================================
 // REQUEST LIST PAGE COMPONENT
 // ============================================
-const RequestListPage: React.FC<{
-  requests: ServiceRequest[];
-  onSelectRequest: (r: ServiceRequest) => void;
-  onCreateNew: () => void;
-  rolePrefix: string;
-}> = ({ requests, onSelectRequest, onCreateNew, rolePrefix }) => {
-  const navigate = useNavigate();
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center gap-4 mb-2">
-        <button
-          onClick={() => navigate(`/${rolePrefix}`)}
-          className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div className="flex-1">
-          <h3 className="text-xl font-black text-slate-800 tracking-tight">Chamados</h3>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Painel de solicitações</p>
-        </div>
-        <button
-          onClick={onCreateNew}
-          className="px-5 py-3 bg-slate-900 text-white rounded-2xl font-black shadow-xl hover:bg-emerald-600 transition-all uppercase tracking-widest text-[10px]"
-        >
-          + Criar Chamado
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {requests.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-100">
-            <p className="text-slate-400 font-medium">Nenhum chamado encontrado</p>
-          </div>
-        ) : (
-          requests.map(req => (
-            <div
-              key={req.id}
-              onClick={() => onSelectRequest(req)}
-              className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-lg hover:border-cyan-200 transition-all cursor-pointer"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-[10px] font-black text-cyan-600 uppercase tracking-widest">#{req.numero || req.id.slice(0, 6)}</span>
-                  <h4 className="font-bold text-slate-800 text-sm mt-1">{req.clientName}</h4>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-2">{req.description}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${req.status === 'ABERTA' ? 'bg-blue-100 text-blue-700' :
-                  req.status === 'EM_ANDAMENTO' ? 'bg-amber-100 text-amber-700' :
-                    req.status === 'CONCLUIDA' ? 'bg-emerald-100 text-emerald-700' :
-                      'bg-slate-100 text-slate-700'
-                  }`}>{req.status}</span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-};
+// RequestListPage is now in its own file
 
 interface AppRoutesProps {
   currentUser: User | null;
@@ -166,7 +107,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
           requests={filteredRequests}
           onSelectRequest={(r) => { setSelectedRequest(r); navigate(`/${prefix}/chamados/${r.id}`); }}
           currentUser={currentUser!}
-          onNavigate={(tab) => navigate(`/${prefix}/${tab === 'dashboard' ? '' : tab}`)}
+          onNavigate={(path, state) => navigate(`/${prefix}/${path === 'dashboard' ? '' : path}`, { state })}
         />
       } />
     </React.Fragment>,

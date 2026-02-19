@@ -8,7 +8,7 @@ interface DashboardProps {
   requests: ServiceRequest[];
   onSelectRequest: (request: ServiceRequest) => void;
   currentUser: User;
-  onNavigate: (path: string) => void;
+  onNavigate: (path: string, state?: any) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest, currentUser, onNavigate }) => {
@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
           </div>
         ) : (
           <div
-            onClick={() => onNavigate('chamados')}
+            onClick={() => onNavigate('chamados', { initialTab: 'all' })}
             className="group relative bg-white p-6 rounded-[2.5rem] border border-cyan-100 shadow-xl shadow-cyan-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-cyan-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
           >
              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
@@ -103,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
 
         {/* Card 2: Open/Available */}
         <div
-          onClick={() => onNavigate('chamados')}
+          onClick={() => onNavigate('chamados', { initialTab: 'active' })}
           className="group relative bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-xl shadow-orange-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-orange-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
@@ -118,7 +118,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
 
         {/* Card 3: In Progress / Scheduled */}
         <div
-          onClick={() => onNavigate(isTech || isProvider ? 'agenda' : 'chamados')}
+          onClick={() => onNavigate(isTech || isProvider ? 'agenda' : 'chamados', { initialTab: 'active' })}
           className="group relative bg-white p-6 rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
@@ -133,7 +133,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
 
         {/* Card 4: Completed */}
         <div
-          onClick={() => onNavigate('chamados')}
+          onClick={() => onNavigate('chamados', { initialTab: 'finalized' })}
           className="group relative bg-white p-6 rounded-[2.5rem] border border-slate-900 shadow-2xl shadow-slate-900/10 flex flex-col justify-between h-44 cursor-pointer hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>

@@ -126,6 +126,7 @@ export interface ServiceRequest {
   materialsUsed?: string;
   nextMaintenanceAt?: string;
   preventive?: boolean;
+  notaFiscal?: NotaFiscal;
 }
 
 export interface OrcamentoItem {
