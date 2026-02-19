@@ -36,7 +36,7 @@ COPY server/ ./
 # Build from the new location (server/main.go)
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
   -ldflags="-w -s" \
-  -o inovar .
+  -o inovar ./cmd/api/main.go
 
 # ─────────────────────────────────────────────
 # Stage 3: Final Runtime Image (minimal)
