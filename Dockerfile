@@ -14,9 +14,9 @@ WORKDIR /app/client
 COPY client/package*.json ./
 RUN npm ci --production=false
 
-# Copy source and build
+# Copy source and build (increasing memory limit for low-RAM VPS)
 COPY client/ ./
-RUN npm run build
+RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 # ─────────────────────────────────────────────
 # Stage 2: Backend Build (Go)
