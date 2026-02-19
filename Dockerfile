@@ -39,27 +39,28 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
   -o inovar ./cmd/api/main.go
 
 # ─────────────────────────────────────────────
-# Stage 3: Final Runtime Image (minimal)
+# Stage 3: Final Runtime Image (minimal Debian-based for Python compatibility)
 # ─────────────────────────────────────────────
-FROM alpine:3.19
+FROM python:3.11-slim-bookworm
 
 # Install runtime dependencies
-RUN apk --no-cache add \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   tzdata \
   wget \
-  python3 \
-  py3-pip \
-  bash
+  curl \
+  bash \
+  && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security
-RUN addgroup -S inovar && adduser -S inovar -G inovar
+# Create non-root user for security (Debian style)
+RUN groupadd -r inovar && useradd -r -g inovar inovar
 
 WORKDIR /app
 
 # Copy Python requirements first
 COPY infra/requirements.txt ./infra/requirements.txt
-RUN pip install --break-system-packages -r ./infra/requirements.txt
+# Install dependencies (Debian has pre-built wheels for numba and rembg dependencies)
+RUN pip install --no-cache-dir --break-system-packages -r ./infra/requirements.txt
 
 # Copy build artifacts and runtime scripts
 COPY --from=client-builder /app/client/dist ./client/dist
