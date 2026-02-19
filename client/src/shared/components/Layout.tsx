@@ -89,27 +89,52 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
     },
   ];
 
-  // Menu items for full screen menu
-  const menuItems = [
-    { path: '', label: 'Dashboard', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-5 h-5" /> },
-    { path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-5 h-5" /> },
-    { path: '/maquinas', label: 'Máquinas', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <AirConditionerIcon className="w-5 h-5" /> },
-    { path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-5 h-5" /> },
-    { path: '/perfil', label: 'Meu Perfil', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <UserIcon className="w-5 h-5" /> },
-    { path: '/empresa', label: 'Minha Empresa', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Building className="w-5 h-5" /> },
-    { path: '/clientes', label: 'Clientes', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Users className="w-5 h-5" /> },
-    { path: '/tecnicos', label: 'Técnicos', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Wrench className="w-5 h-5" /> },
-    { path: '/financeiro', label: 'Financeiro', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <DollarSign className="w-5 h-5" /> },
-    { path: '/usuarios', label: 'Usuários', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Users className="w-5 h-5" /> },
-    { path: '/fiscal', label: 'Fiscal', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <FileSpreadsheet className="w-5 h-5" /> },
-    { path: '/qrcode', label: 'QR Code', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <QrCode className="w-5 h-5" /> },
-    { path: '/auditoria', label: 'Auditoria', roles: [UserRole.ADMIN], icon: <ShieldCheck className="w-5 h-5" /> },
-    { path: '/configuracoes', label: 'Configurações', roles: [UserRole.ADMIN], icon: <Settings className="w-5 h-5" /> },
-    { path: '/system', label: 'Auditoria Sistema', roles: [UserRole.ADMIN], icon: <Activity className="w-5 h-5" /> },
+  // Categorized menu items for the main menu
+  const menuCategories = [
+    {
+      title: 'Operacional',
+      roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE],
+      items: [
+        { path: '', label: 'Dashboard', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <Home className="w-5 h-5" /> },
+        { path: '/chamados', label: 'Chamados', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <FileText className="w-5 h-5" /> },
+        { path: '/maquinas', label: 'Máquinas', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO, UserRole.CLIENTE], icon: <AirConditionerIcon className="w-5 h-5" /> },
+        { path: '/agenda', label: 'Agenda', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Calendar className="w-5 h-5" /> },
+      ]
+    },
+    {
+      title: 'Gestão',
+      roles: [UserRole.ADMIN, UserRole.PRESTADOR],
+      items: [
+        { path: '/clientes', label: 'Clientes', roles: [UserRole.ADMIN, UserRole.PRESTADOR, UserRole.TECNICO], icon: <Users className="w-5 h-5" /> },
+        { path: '/tecnicos', label: 'Técnicos', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Wrench className="w-5 h-5" /> },
+        { path: '/financeiro', label: 'Financeiro', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <DollarSign className="w-5 h-5" /> },
+        { path: '/fiscal', label: 'Fiscal', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <FileSpreadsheet className="w-5 h-5" /> },
+      ]
+    },
+    {
+      title: 'Sistema',
+      roles: [UserRole.ADMIN],
+      items: [
+        { path: '/usuarios', label: 'Usuários', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Users className="w-5 h-5" /> },
+        { path: '/qrcode', label: 'QR Code', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <QrCode className="w-5 h-5" /> },
+        { path: '/empresa', label: 'Minha Empresa', roles: [UserRole.ADMIN, UserRole.PRESTADOR], icon: <Building className="w-5 h-5" /> },
+        { path: '/auditoria', label: 'Auditoria', roles: [UserRole.ADMIN], icon: <ShieldCheck className="w-5 h-5" /> },
+        { path: '/configuracoes', label: 'Configurações', roles: [UserRole.ADMIN], icon: <Settings className="w-5 h-5" /> },
+      ]
+    }
   ];
 
+  // Flat list for simple checks
+  const allMenuItems = menuCategories.flatMap(c => c.items);
+
   const visibleNavItems = navItems.filter(item => item.roles.includes(user.role));
-  const visibleMenuItems = menuItems.filter(item => item.roles.includes(user.role));
+  const filteredCategories = menuCategories
+    .filter(cat => cat.roles.includes(user.role))
+    .map(cat => ({
+      ...cat,
+      items: cat.items.filter(item => item.roles.includes(user.role))
+    }))
+    .filter(cat => cat.items.length > 0);
 
 
   const getPageTitle = () => {
@@ -210,7 +235,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </div>
 
         {/* BOTTOM NAVIGATION (PILL) with integrated menu button */}
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02]">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 glass shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2rem] px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02] mb-[var(--safe-area-bottom)]">
           {visibleNavItems.map(item => {
             const fullPath = getPath(item.path);
             const isActive = location.pathname === fullPath || (item.path !== '' && location.pathname.startsWith(fullPath));
@@ -249,7 +274,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           onLogout={onLogout}
-          menuItems={visibleMenuItems}
+          categories={filteredCategories}
           locationPath={location.pathname}
           getPath={getPath}
         />

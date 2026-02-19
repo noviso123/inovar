@@ -11,7 +11,10 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void;
-  menuItems: MenuItem[];
+  categories: Array<{
+    title: string;
+    items: MenuItem[];
+  }>;
   locationPath: string;
   getPath: (path: string) => string;
 }
@@ -20,7 +23,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
   onLogout,
-  menuItems,
+  categories,
   locationPath,
   getPath
 }) => {
@@ -58,32 +61,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Menu Items List */}
-        <nav className="flex-1 overflow-y-auto py-4">
-          {menuItems.map(item => {
-            const fullPath = getPath(item.path);
-            const isActive = locationPath === fullPath || (item.path !== '' && locationPath.startsWith(fullPath));
+        <nav className="flex-1 overflow-y-auto px-2 py-4 scrollbar-hide">
+          {categories.map((category, catIdx) => (
+            <div key={catIdx} className="mb-6">
+              <h4 className="px-4 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{category.title}</h4>
+              <div className="space-y-1">
+                {category.items.map(item => {
+                  const fullPath = getPath(item.path);
+                  const isActive = locationPath === fullPath || (item.path !== '' && locationPath.startsWith(fullPath));
 
-            // Icon Logic (simplified fallback if icon not provided in props to avoid complexity)
-            // Ideally icons should be passed in menuItems or found by a helper
-
-            return (
-              <NavLink
-                key={item.path}
-                to={fullPath}
-                onClick={onClose}
-                className={`flex items-center gap-4 px-6 py-2.5 transition-all ${isActive
-                  ? 'bg-cyan-50 text-cyan-600 border-r-4 border-cyan-600'
-                  : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-              >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-cyan-100' : 'bg-slate-100'
-                  }`}>
-                   {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-4.5 h-4.5" })}
-                </div>
-                <span className="font-bold text-sm truncate">{item.label}</span>
-              </NavLink>
-            );
-          })}
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={fullPath}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 px-4 py-2 transition-all rounded-xl ${isActive
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                        : 'text-slate-600 hover:bg-slate-100 hover:translate-x-1'
+                        }`}
+                    >
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-100'
+                        }`}>
+                        {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-4 h-4" })}
+                      </div>
+                      <span className="font-bold text-xs truncate">{item.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Footer - Logout */}
