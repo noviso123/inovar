@@ -15,7 +15,7 @@ if "%commit_msg%"=="" set commit_msg=Auto-update
 git commit -m "%commit_msg%"
 
 echo [3/4] Pushing to repository...
-git push
+git push --set-upstream origin main
 
 echo [4/4] Restarting Server...
 taskkill /F /IM "inovar-server.exe" >nul 2>&1
