@@ -30,6 +30,7 @@ type Solicitacao struct {
 	Numero          int        `gorm:"index" json:"numero"` // Sequential number for display (managed in code)
 	ClientID        string     `gorm:"size:36;not null;index" json:"clientId"`
 	ClientName      string     `gorm:"size:255;not null" json:"clientName"`
+	CompanyID       string     `gorm:"size:36;not null;index" json:"companyId"`
 	Status          string     `gorm:"size:20;not null;index" json:"status"`
 	Priority        string     `gorm:"size:20;not null;index" json:"priority"`
 	ServiceType     string     `gorm:"size:100" json:"serviceType,omitempty"`

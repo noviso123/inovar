@@ -133,6 +133,7 @@ func (h *Handler) CreateRequest(c *fiber.Ctx) error {
 		Numero:      nextNumero,
 		ClientID:    clientID,
 		ClientName:  cliente.Name,
+		CompanyID:   cliente.CompanyID,
 		Status:      domain.StatusAberta,
 		Priority:    req.Priority,
 		ServiceType: req.ServiceType,
