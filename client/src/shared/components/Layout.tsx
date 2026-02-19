@@ -210,7 +210,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </div>
 
         {/* BOTTOM NAVIGATION (PILL) with integrated menu button */}
-        <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/98 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[1.5rem] px-1.5 sm:px-8 py-2 sm:py-3 flex items-center gap-0.5 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.01]">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/95 backdrop-blur-3xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-[2rem] px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02]">
           {visibleNavItems.map(item => {
             const fullPath = getPath(item.path);
             const isActive = location.pathname === fullPath || (item.path !== '' && location.pathname.startsWith(fullPath));
@@ -218,13 +218,13 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
               <NavLink
                 key={item.path}
                 to={fullPath}
-                className={`flex flex-col items-center gap-0.5 transition-all duration-500 relative ${isActive ? 'text-cyan-400 -translate-y-1' : 'text-slate-400 hover:text-white'
+                className={`flex flex-col items-center gap-1 transition-all duration-500 relative ${isActive ? 'text-cyan-400 -translate-y-2' : 'text-slate-400 hover:text-white'
                   }`}
               >
-                <div className={`p-1.5 sm:p-3 rounded-xl transition-all duration-500 ${isActive ? 'bg-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.2)]' : 'hover:bg-white/5'}`}>
-                  {React.cloneElement(item.icon as React.ReactElement, { className: "w-5 h-5 sm:w-6 sm:h-6" })}
+                <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'hover:bg-white/5'}`}>
+                  {React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6" })}
                 </div>
-                {isActive && <div className="w-1 h-1 rounded-full bg-cyan-400 absolute -bottom-2 shadow-[0_0_8px_#22d3ee]"></div>}
+                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute -bottom-3 shadow-[0_0_10px_#22d3ee]"></div>}
               </NavLink>
             );
           })}
