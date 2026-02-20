@@ -37,6 +37,7 @@ import { ServiceOrderPrint } from '@/features/requests/ServiceOrderPrint';
 import { BudgetPrint } from '@/features/requests/BudgetPrint';
 import SystemStatus from '@/features/dashboard/SystemStatus';
 import { FiscalSettings } from '@/features/finance/FiscalSettings';
+import { QRCodeManager } from '@/features/resources/equipments/QRCodeManager';
 
 // ============================================
 // ROLE PREFIX HELPER
@@ -259,6 +260,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
         <Route path="financeiro" element={<Finance />} />
         <Route path="fiscal" element={<FiscalSettings currentUser={currentUser!} />} />
+        <Route path="qrcode" element={<QRCodeManager />} />
 
       </Route>
 
@@ -285,6 +287,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route path="usuarios/:id/editar" element={<UserForm currentUser={currentUser!} />} />
         <Route path="financeiro" element={<Finance />} />
         <Route path="fiscal" element={<FiscalSettings currentUser={currentUser!} />} />
+        <Route path="qrcode" element={<QRCodeManager />} />
         <Route path="auditoria" element={<AuditPanel />} />
         <Route path="configuracoes" element={<SystemSettings />} />
         <Route path="system" element={<SystemStatus />} />
