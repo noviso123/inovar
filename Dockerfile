@@ -74,8 +74,8 @@ RUN mkdir -p ./data/db ./data/uploads ./data/certs
 # Set correct ownership
 RUN chown -R inovar:inovar /app
 
-# Switch to non-root user
-USER inovar
+# Note: entrypoint runs as root to fix volume permissions,
+# then drops to inovar user via su when starting the app
 
 # Expose application port
 EXPOSE 8080

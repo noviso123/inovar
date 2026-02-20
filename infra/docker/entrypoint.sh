@@ -1,7 +1,7 @@
 #!/bin/sh
 # ==============================================================
 # INOVAR - Container Entrypoint
-# Runs at container start to prepare the environment
+# Runs as root to prepare environment, then starts app
 # ==============================================================
 set -e
 
@@ -12,7 +12,8 @@ echo "╚═══════════════════════�
 
 # Ensure data directories exist with correct permissions
 mkdir -p /app/data/db /app/data/uploads /app/data/certs
-echo "✅ Data directories verified"
+chown -R inovar:inovar /app/data
+echo "✅ Data directories verified (permissions fixed)"
 
 # Set default environment variables if not provided
 DATABASE_URL=${DATABASE_URL:-/app/data/db/inovar.db}
@@ -32,7 +33,7 @@ echo "🌐 PORT:         ${PORT}"
 echo "🖥️  FRONTEND:     ${FRONTEND_DIST}"
 echo "🐍 BRIDGE:       ${BRIDGE_SCRIPT_PATH}"
 
-# Change to app directory and start the binary
+# Start the binary as the inovar user (drop root privileges)
 cd /app
 echo "🚀 Starting INOVAR application..."
-exec ./inovar
+exec su -s /bin/sh inovar -c "./inovar"
