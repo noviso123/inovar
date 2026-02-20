@@ -193,9 +193,9 @@ export const QRCodeManager: React.FC = () => {
     });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-4 md:px-0">
+        <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-2 md:px-6 max-w-[1920px] mx-auto">
             {/* Header - Hidden on print */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden pt-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
@@ -229,7 +229,7 @@ export const QRCodeManager: React.FC = () => {
 
             {activeTab === 'assets' ? (
                 <>
-                    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 print:hidden">
+                    <div className="bg-white p-4 md:p-6 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 print:hidden">
                         <div className="flex-1 relative">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input
@@ -242,7 +242,7 @@ export const QRCodeManager: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3">
                             <select
-                                className="bg-slate-50 border-transparent rounded-xl text-sm font-medium px-4 py-3 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none min-w-[200px]"
+                                className="bg-slate-50 border-transparent rounded-xl text-sm font-medium px-4 py-3 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none flex-1 md:min-w-[200px]"
                                 value={filterClient}
                                 onChange={(e) => setFilterClient(e.target.value)}
                             >
@@ -252,25 +252,26 @@ export const QRCodeManager: React.FC = () => {
                                 ))}
                             </select>
                         </div>
-                        <button onClick={() => window.print()} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors flex items-center gap-2">
+                        <button onClick={() => window.print()} className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors flex items-center justify-center gap-2">
                             <Printer className="w-5 h-5" />
-                            <span className="text-[10px] font-black uppercase hidden md:inline">Imprimir Tudo</span>
+                            <span className="text-[10px] font-black uppercase">Imprimir Tudo</span>
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 print:grid-cols-3 print:gap-4 print:pt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 print:grid-cols-3 print:gap-4 print:pt-4">
                         {filteredEquipments.map((e) => (
-                            <div key={e.id} className="bg-white p-6 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 print:border-slate-300 print:break-inside-avoid shadow-sm hover:shadow-md transition-all">
+                            <div key={e.id} className="bg-white p-5 md:p-6 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 print:border-slate-300 print:break-inside-avoid shadow-sm hover:shadow-md transition-all">
                                 <div className="w-full text-left">
                                     <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1 truncate">{(e as any).clientName}</p>
                                     <h4 className="text-base font-black text-slate-800 leading-tight truncate">{e.brand}</h4>
                                     <p className="text-[10px] font-bold text-slate-400 truncate">{e.model}</p>
                                 </div>
 
-                                <div className="bg-slate-50 p-4 rounded-2xl print:bg-white relative">
+                                <div className="bg-slate-50 p-4 rounded-2xl print:bg-white relative w-full flex justify-center">
                                     <QRCodeCanvas
+                                        ref={qrRef}
                                         value={`${window.location.origin}/open-request/${e.id}`}
-                                        size={120}
+                                        size={140}
                                         level="H"
                                         includeMargin={true}
                                     />
@@ -291,10 +292,10 @@ export const QRCodeManager: React.FC = () => {
                     </div>
                 </>
             ) : (
-                <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 text-left">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+                <div className="w-full animate-in fade-in slide-in-from-bottom-6 duration-700 text-left">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-12 items-start">
                         {/* Settings Panel */}
-                        <div className="bg-white rounded-[3.5rem] p-10 border-2 border-slate-100 shadow-sm space-y-8">
+                        <div className="lg:col-span-5 bg-white rounded-[2.5rem] md:rounded-[3.5rem] p-6 md:p-10 border-2 border-slate-100 shadow-sm space-y-6 md:space-y-8">
                             <div>
                                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">Gerador de Marketing</h3>
                                 <p className="text-sm text-slate-500 font-medium leading-relaxed">Personalize etiquetas para seus equipamentos. Alta densidade para impressão.</p>
@@ -302,10 +303,10 @@ export const QRCodeManager: React.FC = () => {
 
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tamanho de Impressão</label>
-                                <div className="flex bg-slate-50 p-1 rounded-2xl border-2 border-slate-100">
+                                <div className="flex bg-slate-50 p-1 rounded-2xl border-2 border-slate-100 overflow-x-auto no-scrollbar">
                                     {(['small', 'medium', 'large'] as const).map(size => (
-                                        <button key={size} onClick={() => setPrintSize(size)} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${printSize === size ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>
-                                            {size === 'small' ? 'Pequena (5cm)' : size === 'medium' ? 'Média (10cm)' : 'Grande (20cm)'}
+                                        <button key={size} onClick={() => setPrintSize(size)} className={`flex-1 py-3 px-2 min-w-[80px] rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${printSize === size ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'}`}>
+                                            {size === 'small' ? 'Pequena' : size === 'medium' ? 'Média' : 'Grande'}
                                         </button>
                                     ))}
                                 </div>
@@ -325,67 +326,67 @@ export const QRCodeManager: React.FC = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destino (Link/Número)</label>
                                     <input value={inputValue} onChange={e => setInputValue(e.target.value)}
                                         placeholder={qrType === 'whatsapp' ? 'DDD + Número' : qrType === 'instagram' ? 'username' : 'https://...'}
-                                        className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none focus:border-blue-600 font-black text-slate-800" />
+                                        className="w-full p-4 md:p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl md:rounded-3xl outline-none focus:border-blue-600 font-black text-slate-800" />
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensagem na Etiqueta</label>
                                     <input value={customMessage} onChange={e => setCustomMessage(e.target.value)} maxLength={30}
                                         placeholder="Ex: Agende sua limpeza!"
-                                        className="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-3xl outline-none focus:border-blue-600 font-bold text-slate-700" />
+                                        className="w-full p-4 md:p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl md:rounded-3xl outline-none focus:border-blue-600 font-bold text-slate-700" />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <button onClick={() => handleDownload('png')} disabled={!inputValue || isGenerating}
-                                    className="py-6 bg-slate-900 text-white font-black rounded-3xl shadow-2xl hover:bg-emerald-600 transition-all uppercase tracking-widest text-[9px] flex items-center justify-center gap-3 active:scale-95">
+                                    className="py-5 md:py-6 bg-slate-900 text-white font-black rounded-2xl md:rounded-3xl shadow-xl hover:bg-emerald-600 transition-all uppercase tracking-widest text-[9px] flex items-center justify-center gap-3 active:scale-95">
                                     {isGenerating ? '...' : 'Baixar PNG'}
                                 </button>
                                 <button onClick={() => handleDownload('pdf')} disabled={!inputValue || isGenerating}
-                                    className="py-6 bg-blue-600 text-white font-black rounded-3xl shadow-2xl hover:bg-blue-700 transition-all uppercase tracking-widest text-[9px] flex items-center justify-center gap-3 active:scale-95">
+                                    className="py-5 md:py-6 bg-blue-600 text-white font-black rounded-2xl md:rounded-3xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest text-[9px] flex items-center justify-center gap-3 active:scale-95">
                                     {isGenerating ? '...' : 'Baixar PDF'}
                                 </button>
                             </div>
                         </div>
 
                         {/* Preview Panel */}
-                        <div className="flex flex-col items-center sticky top-24">
-                            <div className="bg-white p-12 rounded-[4rem] border-2 border-slate-100 shadow-2xl flex flex-col items-center w-full max-w-sm">
-                                <div className="mb-8 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full shadow-lg flex items-center justify-center bg-[#0f172a] text-white overflow-hidden">
-                                        <div className="bg-[#3d6b8c] w-full h-full flex items-center justify-center text-[8px] font-black">LOGO</div>
+                        <div className="lg:col-span-7 flex flex-col items-center sticky top-24 w-full">
+                            <div className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[4rem] border-2 border-slate-100 shadow-2xl flex flex-col items-center w-full max-w-2xl">
+                                <div className="mb-6 md:mb-8 flex items-center gap-3">
+                                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center bg-[#0f172a] text-white overflow-hidden">
+                                        <div className="bg-[#3d6b8c] w-full h-full flex items-center justify-center text-[8px] md:text-[10px] font-black">LOGO</div>
                                     </div>
-                                    <span className="font-black text-slate-900 uppercase tracking-tighter text-sm">INOVAR REFRIGERAÇÃO</span>
+                                    <span className="font-black text-slate-900 uppercase tracking-tighter text-sm md:text-lg">INOVAR REFRIGERAÇÃO</span>
                                 </div>
 
-                                <div className="relative p-6 bg-white border-4 border-slate-50 rounded-[3rem] shadow-inner mb-6">
+                                <div className="relative p-6 md:p-10 bg-white border-4 border-slate-50 rounded-[2.5rem] md:rounded-[3.5rem] shadow-inner mb-6 w-full flex justify-center max-w-md">
                                     {inputValue ? (
                                         <div className="bg-white rounded-xl">
                                             <QRCodeCanvas
                                                 ref={qrRef}
                                                 value={qrLink}
-                                                size={200}
+                                                size={window.innerWidth < 768 ? 200 : 300}
                                                 level="H"
                                                 includeMargin={true}
                                                 imageSettings={{
                                                     src: "/logo.png",
                                                     x: undefined,
                                                     y: undefined,
-                                                    height: 45,
-                                                    width: 45,
+                                                    height: window.innerWidth < 768 ? 45 : 65,
+                                                    width: window.innerWidth < 768 ? 45 : 65,
                                                     excavate: true,
                                                 }}
                                             />
                                         </div>
                                     ) : (
-                                        <div className="w-[200px] h-[200px] bg-slate-50 rounded-2xl flex items-center justify-center border-4 border-dashed border-slate-200">
+                                        <div className="w-[200px] h-[200px] md:w-[300px] md:h-[300px] bg-slate-50 rounded-2xl flex items-center justify-center border-4 border-dashed border-slate-200">
                                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest text-center px-8">Aguardando dados...</p>
                                         </div>
                                     )}
                                 </div>
 
                                 <div className="text-center w-full">
-                                    <p className="text-xl font-black text-slate-800 tracking-tight break-words">{customMessage}</p>
+                                    <p className="text-xl md:text-3xl font-black text-slate-800 tracking-tight break-words">{customMessage}</p>
                                 </div>
 
                                 <div className="w-full h-2 bg-blue-500 rounded-full mt-8 opacity-20"></div>

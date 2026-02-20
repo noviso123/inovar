@@ -38,29 +38,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
   }, [isProvider]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700 pb-8">
+    <div className="space-y-4 md:space-y-6 animate-in fade-in duration-700 pb-8 px-1 md:px-0 max-w-[1920px] mx-auto">
       {/* Header with Avatar */}
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full bg-slate-200 overflow-hidden border-2 border-slate-100 shadow-lg">
+      <div className="flex items-center gap-4 bg-white/50 p-2 md:p-3 rounded-[2rem] border border-slate-100/50 backdrop-blur-sm mx-1 md:mx-0">
+        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-200 overflow-hidden border-2 border-slate-100 shadow-lg shrink-0">
           {currentUser.avatarUrl ? (
             <img src={currentUser.avatarUrl} className="w-full h-full object-cover" alt="" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-xl">
+            <div className="w-full h-full flex items-center justify-center font-black text-slate-400 text-lg md:text-xl">
               {currentUser.name?.charAt(0)?.toUpperCase() || '?'}
             </div>
           )}
         </div>
-        <div className="flex-1">
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg md:text-xl font-black text-slate-800 tracking-tight truncate">
             Olá, {currentUser.name?.split(' ')[0] || 'Usuário'}
           </h2>
-          <p className="text-xs text-slate-400 font-bold">
+          <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">
             {isClient ? 'Área do Cliente' : isTech ? 'Área do Técnico' : 'Painel de Gestão'}
           </p>
         </div>
         <button
           onClick={() => onNavigate('perfil')}
-          className="w-10 h-10 rounded-full border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors"
+          className="w-10 h-10 rounded-full border border-slate-100 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-colors shrink-0"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -69,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
       </div>
 
       {/* Stats Grid - Adaptive: 1 col mobile, 2 col tablet, 4 col desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mx-1 md:mx-0">
         {/* Card 1: Earnings (Provider) or Open Requests (Client/Tech) */}
         {isProvider ? (
           <div
@@ -149,10 +149,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
 
       {/* Quick Actions */}
       {isClient && (
-        <div className="mt-4">
+        <div className="mt-4 mx-1 md:mx-0">
           <button
             onClick={() => onNavigate('chamados/novo')}
-            className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-emerald-600 transition-colors active:scale-95"
+            className="w-full py-4 md:py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:bg-emerald-600 transition-colors active:scale-95 text-xs md:text-base"
           >
             + Abrir Nova Solicitação
           </button>
@@ -160,8 +160,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
       )}
 
       {/* Próximos Agendamentos - Redesigned */}
-      <div className="mt-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="mt-6 mx-1 md:mx-0">
+        <div className="flex justify-between items-center mb-4 px-1">
           <h3 className="text-sm font-black text-slate-800">Próximo Atendimento</h3>
           <button
             onClick={() => onNavigate('agenda')}
@@ -188,7 +188,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
               <div
                 key={r.id}
                 onClick={() => onSelectRequest(r)}
-                className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/50 cursor-pointer hover:border-cyan-200 transition-all active:scale-95"
+                className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/50 cursor-pointer hover:border-cyan-200 transition-all active:scale-95"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-4">
@@ -229,9 +229,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
       </div>
 
       {/* Recent Activity */}
-      <div className="mt-6">
-        <h3 className="text-sm font-black text-slate-800 mb-4">Atividade Recente</h3>
-        <div className="space-y-3">
+      <div className="mt-6 mx-1 md:mx-0">
+        <h3 className="text-sm font-black text-slate-800 mb-4 px-1">Atividade Recente</h3>
+        <div className="space-y-2 md:space-y-3">
           {(requests || []).slice(0, 3).length === 0 ? (
             <div className="text-center py-8 text-slate-300 text-xs font-bold uppercase bg-white rounded-2xl border border-slate-100">
               Nenhuma atividade recente

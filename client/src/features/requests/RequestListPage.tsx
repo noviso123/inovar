@@ -83,7 +83,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 px-1 md:px-0 max-w-[1920px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -110,7 +110,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
       </div>
 
       {/* Tabs Layout */}
-      <div className="bg-white rounded-[2.5rem] p-2 shadow-xl shadow-slate-200/50 border border-slate-100 overflow-x-auto no-scrollbar">
+      <div className="bg-white rounded-2xl md:rounded-[2.5rem] p-1.5 md:p-2 shadow-xl shadow-slate-200/50 border border-slate-100 overflow-x-auto no-scrollbar mx-1 md:mx-0">
         <div className="flex p-1 gap-1 min-w-max">
           {tabs.map(tab => (
             <button
@@ -143,23 +143,23 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
       </div>
 
       {/* Search Bar */}
-      <div className="relative group">
+      <div className="relative group mx-1 md:mx-0">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
         </div>
         <input
           type="text"
           placeholder="Buscar por cliente, OS, descrição..."
-          className="block w-full pl-12 pr-4 py-5 bg-white border border-slate-100 rounded-3xl text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+          className="block w-full pl-12 pr-4 py-4 md:py-5 bg-white border border-slate-100 rounded-2xl md:rounded-3xl text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {/* List Container */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-6">
         {filteredItems.length === 0 ? (
-          <div className="col-span-full py-20 bg-white rounded-[3rem] text-center border-2 border-dashed border-slate-100">
+          <div className="col-span-full py-20 bg-white rounded-[2rem] md:rounded-[3rem] text-center border-2 border-dashed border-slate-100 mx-1 md:mx-0">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                <ClipboardList className="w-8 h-8 text-slate-200" />
             </div>
@@ -170,7 +170,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
             <div
               key={req.id}
               onClick={() => onSelectRequest(req)}
-              className="group bg-white rounded-2xl md:rounded-[2.5rem] p-5 md:p-7 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:border-blue-200 hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden"
+              className="group bg-white rounded-xl md:rounded-[2rem] p-4 md:p-6 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:border-blue-200 hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden mx-1 md:mx-0"
             >
               {/* Badge for Status */}
               <div className="flex justify-between items-start mb-6">
