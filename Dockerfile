@@ -34,7 +34,8 @@ RUN go mod download
 # Copy source and build with CGO enabled for SQLite
 COPY server/ ./
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
-  -ldflags="-w -s" \
+  -ldflags="-w -s -extldflags '-static'" \
+  -tags netgo,osusergo \
   -o inovar ./cmd/api/main.go
 
 # ─────────────────────────────────────────────
