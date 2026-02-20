@@ -54,9 +54,10 @@ export const QRCodeManager: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [equipsData, clientsData] = await Promise.all([
+            const [equipsData, clientsData, customData] = await Promise.all([
                 apiService.getEquipments(),
-                apiService.getClients()
+                apiService.getClients(),
+                apiService.getCustomQRs()
             ]);
 
             const enriched = equipsData.map((e: any) => ({
@@ -66,6 +67,7 @@ export const QRCodeManager: React.FC = () => {
 
             setEquipments(enriched);
             setClients(clientsData);
+            setCustomStickers(customData);
         } catch (err) {
             console.error('Failed to load QR code data', err);
         } finally {
@@ -93,25 +95,36 @@ export const QRCodeManager: React.FC = () => {
         }
     };
 
-    const addCustomSticker = () => {
+    const addCustomSticker = async () => {
         if (!newSticker.title || !generateQRValue()) return;
 
-        const sticker: CustomSticker = {
-            id: Math.random().toString(36).substr(2, 9),
-            type: newSticker.type as CustomQRType,
-            title: newSticker.title!,
-            subtitle: newSticker.subtitle || '',
-            content: newSticker.type === 'wifi' ? `Rede: ${formValues.wifiSsid}` : generateQRValue(),
-            value: generateQRValue()
-        };
+        try {
+            const stickerData = {
+                type: newSticker.type as CustomQRType,
+                title: newSticker.title!,
+                subtitle: newSticker.subtitle || '',
+                content: newSticker.type === 'wifi' ? `Rede: ${formValues.wifiSsid}` : generateQRValue(),
+                value: generateQRValue()
+            };
 
-        setCustomStickers([sticker, ...customStickers]);
-        // Reset specific part of form
-        setFormValues(prev => ({ ...prev, message: '', text: '' }));
+            const savedSticker = await apiService.createCustomQR(stickerData);
+            setCustomStickers([savedSticker, ...customStickers]);
+
+            // Reset specific part of form
+            setFormValues(prev => ({ ...prev, message: '', text: '', igUser: '', url: '', wifiSsid: '', wifiPass: '' }));
+            setNewSticker(prev => ({ ...prev, title: '', subtitle: '' }));
+        } catch (err) {
+            console.error('Failed to save sticker', err);
+        }
     };
 
-    const removeCustomSticker = (id: string) => {
-        setCustomStickers(customStickers.filter(s => s.id !== id));
+    const removeCustomSticker = async (id: string) => {
+        try {
+            await apiService.deleteCustomQR(id);
+            setCustomStickers(customStickers.filter(s => s.id !== id));
+        } catch (err) {
+            console.error('Failed to delete sticker', err);
+        }
     };
 
     const filteredEquipments = equipments.filter(e => {

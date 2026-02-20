@@ -76,6 +76,7 @@ func Migrate(db *gorm.DB) error {
 		&domain.ConfiguracaoFiscal{},
 		&domain.NFSeEvento{},
 		&domain.Notification{},
+		&domain.CustomQRCode{},
 	)
 
 	if err != nil {

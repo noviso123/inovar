@@ -318,6 +318,24 @@ class ApiService {
     await this.request(`/equipments/${id}`, { method: 'DELETE' });
   }
 
+  // Custom QR Codes
+  async getCustomQRs(): Promise<any[]> {
+    const response = await this.request<{ data: any[] }>('/equipments/custom');
+    return response.data || [];
+  }
+
+  async createCustomQR(data: any): Promise<any> {
+    const response = await this.request<{ data: any }>('/equipments/custom', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.data;
+  }
+
+  async deleteCustomQR(id: string): Promise<void> {
+    await this.request(`/equipments/custom/${id}`, { method: 'DELETE' });
+  }
+
   // Requests
   async getRequests(filters?: { status?: string; priority?: string; clientId?: string }): Promise<ServiceRequest[]> {
     const params = new URLSearchParams();

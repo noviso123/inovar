@@ -141,6 +141,9 @@ func main() {
 	equipments.Patch("/:id/deactivate", h.DeactivateEquipment)
 	equipments.Patch("/:id/reactivate", h.ReactivateEquipment)
 	equipments.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteEquipment)
+	equipments.Get("/custom", h.GetCustomQRs)
+	equipments.Post("/custom", h.CreateCustomQR)
+	equipments.Delete("/custom/:id", h.DeleteCustomQR)
 
 	// Service Requests
 	requests := protected.Group("/requests")
