@@ -116,7 +116,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as FilterTab)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex items-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 activeTab === tab.id
                   ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30'
                   : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
@@ -170,7 +170,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
             <div
               key={req.id}
               onClick={() => onSelectRequest(req)}
-              className="group bg-white rounded-[2.5rem] p-7 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:border-blue-200 hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden"
+              className="group bg-white rounded-2xl md:rounded-[2.5rem] p-5 md:p-7 shadow-xl shadow-slate-200/50 border border-slate-100 hover:shadow-2xl hover:border-blue-200 hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden"
             >
               {/* Badge for Status */}
               <div className="flex justify-between items-start mb-6">

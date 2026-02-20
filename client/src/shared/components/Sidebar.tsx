@@ -41,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Panel */}
       <aside className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col">
         {/* Header */}
-        <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-lg text-sm">I</div>
             <div>
@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Menu Items List */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 scrollbar-hide">
+        <nav className="flex-1 overflow-y-auto px-2 py-4 scrollbar-hide scroll-container">
           {categories.map((category, catIdx) => (
             <div key={catIdx} className="mb-6">
               <h4 className="px-4 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{category.title}</h4>
@@ -75,16 +75,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       key={item.path}
                       to={fullPath}
                       onClick={onClose}
-                      className={`flex items-center gap-3 px-4 py-2 transition-all rounded-xl ${isActive
+                      className={`flex items-center gap-3 px-4 py-3 transition-all rounded-xl ${isActive
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                         : 'text-slate-600 hover:bg-slate-100 hover:translate-x-1'
                         }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-100'
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-100'
                         }`}>
                         {item.icon && React.cloneElement(item.icon as React.ReactElement, { className: "w-4 h-4" })}
                       </div>
-                      <span className="font-bold text-xs truncate">{item.label}</span>
+                      <span className="font-bold text-[13px] truncate">{item.label}</span>
                     </NavLink>
                   );
                 })}

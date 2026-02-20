@@ -74,21 +74,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {isProvider ? (
           <div
             onClick={() => onNavigate('financeiro')}
-            className="group relative bg-white p-6 rounded-[2.5rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-emerald-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+            className="group relative bg-white p-6 rounded-[2.5rem] border border-emerald-100 shadow-xl shadow-emerald-900/5 flex flex-col justify-between h-40 md:h-44 cursor-pointer hover:shadow-emerald-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
             <div className="w-12 h-12 bg-emerald-600 shadow-lg shadow-emerald-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">
               <DollarSign className="w-7 h-7" />
             </div>
             <div className="relative z-10">
-              <p className="text-2xl font-black text-slate-800 tracking-tighter sm:text-3xl">{earnings}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 tracking-tighter">{earnings}</p>
               <p className="text-[10px] text-emerald-600/60 font-black uppercase tracking-[0.2em] mt-1">Saldo a Receber</p>
             </div>
           </div>
         ) : (
           <div
             onClick={() => onNavigate('chamados', { initialTab: 'all' })}
-            className="group relative bg-white p-6 rounded-[2.5rem] border border-cyan-100 shadow-xl shadow-cyan-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-cyan-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+            className="group relative bg-white p-6 rounded-[2.5rem] border border-cyan-100 shadow-xl shadow-cyan-900/5 flex flex-col justify-between h-40 md:h-44 cursor-pointer hover:shadow-cyan-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
           >
              <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
             <div className="w-12 h-12 bg-cyan-600 shadow-lg shadow-cyan-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">
@@ -104,7 +104,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {/* Card 2: Open/Available */}
         <div
           onClick={() => onNavigate('chamados', { initialTab: 'active' })}
-          className="group relative bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-xl shadow-orange-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-orange-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-orange-100 shadow-xl shadow-orange-900/5 flex flex-col justify-between h-40 md:h-44 cursor-pointer hover:shadow-orange-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           <div className="w-12 h-12 bg-orange-500 shadow-lg shadow-orange-500/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:-rotate-12">
@@ -119,7 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {/* Card 3: In Progress / Scheduled */}
         <div
           onClick={() => onNavigate(isTech || isProvider ? 'agenda' : 'chamados', { initialTab: 'active' })}
-          className="group relative bg-white p-6 rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 flex flex-col justify-between h-44 cursor-pointer hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-blue-100 shadow-xl shadow-blue-900/5 flex flex-col justify-between h-40 md:h-44 cursor-pointer hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           <div className="w-12 h-12 bg-blue-600 shadow-lg shadow-blue-600/30 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:scale-110">
@@ -134,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
         {/* Card 4: Completed */}
         <div
           onClick={() => onNavigate('chamados', { initialTab: 'finalized' })}
-          className="group relative bg-white p-6 rounded-[2.5rem] border border-slate-900 shadow-2xl shadow-slate-900/10 flex flex-col justify-between h-44 cursor-pointer hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
+          className="group relative bg-white p-6 rounded-[2.5rem] border border-slate-900 shadow-2xl shadow-slate-900/10 flex flex-col justify-between h-40 md:h-44 cursor-pointer hover:shadow-slate-900/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700"></div>
           <div className="w-12 h-12 bg-slate-900 shadow-lg shadow-slate-900/50 text-white rounded-2xl flex items-center justify-center relative z-10 transition-transform group-hover:rotate-12">

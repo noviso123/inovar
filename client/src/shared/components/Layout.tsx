@@ -155,7 +155,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
       <div className="w-full max-w-[1600px] bg-slate-50 min-h-screen flex flex-col relative shadow-2xl shadow-slate-200/50 transition-all duration-300">
 
         {/* HEADER */}
-        <header className="h-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-8 sticky top-0 z-[60]">
+        <header className="h-16 md:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-[60]">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Inovar" className="w-10 h-10 rounded-full shadow-lg object-contain bg-[#3d6b8c]" />
             <div className="flex flex-col">
@@ -229,12 +229,12 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </header>
 
         {/* MAIN CONTENT - Outlet for nested routes */}
-        <div className="flex-1 p-6 pb-32">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-28">
           <Outlet />
         </div>
 
         {/* BOTTOM NAVIGATION (PILL) with integrated menu button */}
-        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 glass shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2rem] px-4 sm:px-8 py-3 flex items-center gap-3 sm:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02] mb-[var(--safe-area-bottom)]">
+        <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 glass shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2rem] px-3 sm:px-6 lg:px-8 py-3 flex items-center gap-2 sm:gap-4 lg:gap-6 z-[70] transition-all duration-500 hover:scale-[1.02] mb-[var(--safe-area-bottom)]">
           {visibleNavItems.map(item => {
             const fullPath = getPath(item.path);
             const isActive = location.pathname === fullPath || (item.path !== '' && location.pathname.startsWith(fullPath));
@@ -245,7 +245,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
                 className={`flex flex-col items-center gap-1 transition-all duration-500 relative ${isActive ? 'text-cyan-400 -translate-y-2' : 'text-slate-400 hover:text-white'
                   }`}
               >
-                <div className={`p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'hover:bg-white/5'}`}>
+                <div className={`p-2.5 sm:p-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-cyan-500/20 shadow-[0_0_20px_rgba(34,211,238,0.2)]' : 'hover:bg-white/5'}`}>
                   {React.cloneElement(item.icon as React.ReactElement, { className: "w-6 h-6" })}
                 </div>
                 {isActive && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 absolute -bottom-3 shadow-[0_0_10px_#22d3ee]"></div>}
@@ -263,7 +263,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
             title="Menu"
             aria-label="Menu"
           >
-            <div className="p-3 rounded-2xl group-hover:bg-white/5 transition-all">
+            <div className="p-2.5 sm:p-3 rounded-2xl group-hover:bg-white/5 transition-all">
               <Menu className="w-6 h-6 transition-transform group-hover:rotate-180 duration-500" />
             </div>
           </button>
