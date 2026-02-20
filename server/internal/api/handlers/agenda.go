@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 
 	"inovar/internal/api/middleware"
 	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 )
 
 // GetAgenda returns agenda entries
@@ -21,33 +21,20 @@ func (h *Handler) GetAgenda(c *fiber.Ctx) error {
 	end := c.Query("end")
 	technicianID := c.Query("technicianId")
 
-	var agenda []domain.Agenda
-	query := h.DB.Preload("Solicitacao")
-
-	// Filter by user/company
-	switch role {
-	case domain.RoleTecnico:
-		query = query.Where("user_id = ?", userID)
-	case domain.RolePrestador:
-		// All technicians from company
-		query = query.Where("user_id IN (SELECT id FROM users WHERE company_id = ?)", companyID)
+	path := fmt.Sprintf("/db/agenda/?company_id=%s&start=%s&end=%s", companyID, start, end)
+	if role == domain.RoleTecnico {
+		path = fmt.Sprintf("/db/agenda/?user_id=%s&start=%s&end=%s", userID, start, end)
 	}
-
-	// Filter by technician if provided
 	if technicianID != "" {
-		query = query.Where("user_id = ?", technicianID)
+		path = fmt.Sprintf("/db/agenda/?user_id=%s&start=%s&end=%s", technicianID, start, end)
 	}
 
-	// Filter by date range
-	if start != "" && end != "" {
-		startTime, _ := time.Parse("2006-01-02", start)
-		endTime, _ := time.Parse("2006-01-02", end)
-		query = query.Where("scheduled_at >= ? AND scheduled_at <= ?", startTime, endTime.Add(24*time.Hour))
+	res, err := bridge.CallPyService("GET", path, nil)
+	if err != nil {
+		return Success(c, []interface{}{})
 	}
 
-	query.Order("scheduled_at ASC").Find(&agenda)
-
-	return Success(c, agenda)
+	return Success(c, res["data"])
 }
 
 // CreateAgendaRequest represents agenda entry creation
@@ -70,111 +57,59 @@ func (h *Handler) CreateAgendaEntry(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// For technicians, use their own ID
 	targetUserID := req.UserID
 	if role == domain.RoleTecnico || targetUserID == "" {
 		targetUserID = userID
 	}
 
-	scheduledAt, err := ParseDateTime(req.ScheduledAt)
+	pyReq := map[string]interface{}{
+		"user_id":        targetUserID,
+		"solicitacao_id": req.SolicitacaoID,
+		"title":          req.Title,
+		"scheduled_at":   req.ScheduledAt,
+		"duration":       req.Duration,
+		"notes":          req.Notes,
+	}
+
+	res, err := bridge.CallPyService("POST", "/db/agenda/", pyReq)
 	if err != nil {
-		return BadRequest(c, "Data inválida: "+err.Error())
-	}
-	if scheduledAt == nil {
-		return BadRequest(c, "Data de agendamento é obrigatória")
+		return ServerError(c, err)
 	}
 
-	agenda := domain.Agenda{
-		ID:            uuid.New().String(),
-		UserID:        targetUserID,
-		SolicitacaoID: req.SolicitacaoID,
-		Title:         req.Title,
-		ScheduledAt:   *scheduledAt,
-		Duration:      req.Duration,
-		Notes:         req.Notes,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
-	}
+	agendaData := res["data"]
+	h.Hub.Broadcast("agenda:created", agendaData)
 
-	h.DB.Create(&agenda)
-
-	// Update solicitacao status and scheduled date
-	h.DB.Model(&domain.Solicitacao{}).Where("id = ?", req.SolicitacaoID).Updates(map[string]interface{}{
-		"status":       domain.StatusAgendada,
-		"scheduled_at": scheduledAt,
-	})
-
-	h.Hub.Broadcast("agenda:created", agenda)
-
-	return Created(c, agenda)
+	return Created(c, agendaData)
 }
 
 // UpdateAgendaEntry updates an agenda entry
 func (h *Handler) UpdateAgendaEntry(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var agenda domain.Agenda
-	if err := h.DB.First(&agenda, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Agendamento não encontrado")
-	}
-
-	var req CreateAgendaRequest
+	var req map[string]interface{}
 	if err := c.BodyParser(&req); err != nil {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	if req.ScheduledAt != "" {
-		scheduledAt, err := ParseDateTime(req.ScheduledAt)
-		if err == nil && scheduledAt != nil {
-			agenda.ScheduledAt = *scheduledAt
-			// Update solicitacao scheduled date
-			h.DB.Model(&domain.Solicitacao{}).Where("id = ?", agenda.SolicitacaoID).Update("scheduled_at", scheduledAt)
-		}
+	res, err := bridge.CallPyService("PUT", "/db/agenda/"+id, req)
+	if err != nil {
+		return ServerError(c, err)
 	}
 
-	if req.Duration > 0 {
-		agenda.Duration = req.Duration
-	}
-	if req.Notes != "" {
-		agenda.Notes = req.Notes
-	}
-	if req.Title != "" {
-		agenda.Title = req.Title
-	}
+	agendaData := res["data"]
+	h.Hub.Broadcast("agenda:updated", agendaData)
 
-	agenda.UpdatedAt = time.Now()
-	h.DB.Save(&agenda)
-
-	h.Hub.Broadcast("agenda:updated", agenda)
-
-	return Success(c, agenda)
+	return Success(c, agendaData)
 }
 
 // DeleteAgendaEntry deletes an agenda entry
 func (h *Handler) DeleteAgendaEntry(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var agenda domain.Agenda
-	if err := h.DB.First(&agenda, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Agendamento não encontrado")
-	}
-
-	// Start transaction
-	tx := h.DB.Begin()
-
-	// 1. Clear scheduled date in solicitacao
-	if err := tx.Model(&domain.Solicitacao{}).Where("id = ?", agenda.SolicitacaoID).Update("scheduled_at", nil).Error; err != nil {
-		tx.Rollback()
+	_, err := bridge.CallPyService("DELETE", "/db/agenda/"+id, nil)
+	if err != nil {
 		return ServerError(c, err)
 	}
-
-	// 2. Delete agenda entry
-	if err := tx.Delete(&agenda).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	tx.Commit()
 
 	h.Hub.Broadcast("agenda:deleted", fiber.Map{"id": id})
 

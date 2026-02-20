@@ -5,11 +5,10 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"inovar/internal/api/middleware"
-	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 	"inovar/internal/infra/config"
 	"inovar/internal/services"
 	"inovar/internal/websocket"
@@ -143,25 +142,20 @@ func (h *Handler) LogAudit(c *fiber.Ctx, entity, entityID, action, details strin
 		afterJSON = string(a)
 	}
 
-	log := domain.AuditLog{
-		ID:          "", // Handled by DB or GORM if configured, otherwise uuid
-		UserID:      userID,
-		UserName:    userName,
-		UserRole:    userRole,
-		Entity:      entity,
-		EntityID:    entityID,
-		Action:      action,
-		Details:     details,
-		BeforeValue: beforeJSON,
-		AfterValue:  afterJSON,
-		IPAddress:   c.IP(),
-		UserAgent:   string(c.Context().UserAgent()),
+	pyLog := map[string]interface{}{
+		"user_id":      userID,
+		"user_name":    userName,
+		"user_role":    userRole,
+		"entity":       entity,
+		"entity_id":    entityID,
+		"action":       action,
+		"details":      details,
+		"before_value": beforeJSON,
+		"after_value":  afterJSON,
+		"ip_address":   c.IP(),
+		"user_agent":   string(c.Context().UserAgent()),
 	}
 
-	// Generate UUID if needed
-	if log.ID == "" {
-		log.ID = uuid.NewString()
-	}
-
-	h.DB.Create(&log)
+	// Persist via Python service
+	bridge.CallPyService("POST", "/db/audit", pyLog)
 }

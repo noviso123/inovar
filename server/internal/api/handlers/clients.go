@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"inovar/internal/api/middleware"
 	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 )
 
 // ListClients returns clients based on user role
@@ -18,29 +17,19 @@ func (h *Handler) ListClients(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	companyID := middleware.GetCompanyID(c)
 
-	var clients []domain.Cliente
-	query := h.DB.Model(&domain.Cliente{})
-
-	switch role {
-	case domain.RoleCliente:
-		// Client only sees themselves
-		query = query.Where("user_id = ?", userID)
-	case domain.RolePrestador, domain.RoleTecnico:
-		// See clients from their company
-		query = query.Where("company_id = ?", companyID)
-	}
-	// Admin sees all
-
-	// Admin sees all
-
-	query.Preload("User").Preload("Endereco").Order("name ASC").Find(&clients)
-
-	// Populate Active field from User
-	for i := range clients {
-		clients[i].Active = clients[i].User.Active
+	path := "/db/clients?company_id=" + companyID
+	if role == domain.RoleCliente {
+		path += "&user_id=" + userID
+	} else if role == domain.RoleAdmin {
+		path = "/db/clients"
 	}
 
-	return Success(c, clients)
+	res, err := bridge.CallPyService("GET", path, nil)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	return Success(c, res["data"])
 }
 
 // CreateClientRequest represents client creation payload
@@ -61,13 +50,6 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Check if email exists
-	var count int64
-	h.DB.Model(&domain.User{}).Where("email = ?", req.Email).Count(&count)
-	if count > 0 {
-		return BadRequest(c, "Email já cadastrado")
-	}
-
 	// Get company ID
 	companyID := middleware.GetCompanyID(c)
 	if companyID == "" {
@@ -80,287 +62,107 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 	// Hash password
 	password := req.Password
 	if password == "" {
-		// Use default password from config
 		password = h.Config.DefaultPassword
 	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
-	// Create user first
-	user := domain.User{
-		ID:                 uuid.New().String(),
-		Name:               req.Name,
-		Email:              req.Email,
-		PasswordHash:       string(hashedPassword),
-		Role:               domain.RoleCliente,
-		Phone:              req.Phone,
-		Active:             true,
-		MustChangePassword: true,
-		CompanyID:          &companyID,
-		AvatarURL:          req.AvatarURL,
-		CreatedAt:          time.Now(),
-	}
-	h.DB.Create(&user)
-
-	// Create address if provided
-	var enderecoID *string
-	if req.Endereco != nil {
-		endereco := domain.Endereco{
-			ID:         uuid.New().String(),
-			Street:     req.Endereco.Street,
-			Number:     req.Endereco.Number,
-			Complement: req.Endereco.Complement,
-			District:   req.Endereco.District,
-			City:       req.Endereco.City,
-			State:      req.Endereco.State,
-			ZipCode:    req.Endereco.ZipCode,
-		}
-		h.DB.Create(&endereco)
-		enderecoID = &endereco.ID
+	// Call Python service
+	pyReq := map[string]interface{}{
+		"name":          req.Name,
+		"email":         req.Email,
+		"password_hash": string(hashedPassword),
+		"phone":         req.Phone,
+		"document":      req.Document,
+		"company_id":    companyID,
+		"endereco":      req.Endereco,
+		"avatar_url":    req.AvatarURL,
 	}
 
-	// Create client
-	cliente := domain.Cliente{
-		ID:         uuid.New().String(),
-		UserID:     user.ID,
-		Name:       req.Name,
-		Document:   req.Document,
-		Email:      req.Email,
-		Phone:      req.Phone,
-		EnderecoID: enderecoID,
-		CompanyID:  companyID,
-		CreatedAt:  time.Now(),
+	res, err := bridge.CallPyService("POST", "/db/clients", pyReq)
+	if err != nil {
+		return ServerError(c, err)
 	}
-	h.DB.Create(&cliente)
 
-	h.Hub.Broadcast("client:created", cliente)
+	clientData := res["data"]
+	h.Hub.Broadcast("client:created", clientData)
 
 	// Send Notifications (Email)
 	go func() {
-		// Email
-		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, password)
+		if h.EmailService != nil && req.Email != "" {
+			h.EmailService.SendWelcomeEmail(req.Email, req.Name, password)
 		}
 	}()
 
-	return Created(c, cliente)
+	return Created(c, clientData)
 }
 
 // GetClient returns a specific client
 func (h *Handler) GetClient(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	userID := middleware.GetUserID(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var cliente domain.Cliente
-	query := h.DB.Preload("Endereco")
-
-	// Filter by role/company
-	if role == domain.RoleCliente {
-		query = query.Where("user_id = ?", userID)
-	} else if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.Preload("User").First(&cliente, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("GET", "/db/clients/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Cliente não encontrado")
 	}
 
-	cliente.Active = cliente.User.Active
-
-	return Success(c, cliente)
+	return Success(c, res["data"])
 }
 
 // UpdateClient updates a client
 func (h *Handler) UpdateClient(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var cliente domain.Cliente
-	if err := h.DB.First(&cliente, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Cliente não encontrado")
-	}
-
 	var req CreateClientRequest
 	if err := c.BodyParser(&req); err != nil {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	cliente.Name = req.Name
-	cliente.Phone = req.Phone
-	cliente.Document = req.Document
-	cliente.UpdatedAt = time.Now()
+	// Capture state for audit
+	resBefore, _ := bridge.CallPyService("GET", "/db/clients/"+id, nil)
+	before := resBefore["data"]
 
-	// Update or Create address
-	if req.Endereco != nil {
-		if cliente.EnderecoID != nil && *cliente.EnderecoID != "" {
-			// Update existing address
-			h.DB.Model(&domain.Endereco{}).Where("id = ?", *cliente.EnderecoID).Updates(map[string]interface{}{
-				"street":     req.Endereco.Street,
-				"number":     req.Endereco.Number,
-				"complement": req.Endereco.Complement,
-				"district":   req.Endereco.District,
-				"city":       req.Endereco.City,
-				"state":      req.Endereco.State,
-				"zip_code":   req.Endereco.ZipCode,
-			})
-		} else {
-			// Create new address
-			endereco := domain.Endereco{
-				ID:         uuid.New().String(),
-				Street:     req.Endereco.Street,
-				Number:     req.Endereco.Number,
-				Complement: req.Endereco.Complement,
-				District:   req.Endereco.District,
-				City:       req.Endereco.City,
-				State:      req.Endereco.State,
-				ZipCode:    req.Endereco.ZipCode,
-			}
-			if err := h.DB.Create(&endereco).Error; err == nil {
-				cliente.EnderecoID = &endereco.ID
-			}
-		}
-	}
-
-	// Update user as well
-	h.DB.Model(&domain.User{}).Where("id = ?", cliente.UserID).Updates(map[string]interface{}{
-		"name":       req.Name,
-		"phone":      req.Phone,
-		"avatar_url": req.AvatarURL,
-		"updated_at": time.Now(),
-	})
-
-	before := cliente // Copy original state
-	if err := h.DB.Save(&cliente).Error; err != nil {
+	res, err := bridge.CallPyService("PUT", "/db/clients/"+id, req)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	// Reload with address for the broadcast
-	h.DB.Preload("Endereco").First(&cliente, "id = ?", cliente.ID)
-	h.Hub.Broadcast("client:updated", cliente)
+	clientData := res["data"]
+	h.Hub.Broadcast("client:updated", clientData)
 
 	// Final Audit
-	h.LogAudit(c, "Client", cliente.ID, "UPDATE", fmt.Sprintf("Updated client %s", cliente.Name), before, cliente)
+	h.LogAudit(c, "Client", id, "UPDATE", fmt.Sprintf("Updated client %s", req.Name), before, clientData)
 
-	return Success(c, cliente)
+	return Success(c, clientData)
 }
 
 // BlockClient blocks or unblocks a client
 func (h *Handler) BlockClient(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var cliente domain.Cliente
-	if err := h.DB.First(&cliente, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("PATCH", "/db/clients/"+id+"/block", nil)
+	if err != nil {
 		return NotFound(c, "Cliente não encontrado")
 	}
 
-	// Toggle user active status
-	var user domain.User
-	h.DB.First(&user, "id = ?", cliente.UserID)
-	user.Active = !user.Active
-	h.DB.Save(&user)
+	clientData := res["data"].(map[string]interface{})
+	active := clientData["active"].(bool)
 
 	action := "client:blocked"
-	if user.Active {
+	if active {
 		action = "client:unblocked"
 	}
-	h.Hub.Broadcast(action, cliente)
+	h.Hub.Broadcast(action, fiber.Map{"id": id})
 
-	return Success(c, fiber.Map{"active": user.Active})
+	return Success(c, fiber.Map{"active": active})
 }
 
-// DeleteClient deletes a client (soft delete for prestador, hard for admin)
+// DeleteClient deletes a client (delegates cascading logic to Python)
 func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var cliente domain.Cliente
-	query := h.DB
-	if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&cliente, "id = ?", id).Error; err != nil {
+	_, err := bridge.CallPyService("DELETE", "/db/clients/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Cliente não encontrado")
-	}
-
-	if role == domain.RoleAdmin || role == domain.RolePrestador {
-		// Permanent delete - Start transaction
-		tx := h.DB.Begin()
-
-		// Capture UserID for cleanup of orphans
-		userID := cliente.UserID
-
-		// 1. Find all service requests for this client
-		var requestIDs []string
-		tx.Model(&domain.Solicitacao{}).Where("client_id = ?", id).Pluck("id", &requestIDs)
-
-		// 2. Cascadingly delete all requests and their dependencies
-		for _, reqID := range requestIDs {
-			// Delete dependencies of each request by SolicitacaoID to be safe
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.Anexo{})
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.Checklist{})
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.SolicitacaoHistorico{})
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.SolicitacaoEquipamento{})
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.OrcamentoItem{})
-
-			// Delete NFSe and Events
-			tx.Exec("DELETE FROM nfse_eventos WHERE nfse_id IN (SELECT id FROM notas_fiscais WHERE solicitacao_id = ?)", reqID)
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.NotaFiscal{})
-
-			// Delete from Agenda
-			tx.Unscoped().Where("solicitacao_id = ?", reqID).Delete(&domain.Agenda{})
-		}
-
-		// 3. Delete the requests themselves
-		if len(requestIDs) > 0 {
-			if err := tx.Unscoped().Where("client_id = ?", id).Delete(&domain.Solicitacao{}).Error; err != nil {
-				tx.Rollback()
-				return ServerError(c, err)
-			}
-		}
-
-		// 4. Delete associated Equipments (Hard Delete)
-		if err := tx.Unscoped().Where("client_id = ?", id).Delete(&domain.Equipamento{}).Error; err != nil {
-			tx.Rollback()
-			return ServerError(c, err)
-		}
-
-		// 5. Clean up any ORPHAN records linked to the UserID (Extra safety)
-		// This handles cases where history/agenda might exist but request was already gone or unlinked
-		tx.Unscoped().Where("user_id = ?", userID).Delete(&domain.Agenda{})
-		tx.Unscoped().Where("user_id = ?", userID).Delete(&domain.SolicitacaoHistorico{})
-		tx.Unscoped().Where("user_id = ?", userID).Delete(&domain.NFSeEvento{})
-
-		// 6. Capture address ID before deleting client
-		var addrID *string = cliente.EnderecoID
-
-		// 7. Delete the Client
-		if err := tx.Unscoped().Delete(&cliente).Error; err != nil {
-			tx.Rollback()
-			return ServerError(c, err)
-		}
-
-		// 8. Delete the Address if it exists
-		if addrID != nil && *addrID != "" {
-			if err := tx.Unscoped().Delete(&domain.Endereco{}, "id = ?", *addrID).Error; err != nil {
-				tx.Rollback()
-				return ServerError(c, err)
-			}
-		}
-
-		// 9. Delete the User (This is the final step)
-		if err := tx.Unscoped().Delete(&domain.User{}, "id = ?", userID).Error; err != nil {
-			tx.Rollback()
-			return ServerError(c, err)
-		}
-
-		if err := tx.Commit().Error; err != nil {
-			return ServerError(c, err)
-		}
-	} else {
-		// Soft delete via blocking
-		h.DB.Model(&domain.User{}).Where("id = ?", cliente.UserID).Update("active", false)
 	}
 
 	h.Hub.Broadcast("client:deleted", fiber.Map{"id": id})

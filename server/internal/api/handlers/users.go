@@ -2,14 +2,13 @@ package handlers
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"inovar/internal/api/middleware"
 	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 )
 
 // ListUsers returns all users based on role
@@ -17,17 +16,17 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	role := middleware.GetUserRole(c)
 	companyID := middleware.GetCompanyID(c)
 
-	var users []domain.User
-	query := h.DB.Model(&domain.User{})
-
-	// Prestador and Tecnico see their company's users
-	if (role == domain.RolePrestador || role == domain.RoleTecnico) && companyID != "" {
-		query = query.Where("company_id = ? OR id = ?", companyID, middleware.GetUserID(c))
+	path := "/db/users?company_id=" + companyID
+	if role == domain.RoleAdmin {
+		path = "/db/users"
 	}
 
-	query.Order("created_at DESC").Find(&users)
+	res, err := bridge.CallPyService("GET", path, nil)
+	if err != nil {
+		return ServerError(c, err)
+	}
 
-	return Success(c, users)
+	return Success(c, res["data"])
 }
 
 // CreateUserRequest represents user creation payload
@@ -49,26 +48,6 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Validate role
-	validRoles := []string{domain.RolePrestador, domain.RoleTecnico, domain.RoleCliente}
-	isValid := false
-	for _, r := range validRoles {
-		if req.Role == r {
-			isValid = true
-			break
-		}
-	}
-	if !isValid && middleware.GetUserRole(c) != domain.RoleAdmin {
-		return BadRequest(c, "Role inválido")
-	}
-
-	// Check if email exists
-	var count int64
-	h.DB.Model(&domain.User{}).Where("email = ?", req.Email).Count(&count)
-	if count > 0 {
-		return BadRequest(c, "Email já cadastrado")
-	}
-
 	// Hash password
 	password := req.Password
 	if password == "" {
@@ -82,177 +61,113 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		companyID = middleware.GetCompanyID(c)
 	}
 
-	// For PRESTADOR role: auto-create Prestador profile first to get CompanyID
-	var prestadorID string
-	if req.Role == domain.RolePrestador {
-		prestadorID = uuid.New().String()
-		companyID = prestadorID // CompanyID = Prestador's ID
+	pyReq := map[string]interface{}{
+		"name":          req.Name,
+		"email":         req.Email,
+		"password_hash": string(hashedPassword),
+		"role":          req.Role,
+		"phone":         req.Phone,
+		"company_id":    companyID,
+		"avatar_url":    req.AvatarURL,
+		"specialties":   req.Specialties,
 	}
 
-	// For TECNICO role: if companyID is still empty, assign to first available Prestador
-	if req.Role == domain.RoleTecnico && companyID == "" {
-		var prestador domain.Prestador
-		if err := h.DB.First(&prestador).Error; err == nil {
-			companyID = prestador.ID
-		}
-	}
-
-	user := domain.User{
-		ID:                 uuid.New().String(),
-		Name:               req.Name,
-		Email:              req.Email,
-		PasswordHash:       string(hashedPassword),
-		Role:               req.Role,
-		Phone:              req.Phone,
-		Active:             true,
-		MustChangePassword: true,
-		CompanyID:          &companyID,
-		AvatarURL:          req.AvatarURL,
-		CreatedAt:          time.Now(),
-	}
-
-	if err := h.DB.Create(&user).Error; err != nil {
+	res, err := bridge.CallPyService("POST", "/db/users", pyReq)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	// Auto-create Prestador company profile
-	if req.Role == domain.RolePrestador {
-		prestador := domain.Prestador{
-			ID:           prestadorID,
-			UserID:       user.ID,
-			RazaoSocial:  req.Name,
-			NomeFantasia: req.Name,
-			Email:        req.Email,
-			Phone:        req.Phone,
-			CreatedAt:    time.Now(),
-		}
-		h.DB.Create(&prestador)
-	}
-
-	// Create related Technician profile if it's a technician
-	if req.Role == domain.RoleTecnico {
-		tecnico := domain.Tecnico{
-			ID:          uuid.New().String(),
-			UserID:      user.ID,
-			CompanyID:   companyID,
-			Specialties: req.Specialties,
-			CreatedAt:   time.Now(),
-		}
-		h.DB.Create(&tecnico)
-	}
-
-	// Broadcast event
-	h.Hub.Broadcast("user:created", user)
+	userData := res["data"]
+	h.Hub.Broadcast("user:created", userData)
 
 	// Send Notifications (Email)
 	go func() {
-		// Email
-		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, password)
+		if h.EmailService != nil && req.Email != "" {
+			h.EmailService.SendWelcomeEmail(req.Email, req.Name, password)
 		}
 	}()
 
-	return Created(c, user)
+	return Created(c, userData)
 }
 
 // GetUser returns a specific user
 func (h *Handler) GetUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("GET", "/db/users/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	return Success(c, user)
+	return Success(c, res["data"])
 }
 
 // UpdateUser updates a user
 func (h *Handler) UpdateUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Usuário não encontrado")
-	}
-
 	var req CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	before := user // Copy original state
-	user.Name = req.Name
-	user.Phone = req.Phone
-	if req.AvatarURL != "" {
-		user.AvatarURL = req.AvatarURL
-	}
-	user.UpdatedAt = time.Now()
+	// Capture state for audit
+	resBefore, _ := bridge.CallPyService("GET", "/db/users/"+id, nil)
+	before := resBefore["data"]
 
-	// Only admin can change role
-	if middleware.GetUserRole(c) == domain.RoleAdmin && req.Role != "" {
-		user.Role = req.Role
+	res, err := bridge.CallPyService("PUT", "/db/users/"+id, req)
+	if err != nil {
+		return ServerError(c, err)
 	}
 
-	h.DB.Save(&user)
-
-	// Update technician specialties if applicable
-	if user.Role == domain.RoleTecnico {
-		h.DB.Model(&domain.Tecnico{}).Where("user_id = ?", user.ID).Update("specialties", req.Specialties)
-	}
-
-	h.Hub.Broadcast("user:updated", user)
+	userData := res["data"]
+	h.Hub.Broadcast("user:updated", userData)
 
 	// Final Audit
-	h.LogAudit(c, "User", user.ID, "UPDATE", fmt.Sprintf("Updated user %s (Role: %s)", user.Email, user.Role), before, user)
+	h.LogAudit(c, "User", id, "UPDATE", fmt.Sprintf("Updated user %s", req.Email), before, userData)
 
-	return Success(c, user)
+	return Success(c, userData)
 }
 
 // BlockUser blocks or unblocks a user
 func (h *Handler) BlockUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("PATCH", "/db/users/"+id+"/block", nil)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	user.Active = !user.Active
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
+	userData := res["data"]
+	h.Hub.Broadcast("user:updated", userData)
 
-	action := "user:blocked"
-	if user.Active {
-		action = "user:unblocked"
-	}
-	h.Hub.Broadcast(action, user)
-
-	return Success(c, user)
+	return Success(c, userData)
 }
 
 // AdminResetPassword resets user password (admin/prestador only)
 func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Usuário não encontrado")
-	}
-
 	// Generate temporary password
 	tempPassword := "123456"
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(tempPassword), bcrypt.DefaultCost)
 
-	user.PasswordHash = string(hashedPassword)
-	user.MustChangePassword = true
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
+	pyReq := map[string]interface{}{
+		"password_hash": string(hashedPassword),
+	}
+	res, err := bridge.CallPyService("POST", "/db/users/"+id+"/reset-password", pyReq)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	userData := res["data"].(map[string]interface{})
+	email := userData["email"].(string)
+	name := userData["name"].(string)
 
 	// Send email with new temporary password
 	go func() {
-		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendPasswordResetByAdmin(user.Email, user.Name, tempPassword)
+		if h.EmailService != nil && email != "" {
+			h.EmailService.SendPasswordResetByAdmin(email, name, tempPassword)
 		}
 	}()
 
@@ -266,55 +181,9 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", id).Error; err != nil {
+	_, err := bridge.CallPyService("DELETE", "/db/users/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
-	}
-
-	// Start transaction
-	tx := h.DB.Begin()
-
-	// 1. Null out assigned requests if this user was responsible
-	if err := tx.Model(&domain.Solicitacao{}).Where("responsible_id = ?", id).Updates(map[string]interface{}{
-		"responsible_id":   nil,
-		"responsible_name": nil,
-	}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 2. Delete Agenda items for this user
-	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&domain.Agenda{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 3. Delete History entries created by this user
-	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&domain.SolicitacaoHistorico{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 4. Delete NFSe Events created by this user
-	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&domain.NFSeEvento{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 5. Delete related Technician profile if exists
-	if err := tx.Unscoped().Where("user_id = ?", id).Delete(&domain.Tecnico{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 6. Delete User permanently
-	if err := tx.Unscoped().Delete(&user).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return ServerError(c, err)
 	}
 
 	// Broadcast event
@@ -327,8 +196,8 @@ func (h *Handler) DeleteUser(c *fiber.Ctx) error {
 func (h *Handler) GetCompany(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 
-	var company domain.Prestador
-	if err := h.DB.Preload("Endereco").First(&company, "user_id = ?", userID).Error; err != nil {
+	res, err := bridge.CallPyService("GET", "/db/prestadores/by-user/"+userID, nil)
+	if err != nil {
 		// Return empty company so user can create one
 		return Success(c, fiber.Map{
 			"id":           "",
@@ -343,7 +212,7 @@ func (h *Handler) GetCompany(c *fiber.Ctx) error {
 		})
 	}
 
-	return Success(c, company)
+	return Success(c, res["data"])
 }
 
 // UpdateCompanyRequest represents company update payload
@@ -370,102 +239,24 @@ func (h *Handler) UpdateCompany(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	var company domain.Prestador
-	// check if exists, if not create
-	err := h.DB.Preload("Endereco").First(&company, "user_id = ?", userID).Error
-	if err != nil {
-		// Create structured address if provided
-		var enderecoID *string
-		if req.Endereco != nil {
-			endereco := domain.Endereco{
-				ID:         uuid.New().String(),
-				Street:     req.Endereco.Street,
-				Number:     req.Endereco.Number,
-				Complement: req.Endereco.Complement,
-				District:   req.Endereco.District,
-				City:       req.Endereco.City,
-				State:      req.Endereco.State,
-				ZipCode:    req.Endereco.ZipCode,
-			}
-			if err := h.DB.Create(&endereco).Error; err == nil {
-				enderecoID = &endereco.ID
-			}
-		}
-
-		// Create new company
-		company = domain.Prestador{
-			ID:           uuid.New().String(),
-			UserID:       userID,
-			RazaoSocial:  req.RazaoSocial,
-			NomeFantasia: req.NomeFantasia,
-			CNPJ:         req.CNPJ,
-			Email:        req.Email,
-			Phone:        req.Phone,
-			Address:      req.Address,
-			EnderecoID:   enderecoID,
-			BankDetails:  req.BankDetails,
-			PixKey:       req.PixKey,
-			PixKeyType:   req.PixKeyType,
-			LogoURL:      req.LogoURL,
-			CreatedAt:    time.Now(),
-		}
-		if err := h.DB.Create(&company).Error; err != nil {
-			return ServerError(c, err)
-		}
-
-		// Update user company_id
-		h.DB.Model(&domain.User{}).Where("id = ?", userID).Update("company_id", company.ID)
-	} else {
-		// Update existing
-		company.RazaoSocial = req.RazaoSocial
-		company.NomeFantasia = req.NomeFantasia
-		company.CNPJ = req.CNPJ
-		company.Email = req.Email
-		company.Phone = req.Phone
-		company.Address = req.Address
-		company.BankDetails = req.BankDetails
-		company.PixKey = req.PixKey
-		company.PixKeyType = req.PixKeyType
-		if req.LogoURL != "" {
-			company.LogoURL = req.LogoURL
-		}
-		company.UpdatedAt = time.Now()
-
-		// Update or Create address
-		if req.Endereco != nil {
-			if company.EnderecoID != nil && *company.EnderecoID != "" {
-				// Update existing address
-				h.DB.Model(&domain.Endereco{}).Where("id = ?", *company.EnderecoID).Updates(map[string]interface{}{
-					"street":     req.Endereco.Street,
-					"number":     req.Endereco.Number,
-					"complement": req.Endereco.Complement,
-					"district":   req.Endereco.District,
-					"city":       req.Endereco.City,
-					"state":      req.Endereco.State,
-					"zip_code":   req.Endereco.ZipCode,
-				})
-			} else {
-				// Create new address
-				endereco := domain.Endereco{
-					ID:         uuid.New().String(),
-					Street:     req.Endereco.Street,
-					Number:     req.Endereco.Number,
-					Complement: req.Endereco.Complement,
-					District:   req.Endereco.District,
-					City:       req.Endereco.City,
-					State:      req.Endereco.State,
-					ZipCode:    req.Endereco.ZipCode,
-				}
-				if err := h.DB.Create(&endereco).Error; err == nil {
-					company.EnderecoID = &endereco.ID
-				}
-			}
-		}
-
-		if err := h.DB.Save(&company).Error; err != nil {
-			return ServerError(c, err)
-		}
+	pyReq := map[string]interface{}{
+		"razao_social":  req.RazaoSocial,
+		"nome_fantasia": req.NomeFantasia,
+		"cnpj":          req.CNPJ,
+		"email":         req.Email,
+		"phone":         req.Phone,
+		"address":       req.Address,
+		"bank_details":  req.BankDetails,
+		"pix_key":       req.PixKey,
+		"pix_key_type":  req.PixKeyType,
+		"logo_url":      req.LogoURL,
+		"endereco":      req.Endereco,
 	}
 
-	return Success(c, company)
+	res, err := bridge.CallPyService("PUT", "/db/prestadores/by-user/"+userID, pyReq)
+	if err != nil {
+		return ServerError(c, err)
+	}
+
+	return Success(c, res["data"])
 }

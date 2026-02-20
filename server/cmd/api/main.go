@@ -14,7 +14,6 @@ import (
 	"inovar/internal/api/handlers"
 	"inovar/internal/api/middleware"
 	"inovar/internal/infra/config"
-	"inovar/internal/infra/database"
 
 	"github.com/joho/godotenv"
 )
@@ -27,23 +26,6 @@ func main() {
 
 	// Load configuration
 	cfg := config.Load()
-
-	// Initialize database
-	db, err := database.Connect(cfg.DatabaseURL)
-	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
-	}
-
-	// Run migrations
-	if err := database.Migrate(db); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	// Seed initial data
-	database.Seed(db)
-
-	// Backfill data after migrations
-	database.BackfillData(db)
 
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
@@ -68,8 +50,8 @@ func main() {
 		ContentSecurityPolicy: "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: *; connect-src 'self' *;",
 	}))
 
-	// Initialize handlers
-	h := handlers.New(db, cfg)
+	// Initialize handlers (DB removed, delegating to Python bridge)
+	h := handlers.New(nil, cfg)
 
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -166,7 +148,7 @@ func main() {
 	checklists.Get("/", h.ListChecklists)
 	checklists.Post("/", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CreateChecklist)
 	checklists.Delete("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.DeleteChecklist)
-	checklists.Patch("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.UpdateChecklist)
+	checklists.Patch("/:id", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.ToggleChecklist)
 
 	// Attachments
 	attachments := protected.Group("/requests/:requestId/attachments")

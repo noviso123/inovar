@@ -2,55 +2,32 @@ package handlers
 
 import (
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 
 	"inovar/internal/api/middleware"
 	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 )
 
 // ListEquipments returns equipments based on user role
 func (h *Handler) ListEquipments(c *fiber.Ctx) error {
 	role := middleware.GetUserRole(c)
-	userID := middleware.GetUserID(c)
 	companyID := middleware.GetCompanyID(c)
-
 	clientID := c.Query("clientId")
-	activeOnly := c.Query("activeOnly", "true") == "true"
+	activeOnly := c.Query("activeOnly", "true")
 
-	var equipments []domain.Equipamento
-	query := h.DB.Model(&domain.Equipamento{})
-
-	// Filter by active if requested
-	if activeOnly {
-		query = query.Where("active = ?", true)
+	path := fmt.Sprintf("/db/equipments?company_id=%s&client_id=%s&active_only=%s", companyID, clientID, activeOnly)
+	if role == domain.RoleAdmin {
+		path = fmt.Sprintf("/db/equipments?client_id=%s&active_only=%s", clientID, activeOnly)
 	}
 
-	switch role {
-	case domain.RoleCliente:
-		// Client only sees their own equipments
-		var cliente domain.Cliente
-		h.DB.Where("user_id = ?", userID).First(&cliente)
-		query = query.Where("client_id = ?", cliente.ID)
-	case domain.RolePrestador, domain.RoleTecnico:
-		// See clients from their company
-		query = query.Where("company_id = ?", companyID)
-		if clientID != "" {
-			query = query.Where("client_id = ?", clientID)
-		}
-	default:
-		// Admin sees all, but can filter by client
-		if clientID != "" {
-			query = query.Where("client_id = ?", clientID)
-		}
+	res, err := bridge.CallPyService("GET", path, nil)
+	if err != nil {
+		return ServerError(c, err)
 	}
 
-	query.Order("location ASC").Find(&equipments)
-
-	return Success(c, equipments)
+	return Success(c, res["data"])
 }
 
 // CreateEquipmentRequest represents equipment creation payload
@@ -72,254 +49,112 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	role := middleware.GetUserRole(c)
-	userID := middleware.GetUserID(c)
-
-	// For clients, use their own client ID
-	clientID := req.ClientID
-	if role == domain.RoleCliente {
-		var cliente domain.Cliente
-		h.DB.Where("user_id = ?", userID).First(&cliente)
-		clientID = cliente.ID
-	}
-
-	if clientID == "" {
-		return BadRequest(c, "Cliente é obrigatório")
-	}
-
-	// Calculate Initial Preventive Date
-	interval := req.PreventiveInterval
-	if interval <= 0 {
-		interval = 90 // Default fallback
-		var s domain.Setting
-		if err := h.DB.Where("key = ?", "preventive_interval").First(&s).Error; err == nil && s.Value != "" {
-			if val, err := strconv.Atoi(s.Value); err == nil {
-				interval = val
-			}
-		}
-	}
-
-	baseDate := time.Now()
-	lastPreventive, _ := ParseDateTime(req.LastPreventiveDate)
-	if lastPreventive != nil {
-		baseDate = *lastPreventive
-	}
-	nextDate := baseDate.AddDate(0, 0, interval)
-
-	// Find client to get CompanyID
-	var cliente domain.Cliente
-	if err := h.DB.First(&cliente, "id = ?", clientID).Error; err != nil {
+	// Get companyID from client via bridge
+	resClient, err := bridge.CallPyService("GET", "/db/clients/"+req.ClientID, nil)
+	if err != nil {
 		return BadRequest(c, "Cliente não encontrado")
 	}
+	clientData := resClient["data"].(map[string]interface{})
+	companyID := clientData["companyId"].(string)
 
-	equipment := domain.Equipamento{
-		ID:                 uuid.New().String(),
-		ClientID:           clientID,
-		CompanyID:          cliente.CompanyID,
-		Brand:              req.Brand,
-		Model:              req.Model,
-		BTU:                req.BTU,
-		SerialNumber:       req.SerialNumber,
-		Location:           req.Location,
-		Active:             true,
-		CreatedAt:          time.Now(),
-		LastPreventiveDate: lastPreventive,
-		NextPreventiveDate: &nextDate,
-		PreventiveInterval: req.PreventiveInterval,
+	pyReq := map[string]interface{}{
+		"client_id":           req.ClientID,
+		"company_id":          companyID,
+		"brand":               req.Brand,
+		"model":               req.Model,
+		"btu":                 req.BTU,
+		"serial_number":       req.SerialNumber,
+		"location":            req.Location,
+		"preventive_interval": req.PreventiveInterval,
 	}
 
-	if err := h.DB.Create(&equipment).Error; err != nil {
+	res, err := bridge.CallPyService("POST", "/db/equipments", pyReq)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	h.Hub.Broadcast("equipment:created", equipment)
+	equipData := res["data"]
+	h.Hub.Broadcast("equipment:created", equipData)
 
-	return Created(c, equipment)
+	return Created(c, equipData)
 }
 
 // GetEquipment returns a specific equipment
 func (h *Handler) GetEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	userID := middleware.GetUserID(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var equipment domain.Equipamento
-	query := h.DB
-
-	if role == domain.RoleCliente {
-		// Verify ownership
-		var cliente domain.Cliente
-		h.DB.Where("user_id = ?", userID).First(&cliente)
-		query = query.Where("client_id = ?", cliente.ID)
-	} else if role != domain.RoleAdmin {
-		// Non-admin staff must be in same company
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("GET", "/db/equipments/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
-	return Success(c, equipment)
+	return Success(c, res["data"])
 }
 
 // UpdateEquipment updates an equipment
 func (h *Handler) UpdateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	userID := middleware.GetUserID(c)
-	companyID := middleware.GetCompanyID(c)
-
-	var equipment domain.Equipamento
-	query := h.DB
-
-	// Check ownership for clients
-	if role == domain.RoleCliente {
-		var cliente domain.Cliente
-		h.DB.Where("user_id = ?", userID).First(&cliente)
-		query = query.Where("client_id = ?", cliente.ID)
-	} else if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
-		return NotFound(c, "Equipamento não encontrado")
-	}
 
 	var req CreateEquipmentRequest
 	if err := c.BodyParser(&req); err != nil {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	before := equipment // Copy original state
+	// Capture state for audit
+	resBefore, _ := bridge.CallPyService("GET", "/db/equipments/"+id, nil)
+	before := resBefore["data"]
 
-	equipment.Brand = req.Brand
-	equipment.Model = req.Model
-	equipment.BTU = req.BTU
-	equipment.SerialNumber = req.SerialNumber
-	equipment.Location = req.Location
-	equipment.PreventiveInterval = req.PreventiveInterval
-
-	// Re-calculate dates if interval or last date changed
-	if req.LastPreventiveDate != "" {
-		lastDate, _ := ParseDateTime(req.LastPreventiveDate)
-		if lastDate != nil {
-			equipment.LastPreventiveDate = lastDate
-
-			interval := req.PreventiveInterval
-			if interval <= 0 {
-				interval = 90
-			}
-			nextDate := lastDate.AddDate(0, 0, interval)
-			equipment.NextPreventiveDate = &nextDate
-		}
-	}
-
-	equipment.UpdatedAt = time.Now()
-
-	if err := h.DB.Save(&equipment).Error; err != nil {
+	res, err := bridge.CallPyService("PUT", "/db/equipments/"+id, req)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	h.Hub.Broadcast("equipment:updated", equipment)
+	equipData := res["data"]
+	h.Hub.Broadcast("equipment:updated", equipData)
 
 	// Final Audit
-	h.LogAudit(c, "Equipment", equipment.ID, "UPDATE", fmt.Sprintf("Updated equipment %s (%s)", equipment.Model, equipment.Brand), before, equipment)
+	h.LogAudit(c, "Equipment", id, "UPDATE", fmt.Sprintf("Updated equipment %s", req.Model), before, equipData)
 
-	return Success(c, equipment)
+	return Success(c, equipData)
 }
 
 // DeactivateEquipment deactivates an equipment (never delete!)
 func (h *Handler) DeactivateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var equipment domain.Equipamento
-	query := h.DB
-	if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("PATCH", "/db/equipments/"+id+"/deactivate", nil)
+	if err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
-	equipment.Active = false
-	equipment.UpdatedAt = time.Now()
-	h.DB.Save(&equipment)
+	equipData := res["data"]
+	h.Hub.Broadcast("equipment:updated", equipData)
 
-	h.Hub.Broadcast("equipment:deactivated", equipment)
-
-	return Success(c, equipment)
+	return Success(c, equipData)
 }
 
 // ReactivateEquipment reactivates an equipment
 func (h *Handler) ReactivateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var equipment domain.Equipamento
-	query := h.DB
-	if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+	res, err := bridge.CallPyService("PATCH", "/db/equipments/"+id+"/reactivate", nil)
+	if err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
-	equipment.Active = true
-	equipment.UpdatedAt = time.Now()
-	h.DB.Save(&equipment)
+	equipData := res["data"]
+	h.Hub.Broadcast("equipment:updated", equipData)
 
-	h.Hub.Broadcast("equipment:reactivated", equipment)
-
-	return Success(c, equipment)
+	return Success(c, equipData)
 }
 
 // DeleteEquipment permanently deletes (ADMIN ONLY!)
 func (h *Handler) DeleteEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
-	role := middleware.GetUserRole(c)
-	companyID := middleware.GetCompanyID(c)
 
-	var equipment domain.Equipamento
-	query := h.DB
-	if role != domain.RoleAdmin {
-		query = query.Where("company_id = ?", companyID)
-	}
-
-	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+	_, err := bridge.CallPyService("DELETE", "/db/equipments/"+id, nil)
+	if err != nil {
 		return NotFound(c, "Equipamento não encontrado")
-	}
-
-	// Permanent delete - also for Prestador
-	// Start transaction to clean up junction table
-	tx := h.DB.Begin()
-
-	// 1. Delete associations in solicitacao_equipamentos
-	if err := tx.Where("equipamento_id = ?", id).Delete(&domain.SolicitacaoEquipamento{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 2. Delete Checklists associated with this equipment
-	if err := tx.Unscoped().Where("equipamento_id = ?", id).Delete(&domain.Checklist{}).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	// 3. Delete equipment itself
-	if err := tx.Unscoped().Delete(&equipment).Error; err != nil {
-		tx.Rollback()
-		return ServerError(c, err)
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return ServerError(c, err)
 	}
 
 	h.Hub.Broadcast("equipment:deleted", fiber.Map{"id": id})

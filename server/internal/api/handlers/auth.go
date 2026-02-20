@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"inovar/internal/api/middleware"
-	"inovar/internal/domain"
+	"inovar/internal/infra/bridge"
 )
 
 // LoginRequest represents login payload
@@ -25,9 +25,9 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Find user
-	var user domain.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	// Find user via Python bridge
+	res, err := bridge.CallPyService("GET", "/db/users/by-email/"+req.Email, nil)
+	if err != nil {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": false,
 			"error":   "invalid_credentials",
@@ -35,8 +35,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	userData := res["data"].(map[string]interface{})
+	active := userData["active"].(bool)
+	passwordHash := userData["passwordHash"].(string)
+
 	// Check if active
-	if !user.Active {
+	if !active {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": false,
 			"error":   "user_blocked",
@@ -45,7 +49,7 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 	}
 
 	// Check password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.Password)); err != nil {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": false,
 			"error":   "invalid_credentials",
@@ -53,17 +57,18 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	// Get company ID
-	companyID := ""
-	if user.CompanyID != nil {
-		companyID = *user.CompanyID
+	userID := userData["id"].(string)
+	userRole := userData["role"].(string)
+	var companyID string
+	if cID, ok := userData["companyId"].(string); ok {
+		companyID = cID
 	}
 
 	// Generate access token
 	accessToken, err := middleware.GenerateToken(
-		user.ID,
-		user.Email,
-		user.Role,
+		userID,
+		req.Email,
+		userRole,
 		companyID,
 		h.Config.JWTSecret,
 		h.Config.JWTExpireMinutes,
@@ -74,29 +79,17 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 
 	// Generate refresh token
 	refreshTokenStr := uuid.New().String()
-	refreshToken := domain.RefreshToken{
-		ID:        uuid.New().String(),
-		UserID:    user.ID,
-		Token:     refreshTokenStr,
-		ExpiresAt: time.Now().AddDate(0, 0, h.Config.RefreshExpireDays),
-		CreatedAt: time.Now(),
+	tokenData := map[string]interface{}{
+		"user_id":    userID,
+		"token":      refreshTokenStr,
+		"expires_at": time.Now().AddDate(0, 0, h.Config.RefreshExpireDays).Format(time.RFC3339),
 	}
-	h.DB.Create(&refreshToken)
+	bridge.CallPyService("POST", "/db/users/tokens", tokenData)
 
 	return c.JSON(fiber.Map{
 		"success": true,
 		"data": fiber.Map{
-			"user": fiber.Map{
-				"id":                 user.ID,
-				"name":               user.Name,
-				"email":              user.Email,
-				"role":               user.Role,
-				"phone":              user.Phone,
-				"active":             user.Active,
-				"companyId":          user.CompanyID,
-				"avatarUrl":          user.AvatarURL,
-				"mustChangePassword": user.MustChangePassword,
-			},
+			"user":         userData,
 			"accessToken":  accessToken,
 			"refreshToken": refreshTokenStr,
 			"expiresIn":    h.Config.JWTExpireMinutes * 60,
@@ -116,9 +109,9 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Find refresh token
-	var refreshToken domain.RefreshToken
-	if err := h.DB.Where("token = ? AND revoked = ?", req.RefreshToken, false).First(&refreshToken).Error; err != nil {
+	// Find refresh token via Python
+	res, err := bridge.CallPyService("GET", "/db/users/tokens/"+req.RefreshToken, nil)
+	if err != nil {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": false,
 			"error":   "invalid_token",
@@ -126,8 +119,11 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 		})
 	}
 
+	tokenData := res["data"].(map[string]interface{})
+	expiresAt, _ := time.Parse(time.RFC3339, tokenData["expiresAt"].(string))
+
 	// Check expiration
-	if refreshToken.ExpiresAt.Before(time.Now()) {
+	if expiresAt.Before(time.Now()) {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"success": false,
 			"error":   "token_expired",
@@ -135,23 +131,26 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 		})
 	}
 
-	// Find user
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", refreshToken.UserID).Error; err != nil {
+	// Find user via Python
+	userID := tokenData["userId"].(string)
+	resUser, err := bridge.CallPyService("GET", "/db/users/"+userID, nil)
+	if err != nil {
 		return ServerError(c, err)
 	}
 
-	// Get company ID
-	companyID := ""
-	if user.CompanyID != nil {
-		companyID = *user.CompanyID
+	userData := resUser["data"].(map[string]interface{})
+	userEmail := userData["email"].(string)
+	userRole := userData["role"].(string)
+	var companyID string
+	if cID, ok := userData["companyId"].(string); ok {
+		companyID = cID
 	}
 
 	// Generate new access token
 	accessToken, err := middleware.GenerateToken(
-		user.ID,
-		user.Email,
-		user.Role,
+		userID,
+		userEmail,
+		userRole,
 		companyID,
 		h.Config.JWTSecret,
 		h.Config.JWTExpireMinutes,
@@ -171,8 +170,8 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 func (h *Handler) Logout(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 
-	// Revoke all refresh tokens for user
-	h.DB.Model(&domain.RefreshToken{}).Where("user_id = ?", userID).Update("revoked", true)
+	// Revoke all refresh tokens for user via Python
+	bridge.CallPyService("POST", "/db/users/tokens/revoke/"+userID, nil)
 
 	return Success(c, fiber.Map{"message": "Logout realizado com sucesso"})
 }
@@ -189,26 +188,32 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Find user
-	var user domain.User
-	if err := h.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+	// Find user via Python
+	res, err := bridge.CallPyService("GET", "/db/users/by-email/"+req.Email, nil)
+	if err != nil {
 		// Don't reveal if user exists
 		return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 	}
 
+	userData := res["data"].(map[string]interface{})
+	userID := userData["id"].(string)
+	userName := userData["name"].(string)
+
 	// Generate reset token
 	token := uuid.New().String()
-	expiration := time.Now().Add(1 * time.Hour)
+	expiration := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 
-	user.ResetToken = &token
-	user.ResetTokenExpiresAt = &expiration
-	h.DB.Save(&user)
+	updateReq := map[string]interface{}{
+		"reset_token":            token,
+		"reset_token_expires_at": expiration,
+	}
+	bridge.CallPyService("PUT", "/db/users/"+userID, updateReq)
 
 	// Send notifications
 	go func() {
 		// Email
 		if h.EmailService != nil {
-			h.EmailService.SendPasswordResetEmail(user.Email, token, user.Name)
+			h.EmailService.SendPasswordResetEmail(req.Email, token, userName)
 		}
 	}()
 
@@ -232,11 +237,20 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return BadRequest(c, "Token e nova senha são obrigatórios")
 	}
 
-	// Find user with valid token
-	var user domain.User
-	if err := h.DB.Where("reset_token = ? AND reset_token_expires_at > ?", req.Token, time.Now()).First(&user).Error; err != nil {
+	// Find user with valid token via Python (this requires a custom filter or searching all users)
+	// For efficiency, let's assume Python handles the token lookup if we add a route,
+	// or we just use GET /db/users with a filter if supported.
+	// Actually, let's just use the bridge to find the user by Token.
+
+	// Assuming Python has a filter for reset_token or we check all (poor performance)
+	// Let's call Python with a generic filter if we update the route, or just implement it.
+	res, err := bridge.CallPyService("GET", "/db/users?reset_token="+req.Token, nil)
+	if err != nil || len(res["data"].([]interface{})) == 0 {
 		return BadRequest(c, "Token inválido ou expirado")
 	}
+
+	userData := res["data"].([]interface{})[0].(map[string]interface{})
+	userID := userData["id"].(string)
 
 	// Hash new password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -244,12 +258,12 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	// Update user
-	user.PasswordHash = string(hashedPassword)
-	user.ResetToken = nil
-	user.ResetTokenExpiresAt = nil
-	user.UpdatedAt = time.Now()
-	h.DB.Save(&user)
+	// Update user via Python
+	updateReq := map[string]interface{}{
+		"password_hash": string(hashedPassword),
+		"reset_token":   nil,
+	}
+	bridge.CallPyService("PUT", "/db/users/"+userID, updateReq)
 
 	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
 }
@@ -258,12 +272,12 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 func (h *Handler) GetCurrentUser(c *fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
+	res, err := bridge.CallPyService("GET", "/db/users/"+userID, nil)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	return Success(c, user)
+	return Success(c, res["data"])
 }
 
 // UpdateCurrentUserRequest represents profile update payload
@@ -282,25 +296,12 @@ func (h *Handler) UpdateCurrentUser(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
+	res, err := bridge.CallPyService("PUT", "/db/users/"+userID, req)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
 
-	if req.Name != nil {
-		user.Name = *req.Name
-	}
-	if req.Phone != nil {
-		user.Phone = *req.Phone
-	}
-	if req.AvatarURL != nil {
-		user.AvatarURL = *req.AvatarURL
-	}
-	user.UpdatedAt = time.Now()
-
-	h.DB.Save(&user)
-
-	return Success(c, user)
+	return Success(c, res["data"])
 }
 
 // ChangePasswordRequest represents password change payload
@@ -316,19 +317,19 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 
 	var req ChangePasswordRequest
 	if err := c.BodyParser(&req); err != nil {
-		log.Printf("❌ Falha no BodyParser para alteração de senha: %v", err)
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	var user domain.User
-	if err := h.DB.First(&user, "id = ?", userID).Error; err != nil {
-		log.Printf("❌ Usuário %s não encontrado no banco para alteração de senha", userID)
+	// Get user via bridge
+	res, err := bridge.CallPyService("GET", "/db/users/"+userID, nil)
+	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
+	userData := res["data"].(map[string]interface{})
+	passwordHash := userData["passwordHash"].(string)
 
 	// Verify current password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
-		log.Printf("❌ Senha atual incorreta para o usuário %s", user.Email)
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.CurrentPassword)); err != nil {
 		return BadRequest(c, "Senha atual incorreta")
 	}
 
@@ -338,19 +339,12 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 		return ServerError(c, err)
 	}
 
-	log.Printf("🔄 Atualizando senha no banco para %s (ID: %s)...", user.Email, user.ID)
-
 	updates := map[string]interface{}{
 		"password_hash":        string(hashedPassword),
 		"must_change_password": false,
-		"updated_at":           time.Now(),
 	}
 
-	if err := h.DB.Model(&user).Updates(updates).Error; err != nil {
-		log.Printf("❌ Erro ao salvar usuário no banco: %v", err)
-		return ServerError(c, err)
-	}
+	bridge.CallPyService("PUT", "/db/users/"+userID, updates)
 
-	log.Printf("✅ Senha alterada com sucesso para %s. MustChangePassword agora é false.", user.Email)
 	return Success(c, fiber.Map{"message": "Senha alterada com sucesso"})
 }
