@@ -81,12 +81,17 @@ export const QRCodeManager: React.FC = () => {
             const ctx = canvas.getContext('2d');
             if (!ctx) return;
 
-            const scale = printSize === 'small' ? 1 : printSize === 'medium' ? 2 : 3;
+            // --- EXTREME QUALITY SETTINGS ---
+            const scale = printSize === 'small' ? 3 : printSize === 'medium' ? 6 : 10; // High DPI (up to 6000px height)
             const width = 600 * scale;
             const height = 800 * scale;
 
             canvas.width = width;
             canvas.height = height;
+
+            // Enable high quality image smoothing for crisp edges
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
 
             // 1. Background
             ctx.fillStyle = '#ffffff';
@@ -101,25 +106,51 @@ export const QRCodeManager: React.FC = () => {
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, width, 180 * scale);
 
-            // Draw Logo Text
+            // Draw Logo Text (Crisp Typography)
             ctx.fillStyle = '#ffffff';
             ctx.font = `900 ${40 * scale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('INOVAR REFRIGERAÇÃO', width / 2, 90 * scale);
 
-            // 4. QR Code
+            // 4. QR Code (HDR Rendering)
             const qrSize = 350 * scale;
             const qrX = (width - qrSize) / 2;
             const qrY = 220 * scale;
 
+            // Draw the QR base from the reference (will be smooth but we'll improve the logo)
             ctx.drawImage(qrRef.current, qrX, qrY, qrSize, qrSize);
+
+            // --- HDR LOGO INJECTION ---
+            // Bypass low-res preview and draw logo directly at high resolution
+            try {
+                const logoImg = new Image();
+                logoImg.src = "/logo.png";
+                await new Promise((resolve, reject) => {
+                    logoImg.onload = resolve;
+                    logoImg.onerror = reject;
+                });
+
+                const logoSize = qrSize * 0.22;
+                const logoX = qrX + (qrSize - logoSize) / 2;
+                const logoY = qrY + (qrSize - logoSize) / 2;
+
+                // Create a crisp white background for the logo
+                ctx.fillStyle = '#ffffff';
+                const padding = 4 * scale;
+                ctx.fillRect(logoX - padding, logoY - padding, logoSize + (padding * 2), logoSize + (padding * 2));
+
+                // Draw high-res logo
+                ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+            } catch (err) {
+                console.warn("High-res logo failed, using QR default", err);
+            }
 
             // 5. Custom Message
             ctx.fillStyle = '#0f172a';
             ctx.font = `bold ${32 * scale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(customMessage, width / 2, qrY + qrSize + (80 * scale));
+            ctx.fillText(customMessage, width / 2, qrY + qrSize + (100 * scale));
 
             // 6. Footer
             ctx.fillStyle = '#3d6b8c';

@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -18,11 +19,13 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		return nil, errors.New("DATABASE_URL is required")
 	}
 
-	// Ensure the directory for the database file exists
-	dbDir := filepath.Dir(databaseURL)
-	if dbDir != "" && dbDir != "." {
-		if err := os.MkdirAll(dbDir, 0755); err != nil {
-			return nil, errors.New("failed to create database directory: " + err.Error())
+	// Only create directory if it's likely a local file path
+	if !strings.Contains(databaseURL, "://") {
+		dbDir := filepath.Dir(databaseURL)
+		if dbDir != "" && dbDir != "." {
+			if err := os.MkdirAll(dbDir, 0755); err != nil {
+				return nil, errors.New("failed to create database directory: " + err.Error())
+			}
 		}
 	}
 
