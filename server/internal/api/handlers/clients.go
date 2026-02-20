@@ -138,7 +138,7 @@ func (h *Handler) CreateClient(c *fiber.Ctx) error {
 	go func() {
 		// Email
 		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, req.Password)
+			h.EmailService.SendWelcomeEmail(user.Email, user.Name, password)
 		}
 	}()
 

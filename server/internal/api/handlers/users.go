@@ -70,7 +70,11 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	}
 
 	// Hash password
-	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	password := req.Password
+	if password == "" {
+		password = h.Config.DefaultPassword
+	}
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	// Set company ID for non-admin creators
 	companyID := req.CompanyID
@@ -115,7 +119,7 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 	go func() {
 		// Email
 		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, req.Password)
+			h.EmailService.SendWelcomeEmail(user.Email, user.Name, password)
 		}
 	}()
 

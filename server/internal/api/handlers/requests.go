@@ -43,10 +43,10 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 		query = query.Where("client_id = ?", cliente.ID)
 	case domain.RoleTecnico:
 		// Technician sees requests assigned to them or from their company
-		query = query.Where("responsible_id = ? OR client_id IN (SELECT id FROM clientes WHERE company_id = ?)", userID, companyID)
+		query = query.Where("responsible_id = ? OR company_id = ?", userID, companyID)
 	case domain.RolePrestador:
 		// Prestador sees all from their company
-		query = query.Where("client_id IN (SELECT id FROM clientes WHERE company_id = ?)", companyID)
+		query = query.Where("company_id = ?", companyID)
 	}
 	// Admin sees all
 

@@ -55,7 +55,7 @@ func Load() *Config {
 		MaxUploadSize:   int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
 		LockTimeoutSecs: getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
 		ConfirmDays:     getEnvInt("CONFIRM_DAYS", 7),
-		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
+		DefaultPassword: getEnv("DEFAULT_PASSWORD", "123456"),
 		FrontendURL:     frontendURL,
 		UploadDir:       getEnv("UPLOAD_DIR", "./data/uploads"),
 	}

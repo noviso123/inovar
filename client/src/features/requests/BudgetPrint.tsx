@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { apiService } from '@/shared/services/apiService';
 import { ServiceRequest } from '@/shared/types';
 import { QRCodeSVG } from 'qrcode.react';
 import { Pix } from '@/shared/utils/pix';
+import { ArrowLeft } from 'lucide-react';
 
 export const BudgetPrint: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [request, setRequest] = useState<ServiceRequest | null>(null);
     const [company, setCompany] = useState<any>(null);
     const [pixPayload, setPixPayload] = useState<string>('');
@@ -49,14 +51,22 @@ export const BudgetPrint: React.FC = () => {
         <div className="bg-white p-8 max-w-[210mm] mx-auto text-black print:p-0">
             {/* Mobile/Screen Only Controls */}
             <div className="print:hidden mb-8 flex justify-between items-center bg-slate-100 p-4 rounded-xl border border-slate-200">
-                <p className="text-sm font-bold text-slate-600 flex items-center gap-2">
-                    <span className="text-xl">🖨️</span> Visualização de Impressão
-                </p>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all border border-slate-200 shadow-sm"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <p className="text-sm font-bold text-slate-600 flex items-center gap-2">
+                        <span className="text-xl">🖨️</span> Visualização de Impressão
+                    </p>
+                </div>
                 <button
                     onClick={() => window.print()}
                     className="px-6 py-3 bg-blue-600 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
                 >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2-2v4h10z"></path></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Imprimir / Salvar PDF
                 </button>
             </div>
