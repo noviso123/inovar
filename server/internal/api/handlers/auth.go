@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -35,9 +36,12 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	userData := res["data"].(map[string]interface{})
-	active := userData["active"].(bool)
-	passwordHash := userData["passwordHash"].(string)
+	userData, ok := res["data"].(map[string]interface{})
+	if !ok {
+		return ServerError(c, fmt.Errorf("dados do usuário inválidos"))
+	}
+	active, _ := userData["active"].(bool)
+	passwordHash, _ := userData["passwordHash"].(string)
 
 	// Check if active
 	if !active {
@@ -119,8 +123,12 @@ func (h *Handler) RefreshToken(c *fiber.Ctx) error {
 		})
 	}
 
-	tokenData := res["data"].(map[string]interface{})
-	expiresAt, _ := time.Parse(time.RFC3339, tokenData["expiresAt"].(string))
+	tokenData, ok := res["data"].(map[string]interface{})
+	if !ok {
+		return ServerError(c, fmt.Errorf("dados do token inválidos"))
+	}
+	expiresAtStr, _ := tokenData["expiresAt"].(string)
+	expiresAt, _ := time.Parse(time.RFC3339, expiresAtStr)
 
 	// Check expiration
 	if expiresAt.Before(time.Now()) {
@@ -195,9 +203,12 @@ func (h *Handler) ForgotPassword(c *fiber.Ctx) error {
 		return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
 	}
 
-	userData := res["data"].(map[string]interface{})
-	userID := userData["id"].(string)
-	userName := userData["name"].(string)
+	userData, ok := res["data"].(map[string]interface{})
+	if !ok {
+		return Success(c, fiber.Map{"message": "Se o email existir, enviaremos instruções de recuperação"})
+	}
+	userID, _ := userData["id"].(string)
+	userName, _ := userData["name"].(string)
 
 	// Generate reset token
 	token := uuid.New().String()
@@ -249,8 +260,15 @@ func (h *Handler) ResetPassword(c *fiber.Ctx) error {
 		return BadRequest(c, "Token inválido ou expirado")
 	}
 
-	userData := res["data"].([]interface{})[0].(map[string]interface{})
-	userID := userData["id"].(string)
+	userList, ok := res["data"].([]interface{})
+	if !ok || len(userList) == 0 {
+		return BadRequest(c, "Token inválido ou expirado")
+	}
+	userData, ok := userList[0].(map[string]interface{})
+	if !ok {
+		return BadRequest(c, "Token inválido ou expirado")
+	}
+	userID, _ := userData["id"].(string)
 
 	// Hash new password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -320,13 +338,16 @@ func (h *Handler) ChangePassword(c *fiber.Ctx) error {
 		return BadRequest(c, "Dados inválidos")
 	}
 
-	// Get user via bridge
-	res, err := bridge.CallPyService("GET", "/db/users/"+userID, nil)
+	// Get user via bridge (with hash for verification)
+	res, err := bridge.CallPyService("GET", "/db/users/"+userID+"?include_hash=true", nil)
 	if err != nil {
 		return NotFound(c, "Usuário não encontrado")
 	}
-	userData := res["data"].(map[string]interface{})
-	passwordHash := userData["passwordHash"].(string)
+	userData, ok := res["data"].(map[string]interface{})
+	if !ok {
+		return ServerError(c, fmt.Errorf("dados do usuário inválidos"))
+	}
+	passwordHash, _ := userData["passwordHash"].(string)
 
 	// Verify current password
 	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(req.CurrentPassword)); err != nil {

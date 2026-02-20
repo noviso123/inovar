@@ -85,11 +85,14 @@ def list_users(company_id: str = "", role: str = "", reset_token: str = "", db: 
     return {"data": [user_to_dict(u) for u in users]}
 
 @router.get("/{user_id}")
-def get_user(user_id: str, db: Session = Depends(get_db)):
+def get_user(user_id: str, include_hash: bool = False, db: Session = Depends(get_db)):
     u = db.query(User).filter(User.id == user_id, User.deleted_at.is_(None)).first()
     if not u:
         raise HTTPException(404, "User not found")
-    return {"data": user_to_dict(u)}
+    result = user_to_dict(u)
+    if include_hash:
+        result["passwordHash"] = u.password_hash
+    return {"data": result}
 
 @router.post("", status_code=201)
 def create_user(req: UserCreate, db: Session = Depends(get_db)):
