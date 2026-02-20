@@ -16,11 +16,11 @@ cd "$APP_DIR" || exit
 echo "[1/5] Pulling latest changes..."
 git pull origin main || { echo "❌ Git pull failed"; exit 1; }
 
-echo "[2/5] Stopping containers..."
-docker-compose down
+echo "[2/5] Stopping and removing old containers..."
+docker compose down --remove-orphans
 
 echo "[3/5] Rebuilding and starting containers..."
-docker-compose up -d --build || { echo "❌ Docker build/start failed"; exit 1; }
+docker compose up -d --build || { echo "❌ Docker build/start failed"; exit 1; }
 
 echo "[4/5] Pruning unused images..."
 docker image prune -f
@@ -43,8 +43,8 @@ else
     echo ""
     echo "Container status: $CONTAINER_STATUS"
     echo "Last 20 logs:"
-    docker logs --tail=20 inovar-app
+    docker compose logs --tail=20
 fi
 
 echo ""
-docker-compose ps
+docker compose ps
