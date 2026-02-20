@@ -33,7 +33,7 @@ func Load() *Config {
 	env := getEnv("ENVIRONMENT", "development")
 	jwtSecret := loadJWTSecret(env)
 	dbURL := getEnv("DATABASE_URL", "")
-	frontendURL := getEnv("FRONTEND_URL", "http://localhost:3000")
+	frontendURL := getEnv("FRONTEND_URL", "https://inovar-gestao.duckdns.org")
 
 	if dbURL == "" {
 		log.Fatal("❌ ERRO FATAL: DATABASE_URL não definido na configuração.")

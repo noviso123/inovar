@@ -89,3 +89,60 @@ func Migrate(db *gorm.DB) error {
 	log.Println("✅ Migrations completed")
 	return nil
 }
+
+// BackfillData handles data consistency after schema changes
+func BackfillData(db *gorm.DB) {
+	log.Println("🔄 Running data backfill...")
+
+	// 1. Backfill CompanyID for Clients that have empty company_id
+	// If there's only one Prestador, assign all orphan clients to it
+	var prestadorCount int64
+	db.Model(&domain.Prestador{}).Count(&prestadorCount)
+
+	if prestadorCount > 0 {
+		var prestador domain.Prestador
+		db.First(&prestador)
+
+		// Fix clients with no company
+		result := db.Exec(`
+			UPDATE clientes
+			SET company_id = ?
+			WHERE company_id IS NULL OR company_id = ''
+		`, prestador.ID)
+		if result.RowsAffected > 0 {
+			log.Printf("✅ Backfilled %d clients with CompanyID=%s", result.RowsAffected, prestador.ID[:8])
+		}
+
+		// Fix users with no company (excluding admin)
+		result = db.Exec(`
+			UPDATE users
+			SET company_id = ?
+			WHERE (company_id IS NULL OR company_id = '') AND role != 'ADMIN_SISTEMA'
+		`, prestador.ID)
+		if result.RowsAffected > 0 {
+			log.Printf("✅ Backfilled %d users with CompanyID=%s", result.RowsAffected, prestador.ID[:8])
+		}
+	}
+
+	// 2. Backfill CompanyID for Solicitacoes (Chamados) from their Clients
+	result := db.Exec(`
+		UPDATE solicitacoes
+		SET company_id = (SELECT company_id FROM clientes WHERE clientes.id = solicitacoes.client_id)
+		WHERE (company_id IS NULL OR company_id = '') AND client_id IS NOT NULL AND client_id != ''
+	`)
+	if result.RowsAffected > 0 {
+		log.Printf("✅ Backfilled %d solicitacoes (chamados) with CompanyID", result.RowsAffected)
+	}
+
+	// 3. Backfill CompanyID for Equipments from their Clients
+	result = db.Exec(`
+		UPDATE equipamentos
+		SET company_id = (SELECT company_id FROM clientes WHERE clientes.id = equipamentos.client_id)
+		WHERE (company_id IS NULL OR company_id = '') AND client_id IS NOT NULL AND client_id != ''
+	`)
+	if result.RowsAffected > 0 {
+		log.Printf("✅ Backfilled %d equipments with CompanyID", result.RowsAffected)
+	}
+
+	log.Println("✅ Data backfill completed")
+}

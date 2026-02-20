@@ -16,6 +16,7 @@ import (
 func (h *Handler) ListEquipments(c *fiber.Ctx) error {
 	role := middleware.GetUserRole(c)
 	userID := middleware.GetUserID(c)
+	companyID := middleware.GetCompanyID(c)
 
 	clientID := c.Query("clientId")
 	activeOnly := c.Query("activeOnly", "true") == "true"
@@ -34,8 +35,14 @@ func (h *Handler) ListEquipments(c *fiber.Ctx) error {
 		var cliente domain.Cliente
 		h.DB.Where("user_id = ?", userID).First(&cliente)
 		query = query.Where("client_id = ?", cliente.ID)
+	case domain.RolePrestador, domain.RoleTecnico:
+		// See clients from their company
+		query = query.Where("company_id = ?", companyID)
+		if clientID != "" {
+			query = query.Where("client_id = ?", clientID)
+		}
 	default:
-		// Filter by client if provided
+		// Admin sees all, but can filter by client
 		if clientID != "" {
 			query = query.Where("client_id = ?", clientID)
 		}
@@ -80,10 +87,6 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 		return BadRequest(c, "Cliente é obrigatório")
 	}
 
-	if clientID == "" {
-		return BadRequest(c, "Cliente é obrigatório")
-	}
-
 	// Calculate Initial Preventive Date
 	interval := req.PreventiveInterval
 	if interval <= 0 {
@@ -103,9 +106,16 @@ func (h *Handler) CreateEquipment(c *fiber.Ctx) error {
 	}
 	nextDate := baseDate.AddDate(0, 0, interval)
 
+	// Find client to get CompanyID
+	var cliente domain.Cliente
+	if err := h.DB.First(&cliente, "id = ?", clientID).Error; err != nil {
+		return BadRequest(c, "Cliente não encontrado")
+	}
+
 	equipment := domain.Equipamento{
 		ID:                 uuid.New().String(),
 		ClientID:           clientID,
+		CompanyID:          cliente.CompanyID,
 		Brand:              req.Brand,
 		Model:              req.Model,
 		BTU:                req.BTU,
@@ -132,20 +142,23 @@ func (h *Handler) GetEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
 	role := middleware.GetUserRole(c)
 	userID := middleware.GetUserID(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var equipment domain.Equipamento
+	query := h.DB
 
 	if role == domain.RoleCliente {
 		// Verify ownership
 		var cliente domain.Cliente
 		h.DB.Where("user_id = ?", userID).First(&cliente)
-		if err := h.DB.Where("id = ? AND client_id = ?", id, cliente.ID).First(&equipment).Error; err != nil {
-			return NotFound(c, "Equipamento não encontrado")
-		}
-	} else {
-		if err := h.DB.First(&equipment, "id = ?", id).Error; err != nil {
-			return NotFound(c, "Equipamento não encontrado")
-		}
+		query = query.Where("client_id = ?", cliente.ID)
+	} else if role != domain.RoleAdmin {
+		// Non-admin staff must be in same company
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+		return NotFound(c, "Equipamento não encontrado")
 	}
 
 	return Success(c, equipment)
@@ -156,20 +169,22 @@ func (h *Handler) UpdateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
 	role := middleware.GetUserRole(c)
 	userID := middleware.GetUserID(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var equipment domain.Equipamento
+	query := h.DB
 
 	// Check ownership for clients
 	if role == domain.RoleCliente {
 		var cliente domain.Cliente
 		h.DB.Where("user_id = ?", userID).First(&cliente)
-		if err := h.DB.Where("id = ? AND client_id = ?", id, cliente.ID).First(&equipment).Error; err != nil {
-			return NotFound(c, "Equipamento não encontrado")
-		}
-	} else {
-		if err := h.DB.First(&equipment, "id = ?", id).Error; err != nil {
-			return NotFound(c, "Equipamento não encontrado")
-		}
+		query = query.Where("client_id = ?", cliente.ID)
+	} else if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
+		return NotFound(c, "Equipamento não encontrado")
 	}
 
 	var req CreateEquipmentRequest
@@ -218,9 +233,16 @@ func (h *Handler) UpdateEquipment(c *fiber.Ctx) error {
 // DeactivateEquipment deactivates an equipment (never delete!)
 func (h *Handler) DeactivateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
+	role := middleware.GetUserRole(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var equipment domain.Equipamento
-	if err := h.DB.First(&equipment, "id = ?", id).Error; err != nil {
+	query := h.DB
+	if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
@@ -236,9 +258,16 @@ func (h *Handler) DeactivateEquipment(c *fiber.Ctx) error {
 // ReactivateEquipment reactivates an equipment
 func (h *Handler) ReactivateEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
+	role := middleware.GetUserRole(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var equipment domain.Equipamento
-	if err := h.DB.First(&equipment, "id = ?", id).Error; err != nil {
+	query := h.DB
+	if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 
@@ -254,9 +283,16 @@ func (h *Handler) ReactivateEquipment(c *fiber.Ctx) error {
 // DeleteEquipment permanently deletes (ADMIN ONLY!)
 func (h *Handler) DeleteEquipment(c *fiber.Ctx) error {
 	id := c.Params("id")
+	role := middleware.GetUserRole(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var equipment domain.Equipamento
-	if err := h.DB.First(&equipment, "id = ?", id).Error; err != nil {
+	query := h.DB
+	if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&equipment, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Equipamento não encontrado")
 	}
 

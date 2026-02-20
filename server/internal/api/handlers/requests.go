@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -51,11 +50,6 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 	// Admin sees all
 
 	// Apply filters
-	// Pagination
-	page, _ := strconv.Atoi(c.Query("page", "1"))
-	limit, _ := strconv.Atoi(c.Query("limit", "20"))
-	offset := (page - 1) * limit
-
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -66,7 +60,15 @@ func (h *Handler) ListRequests(c *fiber.Ctx) error {
 		query = query.Where("client_id = ?", clientID)
 	}
 
-	query.Order("created_at DESC").Limit(limit).Offset(offset).Find(&requests)
+	// Pagination (only if explicitly sent)
+	if c.Query("limit") != "" {
+		limit, _ := strconv.Atoi(c.Query("limit", "50"))
+		page, _ := strconv.Atoi(c.Query("page", "1"))
+		offset := (page - 1) * limit
+		query = query.Limit(limit).Offset(offset)
+	}
+
+	query.Order("created_at DESC").Find(&requests)
 
 	return Success(c, requests)
 }
@@ -547,7 +549,7 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		if h.EmailService != nil && solicitacao.Client.Email != "" {
 			osNumStr := fmt.Sprint(solicitacao.Numero)
 			if isTerminal {
-				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, osNumStr, os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
+				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, osNumStr, h.Config.FrontendURL+"/chamados/"+solicitacao.ID)
 			} else {
 				h.EmailService.SendOSStatusUpdate(solicitacao.Client.Email, solicitacao.ClientName, osNumStr, oldStatus, req.Status)
 			}

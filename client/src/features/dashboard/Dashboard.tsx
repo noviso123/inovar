@@ -38,7 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ requests, onSelectRequest,
   }, [isProvider]);
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-in fade-in duration-700 pb-8 px-1 md:px-0 max-w-[1920px] mx-auto">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-0 md:px-6 max-w-[1920px] mx-auto">
       {/* Header with Avatar */}
       <div className="flex items-center gap-4 bg-white/50 p-2 md:p-3 rounded-[2rem] border border-slate-100/50 backdrop-blur-sm mx-1 md:mx-0">
         <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-slate-200 overflow-hidden border-2 border-slate-100 shadow-lg shrink-0">

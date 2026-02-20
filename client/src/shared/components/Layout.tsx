@@ -151,22 +151,22 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         <meta property="og:description" content="Controle total sobre seus chamados e equipamentos." />
         <meta property="og:type" content="website" />
       </Helmet>
-      {/* APP CONTAINER - Expanded for Desktop */}
-      <div className="w-full max-w-[1600px] bg-slate-50 min-h-screen flex flex-col relative shadow-2xl shadow-slate-200/50 transition-all duration-300">
+      {/* APP CONTAINER - Edge-to-Edge on Mobile, Constrained on Desktop */}
+      <div className="w-full md:max-w-[1600px] bg-slate-50 min-h-screen flex flex-col relative md:shadow-2xl md:shadow-slate-200/50 transition-all duration-300">
 
         {/* HEADER */}
-        <header className="h-16 md:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-4 md:px-8 sticky top-0 z-[60]">
+        <header className="h-16 md:h-20 bg-white/90 backdrop-blur-xl border-b border-slate-100 flex items-center justify-between px-3 md:px-8 sticky top-0 z-[60]">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Inovar" className="w-10 h-10 rounded-full shadow-lg object-contain bg-[#3d6b8c]" />
             <div className="flex flex-col">
-              <h2 className="text-sm font-black text-slate-800 tracking-tighter uppercase truncate leading-none">
+              <h2 className="text-[12px] md:text-sm font-black text-slate-800 tracking-tighter uppercase truncate leading-none">
                 {getPageTitle()}
               </h2>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Gestão</span>
+              <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Gestão</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
             {/* Notifications */}
             <div className="relative">
               <button onClick={() => setIsNotifOpen(!isNotifOpen)} className="w-10 h-10 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 active:scale-95 shadow-sm relative" aria-label="Notificações">
@@ -202,7 +202,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
                           </div>
                           <button
                             onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
-                            className="absolute top-2 right-2 p-1 text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-2 right-2 p-1 text-slate-300 pooler:text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Marcar como lida"
                           >
                             <Check className="w-4 h-4" />
@@ -229,7 +229,7 @@ export const Layout: React.FC<LayoutProps> = ({ user, onLogout, notifications = 
         </header>
 
         {/* MAIN CONTENT - Outlet for nested routes */}
-        <div className="flex-1 p-4 md:p-6 lg:p-8 pb-28">
+        <div className="flex-1 px-2 py-4 md:p-6 lg:p-8 pb-28 min-w-0">
           <Outlet />
         </div>
 

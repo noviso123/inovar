@@ -150,13 +150,16 @@ func (h *Handler) GetClient(c *fiber.Ctx) error {
 	id := c.Params("id")
 	role := middleware.GetUserRole(c)
 	userID := middleware.GetUserID(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var cliente domain.Cliente
 	query := h.DB.Preload("Endereco")
 
-	// Client can only see themselves
+	// Filter by role/company
 	if role == domain.RoleCliente {
 		query = query.Where("user_id = ?", userID)
+	} else if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
 	}
 
 	if err := query.Preload("User").First(&cliente, "id = ?", id).Error; err != nil {
@@ -269,9 +272,15 @@ func (h *Handler) BlockClient(c *fiber.Ctx) error {
 func (h *Handler) DeleteClient(c *fiber.Ctx) error {
 	id := c.Params("id")
 	role := middleware.GetUserRole(c)
+	companyID := middleware.GetCompanyID(c)
 
 	var cliente domain.Cliente
-	if err := h.DB.First(&cliente, "id = ?", id).Error; err != nil {
+	query := h.DB
+	if role != domain.RoleAdmin {
+		query = query.Where("company_id = ?", companyID)
+	}
+
+	if err := query.First(&cliente, "id = ?", id).Error; err != nil {
 		return NotFound(c, "Cliente não encontrado")
 	}
 

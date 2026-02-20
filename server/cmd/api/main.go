@@ -42,6 +42,9 @@ func main() {
 	// Seed initial data
 	database.Seed(db)
 
+	// Backfill data after migrations
+	database.BackfillData(db)
+
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:      "Inovar Gestão",

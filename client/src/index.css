@@ -45,6 +45,9 @@
 html {
   scroll-behavior: smooth;
   height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 body {
@@ -54,8 +57,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* Hide scrollbars but allow scroll */

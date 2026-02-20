@@ -20,8 +20,8 @@ func (h *Handler) ListUsers(c *fiber.Ctx) error {
 	var users []domain.User
 	query := h.DB.Model(&domain.User{})
 
-	// Prestador only sees their company's users
-	if role == domain.RolePrestador && companyID != "" {
+	// Prestador and Tecnico see their company's users
+	if (role == domain.RolePrestador || role == domain.RoleTecnico) && companyID != "" {
 		query = query.Where("company_id = ? OR id = ?", companyID, middleware.GetUserID(c))
 	}
 
@@ -82,6 +82,21 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 		companyID = middleware.GetCompanyID(c)
 	}
 
+	// For PRESTADOR role: auto-create Prestador profile first to get CompanyID
+	var prestadorID string
+	if req.Role == domain.RolePrestador {
+		prestadorID = uuid.New().String()
+		companyID = prestadorID // CompanyID = Prestador's ID
+	}
+
+	// For TECNICO role: if companyID is still empty, assign to first available Prestador
+	if req.Role == domain.RoleTecnico && companyID == "" {
+		var prestador domain.Prestador
+		if err := h.DB.First(&prestador).Error; err == nil {
+			companyID = prestador.ID
+		}
+	}
+
 	user := domain.User{
 		ID:                 uuid.New().String(),
 		Name:               req.Name,
@@ -98,6 +113,20 @@ func (h *Handler) CreateUser(c *fiber.Ctx) error {
 
 	if err := h.DB.Create(&user).Error; err != nil {
 		return ServerError(c, err)
+	}
+
+	// Auto-create Prestador company profile
+	if req.Role == domain.RolePrestador {
+		prestador := domain.Prestador{
+			ID:           prestadorID,
+			UserID:       user.ID,
+			RazaoSocial:  req.Name,
+			NomeFantasia: req.Name,
+			Email:        req.Email,
+			Phone:        req.Phone,
+			CreatedAt:    time.Now(),
+		}
+		h.DB.Create(&prestador)
 	}
 
 	// Create related Technician profile if it's a technician

@@ -83,7 +83,7 @@ export const RequestListPage: React.FC<RequestListPageProps> = ({
   ];
 
   return (
-    <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 px-1 md:px-0 max-w-[1920px] mx-auto">
+    <div className="space-y-4 animate-in fade-in duration-500 pb-20 px-0 md:px-6 max-w-[1920px] mx-auto">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">

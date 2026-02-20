@@ -10,6 +10,7 @@ import (
 type Equipamento struct {
 	ID           string `gorm:"primaryKey;size:36" json:"id"`
 	ClientID     string `gorm:"size:36;not null;index" json:"clientId"`
+	CompanyID    string `gorm:"size:36;index" json:"companyId"`
 	Brand        string `gorm:"size:100;not null" json:"brand"`
 	Model        string `gorm:"size:100;not null" json:"model"`
 	BTU          int    `gorm:"not null" json:"btu"`

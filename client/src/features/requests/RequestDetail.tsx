@@ -709,42 +709,44 @@ export const RequestDetail: React.FC<RequestDetailProps> = ({ request: propReque
         <button onClick={handleBack} className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-xl font-black text-slate-800">Chamado #{request.numero || request.id.slice(0, 6)}</h2>
-            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase ${request.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
+            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase whitespace-nowrap ${request.status === RequestStatus.ABERTA ? 'bg-blue-100 text-blue-700' :
               request.status === RequestStatus.EM_ANDAMENTO ? 'bg-amber-100 text-amber-700' :
                 request.status === RequestStatus.CONCLUIDA ? 'bg-emerald-100 text-emerald-700' :
                   request.status === RequestStatus.AGENDADA ? 'bg-blue-100 text-blue-700 border border-blue-200' :
                     'bg-slate-100 text-slate-700'
               }`}>{request.status}</span>
           </div>
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
-             {request.clientName}
-             {request.clientName}
-             <div className="flex flex-col gap-1 mt-1">
-                 {request.client?.endereco ? (
-                    <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit">
-                        <span className="text-xs">📍</span>
-                        <span className="font-bold">Endereço do Cliente:</span>
-                        {`${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state}`}
-                    </span>
-                 ) : (
-                    <span className="bg-rose-50 text-rose-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit font-bold">
-                        <AlertTriangle className="w-3 h-3" />
-                         Endereço do Cliente não cadastrado
-                    </span>
-                 )}
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex flex-col gap-1.5 mt-1">
+             <span className="text-slate-500">{request.clientName}</span>
 
-                 {request.equipments?.[0]?.equipamento?.location && (
-                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg flex items-center gap-1.5 w-fit">
-                        <span className="text-xs">🔧</span>
-                         <span className="font-bold">Local do Equipamento:</span>
-                         {request.equipments[0].equipamento.location}
-                    </span>
-                 )}
-             </div>
-          </p>
+             {request.client?.endereco ? (
+                <div className="bg-slate-100 text-slate-600 px-2 py-1.5 rounded-lg flex items-start gap-1.5 w-full">
+                    <span className="text-xs mt-0.5">📍</span>
+                    <div className="flex-1 leading-relaxed">
+                        <span className="font-bold mr-1">Endereço:</span>
+                        {`${request.client.endereco.street}, ${request.client.endereco.number} - ${request.client.endereco.district}, ${request.client.endereco.city}/${request.client.endereco.state}`}
+                    </div>
+                </div>
+             ) : (
+                <div className="bg-rose-50 text-rose-600 px-2 py-1.5 rounded-lg flex items-center gap-1.5 w-full font-bold">
+                    <AlertTriangle className="w-3 h-3" />
+                     Endereço não cadastrado
+                </div>
+             )}
+
+             {request.equipments?.[0]?.equipamento?.location && (
+                <div className="bg-blue-50 text-blue-600 px-2 py-1.5 rounded-lg flex items-start gap-1.5 w-full">
+                    <span className="text-xs mt-0.5">🔧</span>
+                     <div className="flex-1 leading-relaxed">
+                        <span className="font-bold mr-1">Local:</span>
+                        {request.equipments[0].equipamento.location}
+                     </div>
+                </div>
+             )}
+          </div>
         </div>
         <button
           onClick={() => window.open(`/print/os/${request.id}`, '_blank')}
