@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Menu Items List */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4 scrollbar-hide scroll-container">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 scrollbar-hide scroll-container">
           {categories.map((category, catIdx) => (
             <div key={catIdx} className="mb-6">
               <h4 className="px-4 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{category.title}</h4>
