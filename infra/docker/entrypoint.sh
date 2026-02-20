@@ -24,14 +24,21 @@ PORT=${PORT:-8080}
 # Python bridge configuration for Docker context
 BRIDGE_SCRIPT_PATH=${BRIDGE_SCRIPT_PATH:-/app/infra/scripts/bridge.py}
 PYTHON_CMD=${PYTHON_CMD:-python3}
+PYSERVICE_URL=${PYSERVICE_URL:-http://localhost:8000}
 
-export DATABASE_URL UPLOAD_DIR FRONTEND_DIST PORT BRIDGE_SCRIPT_PATH PYTHON_CMD
+export DATABASE_URL UPLOAD_DIR FRONTEND_DIST PORT BRIDGE_SCRIPT_PATH PYTHON_CMD PYSERVICE_URL
 
 echo "📦 DATABASE_URL: ${DATABASE_URL}"
 echo "📁 UPLOAD_DIR:   ${UPLOAD_DIR}"
 echo "🌐 PORT:         ${PORT}"
 echo "🖥️  FRONTEND:     ${FRONTEND_DIST}"
-echo "🐍 BRIDGE:       ${BRIDGE_SCRIPT_PATH}"
+echo "🐍 BRIDGE URL:   ${PYSERVICE_URL}"
+
+# Start Python Data Service in background
+cd /app/infra/pyservice
+python3 -m uvicorn main:app --port 8000 --host 127.0.0.1 &
+echo "🐍 Python Data Service starting in background (port 8000)..."
+sleep 2
 
 # Start the binary as the inovar user (drop root privileges)
 cd /app
