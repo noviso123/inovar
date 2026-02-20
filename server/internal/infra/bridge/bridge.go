@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -32,9 +33,20 @@ func CallPython(action string, params map[string]interface{}) (*BridgeResponse, 
 		return nil, fmt.Errorf("failed to marshal bridge request: %w", err)
 	}
 
-	// Use full path to python and bridge.py
-	// In production/docker this might change, but for current setup:
-	cmd := exec.Command("python", "../infra/scripts/bridge.py", string(payload))
+	// Determine the bridge script path based on environment
+	// In Docker: /app/infra/scripts/bridge.py
+	// In local dev: ../infra/scripts/bridge.py
+	bridgePath := os.Getenv("BRIDGE_SCRIPT_PATH")
+	if bridgePath == "" {
+		bridgePath = "../infra/scripts/bridge.py"
+	}
+
+	pythonCmd := os.Getenv("PYTHON_CMD")
+	if pythonCmd == "" {
+		pythonCmd = "python3"
+	}
+
+	cmd := exec.Command(pythonCmd, bridgePath, string(payload))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

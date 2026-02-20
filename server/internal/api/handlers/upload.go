@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// UploadFile uploads a generic file to Supabase Storage and returns the URL
+// UploadFile uploads a file to local storage and returns the URL
 func (h *Handler) UploadFile(c *fiber.Ctx) error {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -19,20 +19,7 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		return BadRequest(c, "Arquivo muito grande (máx 10MB)")
 	}
 
-	/*
-		// Determine category based on extension
-		category := "outros"
-		ext := strings.ToLower(filepath.Ext(file.Filename))
-		if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" || ext == ".webp" {
-			category = "imagens"
-		} else if ext == ".pdf" {
-			category = "documentos"
-		}
-
-		subfolder := "geral"
-	*/
-
-	// Upload to Supabase Storage (via S3 protocol)
+	// Upload to local storage
 	var url string
 	var uploadErr error
 
@@ -49,14 +36,12 @@ func (h *Handler) UploadFile(c *fiber.Ctx) error {
 		if contextID == "" {
 			return BadRequest(c, "Context ID (Nº OS) é obrigatório para orçamento")
 		}
-		// Pattern: documents/orcamento-os123.pdf
 		customKey := fmt.Sprintf("documents/orcamento-os%s", contextID)
 		url, uploadErr = h.StorageService.Upload(file, customKey)
 	} else if uploadType == "laudo" || uploadType == "os-finalizada" {
 		if contextID == "" {
 			return BadRequest(c, "Context ID (Nº OS) é obrigatório para laudo")
 		}
-		// Pattern: documents/laudo-os123.pdf
 		customKey := fmt.Sprintf("documents/laudo-os%s", contextID)
 		url, uploadErr = h.StorageService.Upload(file, customKey)
 	} else {

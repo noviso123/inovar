@@ -3,8 +3,10 @@ package database
 import (
 	"errors"
 	"log"
+	"os"
+	"path/filepath"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -16,24 +18,40 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 		return nil, errors.New("DATABASE_URL is required")
 	}
 
-	log.Println("📂 Connecting to Postgres/Supabase...")
+	// Ensure the directory for the database file exists
+	dbDir := filepath.Dir(databaseURL)
+	if dbDir != "" && dbDir != "." {
+		if err := os.MkdirAll(dbDir, 0755); err != nil {
+			return nil, errors.New("failed to create database directory: " + err.Error())
+		}
+	}
 
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN:                  databaseURL,
-		PreferSimpleProtocol: true, // Disables implicit prepared statement usage, mandatory for PgBouncer/Supavisor
-	}), &gorm.Config{
+	log.Printf("📂 Connecting to SQLite database: %s", databaseURL)
+
+	// SQLite with WAL mode for better concurrent read/write performance
+	dsn := databaseURL + "?_journal_mode=WAL&_busy_timeout=5000&_foreign_keys=ON"
+
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Configure connection pool for SQLite
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxOpenConns(1) // SQLite supports only one writer at a time
+	sqlDB.SetMaxIdleConns(1)
+
 	log.Println("✅ Database connected successfully")
 	return db, nil
 }
 
 func Migrate(db *gorm.DB) error {
-	log.Println("ðŸ”„ Running database migrations...")
+	log.Println("🔄 Running database migrations...")
 
 	err := db.AutoMigrate(
 		&domain.User{},
@@ -56,13 +74,14 @@ func Migrate(db *gorm.DB) error {
 		&domain.NotaFiscal{},
 		&domain.CertificadoDigital{},
 		&domain.ConfiguracaoFiscal{},
-		&domain.NFSeEvento{}, // NFS-e authorization/cancellation events
+		&domain.NFSeEvento{},
+		&domain.Notification{},
 	)
 
 	if err != nil {
 		return err
 	}
 
-	log.Println("âœ… Migrations completed")
+	log.Println("✅ Migrations completed")
 	return nil
 }

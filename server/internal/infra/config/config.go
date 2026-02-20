@@ -20,20 +20,13 @@ type Config struct {
 	SMTPPassword      string
 	SMTPFrom          string
 
-	MaxUploadSize          int64
-	LockTimeoutSecs        int
-	ConfirmDays            int
-	Environment            string // development, staging, production
-	DefaultPassword        string
-	FrontendURL            string
-	SupabaseURL            string
-	SupabaseKey            string
-	SupabaseServiceRoleKey string
-	AWSAccessKeyID         string
-	AWSSecretAccessKey     string
-	AWSRegion              string
-	AWSBucket              string
-	AWSEndpoint            string
+	MaxUploadSize   int64
+	LockTimeoutSecs int
+	ConfirmDays     int
+	Environment     string // development, staging, production
+	DefaultPassword string
+	FrontendURL     string
+	UploadDir       string
 }
 
 func Load() *Config {
@@ -48,7 +41,7 @@ func Load() *Config {
 
 	return &Config{
 		Environment:       env,
-		DatabaseURL:       dbURL, // Now points to SQLite file by default or env
+		DatabaseURL:       dbURL,
 		JWTSecret:         jwtSecret,
 		JWTExpireMinutes:  getEnvInt("JWT_EXPIRE_MINUTES", 60),
 		RefreshExpireDays: getEnvInt("REFRESH_EXPIRE_DAYS", 7),
@@ -59,19 +52,12 @@ func Load() *Config {
 		SMTPPassword:      getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:          getEnv("SMTP_FROM", "noreply@inovar.com"),
 
-		MaxUploadSize:          int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
-		LockTimeoutSecs:        getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
-		ConfirmDays:            getEnvInt("CONFIRM_DAYS", 7),
-		DefaultPassword:        getEnv("DEFAULT_PASSWORD", "inovar123"),
-		FrontendURL:            frontendURL,
-		SupabaseURL:            getEnv("SUPABASE_URL", ""),
-		SupabaseKey:            getEnv("SUPABASE_KEY", ""),
-		SupabaseServiceRoleKey: getEnv("SUPABASE_SERVICE_ROLE_KEY", ""),
-		AWSAccessKeyID:         getEnv("AWS_ACCESS_KEY_ID", ""),
-		AWSSecretAccessKey:     getEnv("AWS_SECRET_ACCESS_KEY", ""),
-		AWSRegion:              getEnv("AWS_REGION", "sa-east-1"),
-		AWSBucket:              getEnv("AWS_BUCKET", "uploads"),
-		AWSEndpoint:            getEnv("AWS_ENDPOINT", ""),
+		MaxUploadSize:   int64(getEnvInt("MAX_UPLOAD_SIZE", 10*1024*1024)), // 10MB
+		LockTimeoutSecs: getEnvInt("LOCK_TIMEOUT_SECS", 300),               // 5 minutes
+		ConfirmDays:     getEnvInt("CONFIRM_DAYS", 7),
+		DefaultPassword: getEnv("DEFAULT_PASSWORD", "inovar123"),
+		FrontendURL:     frontendURL,
+		UploadDir:       getEnv("UPLOAD_DIR", "./data/uploads"),
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 func (h *Handler) ListRoutes(c *fiber.Ctx) error {
 	var routes []fiber.Map
 
-	// Fiber's Stack() returns the route stack
 	for _, stack := range c.App().Stack() {
 		for _, route := range stack {
 			routes = append(routes, fiber.Map{
@@ -21,7 +20,6 @@ func (h *Handler) ListRoutes(c *fiber.Ctx) error {
 		}
 	}
 
-	// Sort by path
 	sort.Slice(routes, func(i, j int) bool {
 		return routes[i]["path"].(string) < routes[j]["path"].(string)
 	})
@@ -33,10 +31,7 @@ func (h *Handler) ListRoutes(c *fiber.Ctx) error {
 func (h *Handler) ListTables(c *fiber.Ctx) error {
 	var tables []string
 
-	// Query the list of tables from the database (strictly PostgreSQL/Supabase)
-	// Query: SELECT table_name FROM information_schema.tables WHERE table_schema='public'
-
-	// We can try GORM's Migrator which is database agnostic
+	// GORM Migrator is database-agnostic (works with SQLite)
 	tableList, err := h.DB.Migrator().GetTables()
 	if err != nil {
 		return ServerError(c, err)

@@ -46,6 +46,7 @@ func main() {
 	app := fiber.New(fiber.Config{
 		AppName:      "Inovar Gestão",
 		ErrorHandler: handlers.ErrorHandler,
+		BodyLimit:    50 * 1024 * 1024, // 50MB for file uploads
 	})
 
 	// Middleware
@@ -63,20 +64,6 @@ func main() {
 	app.Use(helmet.New(helmet.Config{
 		ContentSecurityPolicy: "default-src 'self' *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *; img-src 'self' data: *; connect-src 'self' *;",
 	}))
-	/*
-		app.Use(limiter.New(limiter.Config{
-			Max:        100,
-			Expiration: 60 * time.Second,
-			KeyGenerator: func(c *fiber.Ctx) string {
-				return c.IP()
-			},
-			LimitReached: func(c *fiber.Ctx) error {
-				return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-					"error": "Muitas requisições. Tente novamente mais tarde.",
-				})
-			},
-		}))
-	*/
 
 	// Initialize handlers
 	h := handlers.New(db, cfg)
@@ -113,7 +100,7 @@ func main() {
 	protected.Get("/me", h.GetCurrentUser)
 	protected.Put("/me", h.UpdateCurrentUser)
 	protected.Put("/me/password", h.ChangePassword)
-	protected.Post("/logout", h.Logout) // Changed from /auth/logout to prevent middleware collision with public /auth
+	protected.Post("/logout", h.Logout)
 	protected.Post("/upload", h.UploadFile)
 
 	// Company profile
@@ -194,18 +181,18 @@ func main() {
 	requests.Post("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.IssueNFSe)
 	requests.Delete("/:id/nfse", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CancelNFSe)
 	requests.Get("/:id/nfse", h.GetNFSe)
-	requests.Get("/:id/nfse/danfse", h.GetDANFSe)                                                                                 // DANFS-e - Documento Auxiliar
-	requests.Get("/:id/nfse/eventos", h.GetNFSeEventos)                                                                           // Event history
-	requests.Post("/:id/nfse/cancelar", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CancelNFSeWithMotivo) // Cancel with reason
+	requests.Get("/:id/nfse/danfse", h.GetDANFSe)
+	requests.Get("/:id/nfse/eventos", h.GetNFSeEventos)
+	requests.Post("/:id/nfse/cancelar", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"), h.CancelNFSeWithMotivo)
 
 	// Fiscal Management
 	fiscal := protected.Group("/fiscal", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"))
 	fiscal.Get("/config", h.GetFiscalConfig)
 	fiscal.Put("/config", h.UpdateFiscalConfig)
 	fiscal.Post("/certificate", h.UploadCertificate)
-	fiscal.Get("/regimes", h.GetTaxRegimes)    // Available tax regimes
-	fiscal.Get("/lookup/:cnpj", h.LookupCNPJ)  // Lookup CNPJ data
-	fiscal.Post("/calcular", h.CalculateTaxes) // Calculate taxes automatically
+	fiscal.Get("/regimes", h.GetTaxRegimes)
+	fiscal.Get("/lookup/:cnpj", h.LookupCNPJ)
+	fiscal.Post("/calcular", h.CalculateTaxes)
 
 	// Agenda
 	agenda := protected.Group("/agenda", middleware.RolesAllowed("ADMIN_SISTEMA", "PRESTADOR", "TECNICO"))
@@ -249,8 +236,12 @@ func main() {
 		h.Hub.HandleWebSocket(c)
 	}))
 
-	// Note: Uploads are now served directly from Supabase Storage Public URLs.
-	// Local storage serving is disabled to ensure 100% cloud-native architecture.
+	// Serve uploaded files from local storage
+	uploadDir := os.Getenv("UPLOAD_DIR")
+	if uploadDir == "" {
+		uploadDir = "./data/uploads"
+	}
+	app.Static("/uploads", uploadDir)
 
 	// Serve static files from React build
 	frontendDist := os.Getenv("FRONTEND_DIST")

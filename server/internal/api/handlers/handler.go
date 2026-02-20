@@ -41,7 +41,7 @@ func New(db *gorm.DB, cfg *config.Config) *Handler {
 	hub := websocket.NewHub()
 	go hub.Run()
 
-	emailService := services.NewEmailService(cfg)
+	emailService := services.NewEmailService(cfg, db)
 	storageService := services.NewStorageService(cfg)
 
 	return &Handler{

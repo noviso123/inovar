@@ -1,5 +1,5 @@
 # ==============================================================
-# INOVAR - Dockerfile Multi-Stage (Refatorado)
+# INOVAR - Dockerfile Multi-Stage (SQLite + Local Storage)
 # Build: docker build -t inovar .
 # Run:   docker-compose up -d
 # ==============================================================
@@ -19,27 +19,26 @@ COPY client/ ./
 RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 # ─────────────────────────────────────────────
-# Stage 2: Backend Build (Go)
+# Stage 2: Backend Build (Go + SQLite via CGO)
 # ─────────────────────────────────────────────
 FROM golang:1.23-alpine AS server-builder
 WORKDIR /app/server
 
-# Install git for go modules that require it
-RUN apk add --no-cache git
+# Install build dependencies for CGO (required by go-sqlite3)
+RUN apk add --no-cache git gcc musl-dev
 
 # Copy dependency files first for layer caching
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 
-# Copy source and build a static binary
+# Copy source and build with CGO enabled for SQLite
 COPY server/ ./
-# Build from the new location (server/main.go)
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
   -ldflags="-w -s" \
   -o inovar ./cmd/api/main.go
 
 # ─────────────────────────────────────────────
-# Stage 3: Final Runtime Image (minimal Debian-based for Python compatibility)
+# Stage 3: Final Runtime Image
 # ─────────────────────────────────────────────
 FROM python:3.11-slim-bookworm
 
@@ -52,14 +51,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   bash \
   && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for security (Debian style)
+# Create non-root user for security
 RUN groupadd -r inovar && useradd -r -g inovar inovar
 
 WORKDIR /app
 
-# Copy Python requirements first
+# Copy Python requirements and install
 COPY infra/requirements.txt ./infra/requirements.txt
-# Install dependencies (Debian has pre-built wheels for numba and rembg dependencies)
 RUN pip install --no-cache-dir --break-system-packages -r ./infra/requirements.txt
 
 # Copy build artifacts and runtime scripts
@@ -81,7 +79,7 @@ USER inovar
 # Expose application port
 EXPOSE 8080
 
-# Health check using wget (alpine-compatible)
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD wget -qO- http://localhost:8080/health || exit 1
 

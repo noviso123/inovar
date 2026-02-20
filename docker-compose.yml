@@ -1,5 +1,5 @@
 # ==============================================================
-# INOVAR - Docker Compose (Refatorado)
+# INOVAR - Docker Compose (Local Stack)
 # Uso: docker-compose up -d
 # ==============================================================
 version: '3.9'
@@ -15,15 +15,18 @@ services:
       - "${APP_PORT:-8080}:8080"
     volumes:
       # Persistent data - bind mounts to infra/data
-      - ./infra/data/db:/app/data/db # SQLite database
+      - ./infra/data/db:/app/data/db       # SQLite database
       - ./infra/data/uploads:/app/data/uploads # File uploads
-      - ./infra/data/certs:/app/data/certs # Digital certificates
+      - ./infra/data/certs:/app/data/certs   # Digital certificates
     env_file:
       - .env.docker
     environment:
       # Override specific paths for Docker environment
       - UPLOAD_DIR=/app/data/uploads
       - FRONTEND_DIST=/app/client/dist
+      - DATABASE_URL=/app/data/db/inovar.db
+      - BRIDGE_SCRIPT_PATH=/app/infra/scripts/bridge.py
+      - PYTHON_CMD=python3
     healthcheck:
       test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
       interval: 30s

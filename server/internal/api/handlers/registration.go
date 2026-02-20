@@ -139,7 +139,7 @@ func (h *Handler) PublicRegister(c *fiber.Ctx) error {
 	// 11. Send Welcome Email
 	go func() {
 		if h.EmailService != nil {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, "Sua senha definitiva")
+			h.EmailService.SendWelcomeEmail(user.Email, user.Name, req.Password)
 		}
 	}()
 

@@ -19,7 +19,7 @@ func (h *Handler) GetSettings(c *fiber.Ctx) error {
 		settingsMap[s.Key] = s.Value
 	}
 
-	// Defaut values if database is empty
+	// Default values if database is empty
 	if len(settingsMap) == 0 {
 		defaults := map[string]string{
 			"sla_baixa":           "72", // hours
@@ -64,23 +64,14 @@ func (h *Handler) UpdateSettings(c *fiber.Ctx) error {
 
 	tx.Commit()
 
-	// Checar se preventive_interval foi atualizado e disparar update em massa
+	// Update preventive dates on equipment when interval changes
 	if intervalStr, ok := req.Settings["preventive_interval"]; ok {
-		// Converter para int
-		// Nota: Aqui não estou tratando erro de conversão pois se salvar string invalida no banco é outro problema,
-		// e o impacto seria apenas não rodar o update automatico agora.
-		// Mas podemos tentar validar.
-		// Importante: No loop acima já salvou.
-
-		// Executar Raw SQL para atualizar equipamentos que usam o padrão (interval = 0)
-		// Postgres syntax: base + (N || ' days')::interval
+		// SQLite-compatible date arithmetic using datetime() function
 		query := `
             UPDATE equipamentos
-            SET next_preventive_date = COALESCE(last_preventive_date, created_at) + (? || ' days')::interval
-            WHERE preventive_interval = 0 AND active = true
+            SET next_preventive_date = datetime(COALESCE(last_preventive_date, created_at), '+' || ? || ' days')
+            WHERE preventive_interval = 0 AND active = 1
         `
-		// Execute in background or blocking? Blocking is safer for consistency.
-		// H.DB is available.
 		h.DB.Exec(query, intervalStr)
 	}
 

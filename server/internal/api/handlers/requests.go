@@ -528,7 +528,7 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 		"userId":    userID,
 	})
 
-	// Auto-Email on Finalization and In-App Notifications
+	// Auto-Email on status change and In-App Notifications
 	go func() {
 		// Calculate notification message based on status
 		title := "Status Atualizado"
@@ -543,9 +543,14 @@ func (h *Handler) UpdateRequestStatus(c *fiber.Ctx) error {
 			"/chamados/"+solicitacao.ID,
 		)
 
-		if h.EmailService != nil && solicitacao.ClientName != "" && isTerminal {
-			// We need to ensure solicitacao has Client loaded. Preload used earlier should have it.
-			h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, fmt.Sprint(solicitacao.Numero), os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
+		// Email to client on all status changes
+		if h.EmailService != nil && solicitacao.Client.Email != "" {
+			osNumStr := fmt.Sprint(solicitacao.Numero)
+			if isTerminal {
+				h.EmailService.SendOSFinalized(solicitacao.Client.Email, solicitacao.ClientName, osNumStr, os.Getenv("FRONTEND_URL")+"/chamados/"+solicitacao.ID)
+			} else {
+				h.EmailService.SendOSStatusUpdate(solicitacao.Client.Email, solicitacao.ClientName, osNumStr, oldStatus, req.Status)
+			}
 		}
 	}()
 

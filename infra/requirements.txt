@@ -1,7 +1,3 @@
-boto3
-botocore
-rembg
-Pillow
 jinja2
 requests
 python-dotenv

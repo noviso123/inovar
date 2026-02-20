@@ -216,10 +216,10 @@ func (h *Handler) AdminResetPassword(c *fiber.Ctx) error {
 	user.UpdatedAt = time.Now()
 	h.DB.Save(&user)
 
-	// Send email with new password
+	// Send email with new temporary password
 	go func() {
 		if h.EmailService != nil && user.Email != "" {
-			h.EmailService.SendWelcomeEmail(user.Email, user.Name, tempPassword)
+			h.EmailService.SendPasswordResetByAdmin(user.Email, user.Name, tempPassword)
 		}
 	}()
 
