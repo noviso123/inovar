@@ -157,7 +157,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
     );
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
+        <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 animate-in fade-in duration-500 pb-12 px-4 md:px-0">
             {/* Header */}
             <div className="flex items-center gap-4 mb-2">
                 <button
@@ -179,10 +179,10 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                 </div>
             )}
 
-            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 {/* Left Column: Regime & CNPJ */}
-                <div className="lg:col-span-2 space-y-8">
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100 relative overflow-hidden">
+                <div className="lg:col-span-2 space-y-6 md:space-y-8">
+                    <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 shadow-xl border border-slate-100 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-50"></div>
 
                         <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-3 relative z-10">
@@ -205,7 +205,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                                         type="button"
                                         onClick={handleLookupCNPJ}
                                         disabled={searching || !cnpjInput}
-                                        className="px-6 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                                        className="px-4 md:px-6 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {searching ? (
                                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -324,7 +324,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
 
                     {/* Tax Rates & Withholdings - Only for Lucro Presumido/Real */}
                     {(config?.regimeTributario === 'LUCRO_PRESUMIDO' || config?.regimeTributario === 'LUCRO_REAL') && (
-                        <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100">
+                        <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 shadow-xl border border-slate-100">
                             <h3 className="text-lg font-black text-slate-800 mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 bg-emerald-600 text-white rounded-lg flex items-center justify-center text-sm">2</span>
                                 Alíquotas e Impostos
@@ -453,7 +453,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
 
                     {/* MEI / Simples Nacional Info Notes */}
                     {config?.regimeTributario === 'MEI' && (
-                        <div className="bg-blue-50 rounded-[2.5rem] p-8 border border-blue-100">
+                        <div className="bg-blue-50 rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 border border-blue-100">
                              <h3 className="text-lg font-black text-blue-800 mb-2">Regime MEI Ativo</h3>
                              <p className="text-xs text-blue-600 font-bold">
                                 Como MEI, você paga um valor fixo mensal (DAS-MEI). Não há destaque de impostos individuais (PIS, COFINS, etc) na NFS-e Nacional para serviços.
@@ -462,7 +462,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                     )}
 
                     {config?.regimeTributario === 'SIMPLES_NACIONAL' && (
-                        <div className="bg-emerald-50 rounded-[2.5rem] p-8 border border-emerald-100">
+                        <div className="bg-emerald-50 rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 border border-emerald-100">
                              <h3 className="text-lg font-black text-emerald-800 mb-2">Regime Simples Nacional</h3>
                              <p className="text-xs text-emerald-600 font-bold">
                                 Os impostos são pagos de forma unificada no DAS. A alíquota é baseada na sua faixa de faturamento dos últimos 12 meses.
@@ -472,9 +472,9 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                 </div>
 
                 {/* Right Column: Certificate & Environment */}
-                <div className="space-y-8">
+                <div className="space-y-6 md:space-y-8">
                     {/* Digital Certificate */}
-                    <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
+                    <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 text-white shadow-2xl relative overflow-hidden">
                         <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-600/20 blur-[60px] rounded-full"></div>
 
                         <h3 className="text-lg font-black mb-6 flex items-center gap-3 relative z-10">
@@ -509,7 +509,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                     </div>
 
                     {/* Environment */}
-                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-100">
+                    <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-6 md:p-8 shadow-xl border border-slate-100">
                         <h3 className="text-lg font-black text-slate-800 mb-6">Ambiente API</h3>
 
                         <div className="space-y-4">
@@ -534,7 +534,7 @@ export const FiscalSettings: React.FC<FiscalSettingsProps> = ({ currentUser }) =
                     <button
                         type="submit"
                         disabled={saving}
-                        className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] uppercase tracking-[0.2em] text-xs shadow-2xl shadow-blue-600/40 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
+                        className="w-full py-5 md:py-6 bg-blue-600 text-white font-black rounded-2xl md:rounded-[2rem] uppercase tracking-[0.2em] text-xs shadow-2xl shadow-blue-600/40 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
                     >
                         {saving ? 'Salvando...' : 'Salvar Configurações'}
                     </button>

@@ -57,7 +57,7 @@ export const QRCodeManager: React.FC = () => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-4 md:px-0">
             {/* Header - Hidden on print */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
                 <div className="flex items-center gap-4">
@@ -75,7 +75,7 @@ export const QRCodeManager: React.FC = () => {
 
                 <button
                     onClick={handlePrint}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-4 md:py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl"
                 >
                     <Printer className="w-4 h-4" />
                     Imprimir Etiquetas
@@ -83,7 +83,7 @@ export const QRCodeManager: React.FC = () => {
             </div>
 
             {/* Filters - Hidden on print */}
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 print:hidden">
+            <div className="bg-white p-6 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4 print:hidden">
                 <div className="flex-1 relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -125,9 +125,9 @@ export const QRCodeManager: React.FC = () => {
             )}
 
             {/* Stickers Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 print:grid-cols-3 print:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 print:grid-cols-3 print:gap-4">
                 {filteredEquipments.map((e) => (
-                    <div key={e.id} className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 hover:border-blue-200 transition-all group print:border-slate-300 print:shadow-none print:break-inside-avoid print:p-4">
+                    <div key={e.id} className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 hover:border-blue-200 transition-all group print:border-slate-300 print:shadow-none print:break-inside-avoid print:p-4">
                         <div className="w-full text-left">
                             <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1 truncate">{(e as any).clientName}</p>
                             <h4 className="text-base font-black text-slate-800 leading-tight truncate">{e.brand}</h4>
