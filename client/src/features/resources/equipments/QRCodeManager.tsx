@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Equipment } from '@/shared/types';
 import { apiService } from '@/shared/services/apiService';
 import { QRCodeSVG } from 'qrcode.react';
-import { toPng } from 'html-to-image';
-import { Printer, Search, ArrowLeft, SlidersHorizontal, Plus, Trash2, Smartphone, Instagram, Globe, AlignLeft, LayoutGrid, Sparkles, Download, MessageCircle } from 'lucide-react';
+import { toPng, toSvg } from 'html-to-image';
+import {
+    Printer, Search, ArrowLeft, SlidersHorizontal, Plus, Trash2,
+    Smartphone, Instagram, Globe, AlignLeft, LayoutGrid, Sparkles,
+    Download, MessageCircle, Palette, Monitor, Shield, FileCode
+} from 'lucide-react';
 
 type QRMode = 'assets' | 'custom';
 type CustomQRType = 'whatsapp' | 'instagram' | 'url' | 'text';
+type LayoutType = 'marketing' | 'asset' | 'minimal';
 
 interface CustomSticker {
     id: string;
@@ -15,6 +20,9 @@ interface CustomSticker {
     title: string;
     subtitle: string;
     footerMessage: string;
+    primaryColor: string;
+    secondaryColor: string;
+    layoutType: LayoutType;
     content: string;
     value: string;
 }
@@ -37,6 +45,9 @@ export const QRCodeManager: React.FC = () => {
     const [customStickers, setCustomStickers] = useState<CustomSticker[]>([]);
     const [newSticker, setNewSticker] = useState<Partial<CustomSticker>>({
         type: 'url',
+        layoutType: 'marketing',
+        primaryColor: '#2563eb',
+        secondaryColor: '#ffffff',
         title: '',
         subtitle: '',
         footerMessage: ''
@@ -106,6 +117,9 @@ export const QRCodeManager: React.FC = () => {
                 title: newSticker.title!,
                 subtitle: newSticker.subtitle || '',
                 footerMessage: newSticker.footerMessage || '',
+                primaryColor: newSticker.primaryColor || '#2563eb',
+                secondaryColor: newSticker.secondaryColor || '#ffffff',
+                layoutType: newSticker.layoutType || 'marketing',
                 content: generateQRValue(),
                 value: generateQRValue()
             };
@@ -115,7 +129,13 @@ export const QRCodeManager: React.FC = () => {
 
             // Reset form
             setFormValues({ phone: '', message: '', igUser: '', url: '', text: '' });
-            setNewSticker({ type: 'url', title: '', subtitle: '', footerMessage: '' });
+            setNewSticker({
+                type: 'url',
+                layoutType: 'marketing',
+                primaryColor: '#2563eb',
+                secondaryColor: '#ffffff',
+                title: '', subtitle: '', footerMessage: ''
+            });
         } catch (err) {
             console.error('Failed to save sticker', err);
         }
@@ -130,21 +150,23 @@ export const QRCodeManager: React.FC = () => {
         }
     };
 
-    const downloadPNG = async (id: string, title: string) => {
+    const exportSticker = async (id: string, title: string, format: 'png' | 'svg') => {
         const node = stickerRefs.current[id];
         if (!node) return;
 
         try {
-            const dataUrl = await toPng(node, {
-                pixelRatio: 4, // Ultra high quality
-                backgroundColor: '#ffffff'
-            });
+            const options = {
+                pixelRatio: 4,
+                backgroundColor: 'transparent'
+            };
+
+            const dataUrl = format === 'png' ? await toPng(node, options) : await toSvg(node, options);
             const link = document.createElement('a');
-            link.download = `sticker-${title.toLowerCase().replace(/\s+/g, '-')}.png`;
+            link.download = `sticker-${title.toLowerCase().replace(/\s+/g, '-')}.${format}`;
             link.href = dataUrl;
             link.click();
         } catch (err) {
-            console.error('Download failed', err);
+            console.error(`Export ${format} failed`, err);
         }
     };
 
@@ -171,6 +193,20 @@ export const QRCodeManager: React.FC = () => {
         window.print();
     };
 
+    // Helper to render premium QR
+    const PremiumQR = ({ value, color, size = 160 }: { value: string, color: string, size?: number }) => (
+        <div className="relative group">
+            <QRCodeSVG
+                value={value}
+                size={size}
+                level="H"
+                includeMargin={true}
+                fgColor={color}
+                className="mx-auto"
+            />
+        </div>
+    );
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500 pb-20 px-4 md:px-0">
             {/* Header - Hidden on print */}
@@ -183,8 +219,11 @@ export const QRCodeManager: React.FC = () => {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">Gerador de QR Codes</h2>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Identificação de Ativos e Marketing</p>
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                             QR Code Creator
+                             <span className="bg-blue-600 text-[8px] text-white px-2 py-0.5 rounded-full uppercase tracking-tighter">Premium v2</span>
+                        </h2>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Identidade e Marketing Inteligente</p>
                     </div>
                 </div>
 
@@ -193,7 +232,7 @@ export const QRCodeManager: React.FC = () => {
                         onClick={() => setActiveTab('assets')}
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'assets' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
                     >
-                        <LayoutGrid className="w-4 h-4 mb-1 mx-auto" />
+                        <Monitor className="w-4 h-4 mb-1 mx-auto" />
                         Ativos
                     </button>
                     <button
@@ -221,7 +260,6 @@ export const QRCodeManager: React.FC = () => {
                             />
                         </div>
                         <div className="flex items-center gap-3">
-                            <SlidersHorizontal className="w-4 h-4 text-slate-400" />
                             <select
                                 className="bg-slate-50 border-transparent rounded-xl text-sm font-medium px-4 py-3 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 appearance-none min-w-[200px]"
                                 value={filterClient}
@@ -235,20 +273,12 @@ export const QRCodeManager: React.FC = () => {
                         </div>
                         <button
                             onClick={handlePrintAll}
-                            className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors"
-                            title="Imprimir Selecionados"
+                            className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors flex items-center gap-2"
                         >
                             <Printer className="w-5 h-5" />
+                            <span className="text-[10px] font-black uppercase hidden md:inline">Imprimir Tudo</span>
                         </button>
                     </div>
-
-                    {/* Loading State */}
-                    {loading && (
-                        <div className="py-20 text-center">
-                            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Carregando Ativos...</p>
-                        </div>
-                    )}
 
                     {/* Stickers Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 print:grid-cols-3 print:gap-4 print:pt-4">
@@ -260,13 +290,12 @@ export const QRCodeManager: React.FC = () => {
                                     <p className="text-[10px] font-bold text-slate-400 truncate">{e.model}</p>
                                 </div>
 
-                                <div className="bg-slate-50 p-4 rounded-2xl print:bg-white print:p-2">
-                                    <QRCodeSVG
+                                <div className="bg-slate-50 p-4 rounded-2xl print:bg-white print:p-2 relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <PremiumQR
                                         value={`${window.location.origin}/open-request/${e.id}`}
+                                        color="#0f172a"
                                         size={120}
-                                        level="H"
-                                        includeMargin={true}
-                                        className="mx-auto"
                                     />
                                 </div>
 
@@ -276,7 +305,7 @@ export const QRCodeManager: React.FC = () => {
                                         <span className="text-slate-800">{e.location}</span>
                                     </div>
                                     <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-widest text-slate-400">
-                                        <span>Nº de Série</span>
+                                        <span>Série</span>
                                         <span className="text-slate-800">{e.serialNumber || 'N/A'}</span>
                                     </div>
                                 </div>
@@ -285,67 +314,112 @@ export const QRCodeManager: React.FC = () => {
                     </div>
                 </>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Custom Form */}
-                    <div className="lg:col-span-1 space-y-6 print:hidden">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Custom Form - Left Side */}
+                    <div className="lg:col-span-4 space-y-6 print:hidden">
                         <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 space-y-6">
                             <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
                                 <Plus className="w-5 h-5 text-blue-600" />
-                                Nova Etiqueta
+                                Customização Pro
                             </h3>
 
                             {/* Type Selector */}
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="flex gap-2 p-1 bg-slate-50 rounded-xl">
                                 {(['whatsapp', 'instagram', 'url', 'text'] as CustomQRType[]).map(t => (
                                     <button
                                         key={t}
                                         onClick={() => setNewSticker(prev => ({ ...prev, type: t }))}
-                                        className={`h-12 rounded-xl flex items-center justify-center transition-all ${newSticker.type === t ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
-                                        title={t}
+                                        className={`flex-1 h-10 rounded-lg flex items-center justify-center transition-all ${newSticker.type === t ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                                     >
-                                        {t === 'whatsapp' && <Smartphone className="w-5 h-5" />}
-                                        {t === 'instagram' && <Instagram className="w-5 h-5" />}
-                                        {t === 'url' && <Globe className="w-5 h-5" />}
-                                        {t === 'text' && <AlignLeft className="w-5 h-5" />}
+                                        {t === 'whatsapp' && <Smartphone className="w-4 h-4" />}
+                                        {t === 'instagram' && <Instagram className="w-4 h-4" />}
+                                        {t === 'url' && <Globe className="w-4 h-4" />}
+                                        {t === 'text' && <AlignLeft className="w-4 h-4" />}
                                     </button>
                                 ))}
                             </div>
 
+                            {/* Theme & Layout Selector */}
                             <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Layout do Adesivo</label>
+                                    <LayoutGrid className="w-4 h-4 text-slate-300" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['marketing', 'asset', 'minimal'] as LayoutType[]).map(l => (
+                                        <button
+                                            key={l}
+                                            onClick={() => setNewSticker(prev => ({ ...prev, layoutType: l }))}
+                                            className={`py-2 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all border-2 ${newSticker.layoutType === l ? 'border-blue-600 bg-blue-50 text-blue-600' : 'border-slate-100 text-slate-400'}`}
+                                        >
+                                            {l}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Cor Principal</label>
+                                         <div className="flex items-center gap-2">
+                                             <input
+                                                type="color"
+                                                className="w-8 h-8 rounded-lg border-0 cursor-pointer"
+                                                value={newSticker.primaryColor}
+                                                onChange={e => setNewSticker(prev => ({ ...prev, primaryColor: e.target.value }))}
+                                            />
+                                            <span className="text-xs font-mono text-slate-400 uppercase">{newSticker.primaryColor}</span>
+                                         </div>
+                                    </div>
+                                    <div className="flex-1">
+                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Fundo</label>
+                                         <div className="flex items-center gap-2">
+                                             <input
+                                                type="color"
+                                                className="w-8 h-8 rounded-lg border-0 cursor-pointer"
+                                                value={newSticker.secondaryColor}
+                                                onChange={e => setNewSticker(prev => ({ ...prev, secondaryColor: e.target.value }))}
+                                            />
+                                            <span className="text-xs font-mono text-slate-400 uppercase">{newSticker.secondaryColor}</span>
+                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
                                 <input
                                     type="text"
-                                    placeholder="Título Principal (ex: Inovar Gestão)"
-                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Título Principal"
+                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all"
                                     value={newSticker.title || ''}
                                     onChange={e => setNewSticker(prev => ({ ...prev, title: e.target.value }))}
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Subtítulo (ex: @inovar_sistema)"
-                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Subtítulo ou Link visível"
+                                    className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition-all"
                                     value={newSticker.subtitle || ''}
                                     onChange={e => setNewSticker(prev => ({ ...prev, subtitle: e.target.value }))}
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Mensagem de Marketing (abaixo do QR)"
-                                    className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                                    placeholder="Mensagem Impactante (Footer)"
+                                    className="w-full px-4 py-3 bg-blue-50 border-2 border-blue-200 text-blue-700 font-bold rounded-xl text-sm focus:bg-white outline-none transition-all"
                                     value={newSticker.footerMessage || ''}
                                     onChange={e => setNewSticker(prev => ({ ...prev, footerMessage: e.target.value }))}
                                 />
 
                                 {newSticker.type === 'whatsapp' && (
-                                    <div className="space-y-4 animate-in slide-in-from-top-2">
+                                    <div className="space-y-3 p-4 bg-slate-50 rounded-2xl animate-in slide-in-from-top-2">
                                         <input
                                             type="text"
-                                            placeholder="WhatsApp (ex: 11999999999)"
-                                            className="w-full px-4 py-3 bg-blue-50/50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                            placeholder="WhatsApp com DDD"
+                                            className="w-full px-4 py-2.5 bg-white rounded-lg text-sm border-slate-200 outline-none"
                                             value={formValues.phone}
                                             onChange={e => setFormValues(prev => ({ ...prev, phone: e.target.value }))}
                                         />
                                         <textarea
-                                            placeholder="Mensagem Pré-definida"
-                                            className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none h-20"
+                                            placeholder="Mensagem do Link"
+                                            className="w-full px-4 py-2.5 bg-white rounded-lg text-sm border-slate-200 outline-none h-16"
                                             value={formValues.message}
                                             onChange={e => setFormValues(prev => ({ ...prev, message: e.target.value }))}
                                         />
@@ -355,8 +429,8 @@ export const QRCodeManager: React.FC = () => {
                                 {newSticker.type === 'instagram' && (
                                     <input
                                         type="text"
-                                        placeholder="Usuário Instagram (ex: inovar.sistema)"
-                                        className="w-full px-4 py-3 bg-pink-50/50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none animate-in slide-in-from-top-2"
+                                        placeholder="Seu @usuário"
+                                        className="w-full px-4 py-3 bg-pink-50 text-pink-700 font-bold rounded-xl text-sm border-transparent focus:bg-white outline-none animate-in slide-in-from-top-2"
                                         value={formValues.igUser}
                                         onChange={e => setFormValues(prev => ({ ...prev, igUser: e.target.value }))}
                                     />
@@ -365,114 +439,130 @@ export const QRCodeManager: React.FC = () => {
                                 {newSticker.type === 'url' && (
                                     <input
                                         type="text"
-                                        placeholder="Link do Site (ex: inovar.com)"
-                                        className="w-full px-4 py-3 bg-blue-50/50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none animate-in slide-in-from-top-2"
+                                        placeholder="https://seu-site.com"
+                                        className="w-full px-4 py-3 bg-blue-50 text-blue-700 font-bold rounded-xl text-sm border-transparent focus:bg-white outline-none animate-in slide-in-from-top-2"
                                         value={formValues.url}
                                         onChange={e => setFormValues(prev => ({ ...prev, url: e.target.value }))}
                                     />
                                 )}
 
-                                {newSticker.type === 'text' && (
-                                    <textarea
-                                        placeholder="Texto ou Código Livre"
-                                        className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none h-32 animate-in slide-in-from-top-2"
-                                        value={formValues.text}
-                                        onChange={e => setFormValues(prev => ({ ...prev, text: e.target.value }))}
-                                    />
-                                )}
-
                                 <button
                                     onClick={addCustomSticker}
-                                    className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+                                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95"
                                 >
-                                    Gerar Etiqueta
+                                    Criar Sticker Premium
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Stickers Preview/List */}
-                    <div className="lg:col-span-2 space-y-6">
+                    {/* Stickers Display - Center/Right */}
+                    <div className="lg:col-span-8 space-y-6">
                         <div className="flex items-center justify-between print:hidden">
-                             <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Etiquetas Criadas ({customStickers.length})</h3>
+                             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Galeria de Design ({customStickers.length})</h3>
                              {customStickers.length > 0 && (
-                                 <button onClick={handlePrintAll} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
-                                     <Printer className="w-4 h-4" /> Imprimir Folha Completa
+                                 <button onClick={handlePrintAll} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:scale-105 transition-transform">
+                                     <Printer className="w-4 h-4" /> Imprimir Folha A4
                                  </button>
                              )}
                         </div>
 
                         {customStickers.length === 0 ? (
-                            <div className="py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 print:hidden">
-                                <Sparkles className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                <p className="text-slate-400 font-bold">Crie etiquetas de marketing para seus clientes.</p>
+                            <div className="py-32 text-center bg-slate-50 rounded-[3.5rem] border-4 border-dashed border-slate-100 print:hidden group">
+                                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                                    <Sparkles className="w-10 h-10 text-blue-600" />
+                                </div>
+                                <h4 className="text-xl font-black text-slate-800">Crie seu primeiro adesivo!</h4>
+                                <p className="text-slate-400 font-medium max-w-xs mx-auto mt-2">Escolha cores, layouts e gere artes incríveis para o seu negócio.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 print:grid-cols-1">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 print:grid-cols-1">
                                 {customStickers.map(s => {
-                                    // Logic to show only one during individual print
                                     const isVisible = printingId ? printingId === s.id : true;
                                     if (!isVisible) return null;
 
                                     return (
                                         <div
                                             key={s.id}
-                                            ref={el => stickerRefs.current[s.id] = el}
-                                            className={`relative bg-white p-8 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 print:border-slate-300 print:p-6 print:break-inside-avoid print:shadow-none ${printingId === s.id ? 'print:block' : ''}`}
+                                            className="group relative animate-in zoom-in-95 duration-300"
                                         >
-                                            <div className="absolute top-4 right-4 flex gap-1 print:hidden">
-                                                <button
-                                                    onClick={() => downloadPNG(s.id, s.title)}
-                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                                                    title="Download PNG"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => printIndividual(s.id)}
-                                                    className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-                                                    title="Imprimir"
-                                                >
-                                                    <Printer className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => removeCustomSticker(s.id)}
-                                                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                            {/* Action Buttons - Floating Container */}
+                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all z-10 print:hidden scale-90 group-hover:scale-100">
+                                                <button onClick={() => exportSticker(s.id, s.title, 'png')} className="p-2.5 bg-white text-blue-600 rounded-xl shadow-xl hover:bg-blue-600 hover:text-white transition-all" title="PNG Alta"><Download className="w-4 h-4" /></button>
+                                                <button onClick={() => exportSticker(s.id, s.title, 'svg')} className="p-2.5 bg-white text-emerald-600 rounded-xl shadow-xl hover:bg-emerald-600 hover:text-white transition-all" title="SVG Vetor"><FileCode className="w-4 h-4" /></button>
+                                                <button onClick={() => printIndividual(s.id)} className="p-2.5 bg-white text-slate-800 rounded-xl shadow-xl hover:bg-slate-900 hover:text-white transition-all" title="Imprimir"><Printer className="w-4 h-4" /></button>
+                                                <button onClick={() => removeCustomSticker(s.id)} className="p-2.5 bg-white text-red-500 rounded-xl shadow-xl hover:bg-red-500 hover:text-white transition-all" title="Remover"><Trash2 className="w-4 h-4" /></button>
                                             </div>
 
-                                            <div className="w-full">
-                                                 <div className="flex items-center justify-center gap-2 mb-1">
-                                                     {s.type === 'whatsapp' && <MessageCircle className="w-3 h-3 text-emerald-500" />}
-                                                     {s.type === 'instagram' && <Instagram className="w-3 h-3 text-pink-500" />}
-                                                     {s.type === 'url' && <Globe className="w-3 h-3 text-blue-500" />}
-                                                     <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{s.type}</span>
-                                                 </div>
-                                                 <h4 className="text-xl font-black text-slate-800 leading-tight">{s.title}</h4>
-                                                 {s.subtitle && <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{s.subtitle}</p>}
-                                            </div>
+                                            {/* The Sticker Itself */}
+                                            <div
+                                                ref={el => stickerRefs.current[s.id] = el}
+                                                className={`
+                                                    w-full rounded-[2.5rem] border-4 flex flex-col items-center justify-between overflow-hidden shadow-2xl transition-all h-[420px]
+                                                    ${s.layoutType === 'marketing' ? 'p-0' : 'p-8'}
+                                                    print:h-auto print:shadow-none print:border-slate-200
+                                                `}
+                                                style={{
+                                                    borderColor: s.primaryColor + '20',
+                                                    backgroundColor: s.secondaryColor
+                                                }}
+                                            >
+                                                {/* LAYOUT: MARKETING MAX */}
+                                                {s.layoutType === 'marketing' && (
+                                                    <>
+                                                        <div className="w-full pt-10 px-8 text-center">
+                                                            <div className="flex items-center justify-center gap-2 mb-2">
+                                                                <Palette className="w-4 h-4" style={{ color: s.primaryColor }} />
+                                                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">{s.type}</span>
+                                                            </div>
+                                                            <h4 className="text-2xl font-black leading-tight" style={{ color: s.primaryColor }}>{s.title}</h4>
+                                                            <p className="text-xs font-bold text-slate-400 mt-1 opacity-80">{s.subtitle}</p>
+                                                        </div>
+                                                        <div className="flex-1 flex items-center justify-center py-6">
+                                                            <div className="bg-white p-4 rounded-[2rem] shadow-inner border-2" style={{ borderColor: s.primaryColor + '10' }}>
+                                                                <PremiumQR value={s.value} color={s.primaryColor} size={180} />
+                                                            </div>
+                                                        </div>
+                                                        {s.footerMessage && (
+                                                            <div className="w-full py-5 px-6 text-center" style={{ backgroundColor: s.primaryColor }}>
+                                                                <p className="text-xs font-black text-white uppercase tracking-[0.25em]">{s.footerMessage}</p>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
 
-                                            <div className="bg-white p-2 rounded-3xl group-hover:scale-105 transition-transform">
-                                                 <QRCodeSVG
-                                                    value={s.value}
-                                                    size={160}
-                                                    level="H"
-                                                    includeMargin={true}
-                                                    className="mx-auto"
-                                                />
-                                            </div>
+                                                {/* LAYOUT: ASSET PRO */}
+                                                {s.layoutType === 'asset' && (
+                                                    <div className="w-full h-full flex flex-col justify-between border-8 p-6 rounded-[2.5rem]" style={{ borderColor: s.primaryColor }}>
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="text-left">
+                                                                <h4 className="text-lg font-black" style={{ color: s.primaryColor }}>{s.title}</h4>
+                                                                <p className="text-[10px] font-bold text-slate-400">{s.subtitle}</p>
+                                                            </div>
+                                                            <Shield className="w-6 h-6" style={{ color: s.primaryColor }} />
+                                                        </div>
+                                                        <div className="flex-1 flex items-center justify-center">
+                                                             <PremiumQR value={s.value} color="#0f172a" size={160} />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                                <div className="h-full w-1/3" style={{ backgroundColor: s.primaryColor }}></div>
+                                                            </div>
+                                                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center">{s.footerMessage || "QR Code de Identificação"}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
 
-                                            {s.footerMessage && (
-                                                <div className="w-full bg-blue-600 py-3 px-4 rounded-2xl shadow-lg shadow-blue-100">
-                                                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{s.footerMessage}</p>
-                                                </div>
-                                            )}
-
-                                            <div className="w-full pt-2 text-center opacity-30">
-                                                 <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Gerado por Inovar Gestão</p>
+                                                {/* LAYOUT: MINIMALISTA */}
+                                                {s.layoutType === 'minimal' && (
+                                                    <div className="w-full h-full flex flex-col items-center justify-center space-y-8">
+                                                        <PremiumQR value={s.value} color={s.primaryColor} size={200} />
+                                                        <div className="text-center">
+                                                            <h4 className="text-xl font-black" style={{ color: s.primaryColor }}>{s.title}</h4>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{s.footerMessage}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     );
@@ -483,35 +573,34 @@ export const QRCodeManager: React.FC = () => {
                 </div>
             )}
 
-            {/* Print CSS - Logic for A4 vs Individual */}
+            {/* Print CSS - Enhanced for Premium Layouts */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
                     body { background: white !important; margin: 0 !important; }
                     #root > div > div { padding: 0 !important; margin: 0 !important; }
                     .print\\:hidden { display: none !important; }
 
-                    /* If printing individual, center it */
                     ${printingId ? `
-                        .grid {
+                        .grid, .grid-cols-1 {
                             display: flex !important;
                             justify-content: center !important;
                             align-items: center !important;
                             height: 100vh !important;
+                            width: 100vw !important;
+                            padding: 0 !important;
                         }
                         .grid > div {
-                            width: 80mm !important;
-                            border: 2px solid #ccc !important;
+                            width: 100mm !important;
+                            height: 150mm !important;
                         }
                     ` : `
                         .grid {
                             display: grid !important;
-                            grid-template-columns: repeat(3, 1fr) !important;
-                            gap: 10mm !important;
-                            visibility: visible !important;
+                            grid-template-columns: repeat(2, 1fr) !important;
+                            gap: 15mm !important;
                         }
                         .grid > div {
-                            visibility: visible !important;
-                            border: 1px solid #eee !important;
+                            height: 120mm !important;
                             break-inside: avoid !important;
                         }
                     `}
