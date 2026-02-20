@@ -1,8 +1,6 @@
-# ==============================================================
 # INOVAR - Docker Compose (Local Stack)
-# Uso: docker-compose up -d
+# Uso: docker compose up -d
 # ==============================================================
-version: '3.9'
 
 services:
   app:
