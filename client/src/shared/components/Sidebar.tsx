@@ -39,7 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       />
 
       {/* Sidebar Panel */}
-      <aside className="fixed top-0 right-0 h-full w-full sm:w-80 bg-white shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col">
+      <aside className="fixed inset-y-0 right-0 w-full sm:w-80 bg-white shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
@@ -61,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Menu Items List */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 scrollbar-hide scroll-container">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 scroll-container">
           {categories.map((category, catIdx) => (
             <div key={catIdx} className="mb-6">
               <h4 className="px-4 mb-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{category.title}</h4>
