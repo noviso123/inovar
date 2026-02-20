@@ -222,7 +222,7 @@ export const QRCodeManager: React.FC = () => {
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'custom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
                     >
                         <Sparkles className="w-4 h-4 mb-1 mx-auto" />
-                        Marketing (Antigo)
+                        Marketing
                     </button>
                 </div>
             </div>
