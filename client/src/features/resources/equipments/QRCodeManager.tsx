@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Equipment } from '@/shared/types';
 import { apiService } from '@/shared/services/apiService';
 import { QRCodeSVG } from 'qrcode.react';
-import { Printer, Search, ArrowLeft, SlidersHorizontal, Plus, Trash2, Smartphone, Instagram, Globe, Wifi, AlignLeft, LayoutGrid, Sparkles } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import { Printer, Search, ArrowLeft, SlidersHorizontal, Plus, Trash2, Smartphone, Instagram, Globe, AlignLeft, LayoutGrid, Sparkles, Download, MessageCircle } from 'lucide-react';
 
 type QRMode = 'assets' | 'custom';
-type CustomQRType = 'whatsapp' | 'instagram' | 'url' | 'wifi' | 'text';
+type CustomQRType = 'whatsapp' | 'instagram' | 'url' | 'text';
 
 interface CustomSticker {
     id: string;
     type: CustomQRType;
     title: string;
     subtitle: string;
+    footerMessage: string;
     content: string;
-    value: string; // The raw QR value (wa.me, ig.com, etc)
+    value: string;
 }
 
 export const QRCodeManager: React.FC = () => {
@@ -23,6 +25,7 @@ export const QRCodeManager: React.FC = () => {
     // UI State
     const [activeTab, setActiveTab] = useState<QRMode>('assets');
     const [loading, setLoading] = useState(true);
+    const [printingId, setPrintingId] = useState<string | null>(null);
 
     // Assets Data
     const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -35,17 +38,18 @@ export const QRCodeManager: React.FC = () => {
     const [newSticker, setNewSticker] = useState<Partial<CustomSticker>>({
         type: 'url',
         title: '',
-        subtitle: ''
+        subtitle: '',
+        footerMessage: ''
     });
     const [formValues, setFormValues] = useState({
         phone: '',
         message: '',
         igUser: '',
         url: '',
-        wifiSsid: '',
-        wifiPass: '',
         text: ''
     });
+
+    const stickerRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
     useEffect(() => {
         loadData();
@@ -76,7 +80,7 @@ export const QRCodeManager: React.FC = () => {
     };
 
     const generateQRValue = () => {
-        const { phone, message, igUser, url, wifiSsid, wifiPass, text } = formValues;
+        const { phone, message, igUser, url, text } = formValues;
         switch (newSticker.type) {
             case 'whatsapp':
                 const cleanPhone = phone.replace(/\D/g, '');
@@ -84,8 +88,6 @@ export const QRCodeManager: React.FC = () => {
             case 'instagram':
                 const cleanUser = igUser.replace('@', '');
                 return `https://instagram.com/${cleanUser}`;
-            case 'wifi':
-                return `WIFI:S:${wifiSsid};T:WPA;P:${wifiPass};;`;
             case 'url':
                 return url.startsWith('http') ? url : `https://${url}`;
             case 'text':
@@ -103,16 +105,17 @@ export const QRCodeManager: React.FC = () => {
                 type: newSticker.type as CustomQRType,
                 title: newSticker.title!,
                 subtitle: newSticker.subtitle || '',
-                content: newSticker.type === 'wifi' ? `Rede: ${formValues.wifiSsid}` : generateQRValue(),
+                footerMessage: newSticker.footerMessage || '',
+                content: generateQRValue(),
                 value: generateQRValue()
             };
 
             const savedSticker = await apiService.createCustomQR(stickerData);
             setCustomStickers([savedSticker, ...customStickers]);
 
-            // Reset specific part of form
-            setFormValues(prev => ({ ...prev, message: '', text: '', igUser: '', url: '', wifiSsid: '', wifiPass: '' }));
-            setNewSticker(prev => ({ ...prev, title: '', subtitle: '' }));
+            // Reset form
+            setFormValues({ phone: '', message: '', igUser: '', url: '', text: '' });
+            setNewSticker({ type: 'url', title: '', subtitle: '', footerMessage: '' });
         } catch (err) {
             console.error('Failed to save sticker', err);
         }
@@ -127,6 +130,32 @@ export const QRCodeManager: React.FC = () => {
         }
     };
 
+    const downloadPNG = async (id: string, title: string) => {
+        const node = stickerRefs.current[id];
+        if (!node) return;
+
+        try {
+            const dataUrl = await toPng(node, {
+                pixelRatio: 4, // Ultra high quality
+                backgroundColor: '#ffffff'
+            });
+            const link = document.createElement('a');
+            link.download = `sticker-${title.toLowerCase().replace(/\s+/g, '-')}.png`;
+            link.href = dataUrl;
+            link.click();
+        } catch (err) {
+            console.error('Download failed', err);
+        }
+    };
+
+    const printIndividual = (id: string) => {
+        setPrintingId(id);
+        setTimeout(() => {
+            window.print();
+            setPrintingId(null);
+        }, 300);
+    };
+
     const filteredEquipments = equipments.filter(e => {
         const matchesSearch =
             e.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -137,7 +166,8 @@ export const QRCodeManager: React.FC = () => {
         return matchesSearch && matchesClient;
     });
 
-    const handlePrint = () => {
+    const handlePrintAll = () => {
+        setPrintingId(null);
         window.print();
     };
 
@@ -171,7 +201,7 @@ export const QRCodeManager: React.FC = () => {
                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'custom' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400'}`}
                     >
                         <Sparkles className="w-4 h-4 mb-1 mx-auto" />
-                        Custom
+                        Marketing
                     </button>
                 </div>
             </div>
@@ -204,7 +234,7 @@ export const QRCodeManager: React.FC = () => {
                             </select>
                         </div>
                         <button
-                            onClick={handlePrint}
+                            onClick={handlePrintAll}
                             className="bg-slate-900 text-white p-3 rounded-xl hover:bg-blue-600 transition-colors"
                             title="Imprimir Selecionados"
                         >
@@ -223,14 +253,14 @@ export const QRCodeManager: React.FC = () => {
                     {/* Stickers Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 print:grid-cols-3 print:gap-4 print:pt-4">
                         {filteredEquipments.map((e) => (
-                            <div key={e.id} className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 hover:border-blue-200 transition-all group print:border-slate-300 print:shadow-none print:break-inside-avoid print:p-4">
+                            <div key={e.id} className="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 transition-all group print:border-slate-300 print:p-4 print:break-inside-avoid">
                                 <div className="w-full text-left">
                                     <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-1 truncate">{(e as any).clientName}</p>
                                     <h4 className="text-base font-black text-slate-800 leading-tight truncate">{e.brand}</h4>
                                     <p className="text-[10px] font-bold text-slate-400 truncate">{e.model}</p>
                                 </div>
 
-                                <div className="bg-slate-50 p-4 rounded-2xl group-hover:bg-blue-50 transition-colors print:bg-white print:p-2">
+                                <div className="bg-slate-50 p-4 rounded-2xl print:bg-white print:p-2">
                                     <QRCodeSVG
                                         value={`${window.location.origin}/open-request/${e.id}`}
                                         size={120}
@@ -250,10 +280,6 @@ export const QRCodeManager: React.FC = () => {
                                         <span className="text-slate-800">{e.serialNumber || 'N/A'}</span>
                                     </div>
                                 </div>
-
-                                <div className="w-full pt-2 border-t border-dashed border-slate-100 print:hidden text-center">
-                                     <p className="text-[7px] font-bold text-slate-400">Escaneie para suporte técnico</p>
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -269,8 +295,8 @@ export const QRCodeManager: React.FC = () => {
                             </h3>
 
                             {/* Type Selector */}
-                            <div className="grid grid-cols-5 gap-2">
-                                {(['whatsapp', 'instagram', 'url', 'wifi', 'text'] as CustomQRType[]).map(t => (
+                            <div className="grid grid-cols-4 gap-2">
+                                {(['whatsapp', 'instagram', 'url', 'text'] as CustomQRType[]).map(t => (
                                     <button
                                         key={t}
                                         onClick={() => setNewSticker(prev => ({ ...prev, type: t }))}
@@ -280,7 +306,6 @@ export const QRCodeManager: React.FC = () => {
                                         {t === 'whatsapp' && <Smartphone className="w-5 h-5" />}
                                         {t === 'instagram' && <Instagram className="w-5 h-5" />}
                                         {t === 'url' && <Globe className="w-5 h-5" />}
-                                        {t === 'wifi' && <Wifi className="w-5 h-5" />}
                                         {t === 'text' && <AlignLeft className="w-5 h-5" />}
                                     </button>
                                 ))}
@@ -300,6 +325,13 @@ export const QRCodeManager: React.FC = () => {
                                     className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                                     value={newSticker.subtitle || ''}
                                     onChange={e => setNewSticker(prev => ({ ...prev, subtitle: e.target.value }))}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Mensagem de Marketing (abaixo do QR)"
+                                    className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                                    value={newSticker.footerMessage || ''}
+                                    onChange={e => setNewSticker(prev => ({ ...prev, footerMessage: e.target.value }))}
                                 />
 
                                 {newSticker.type === 'whatsapp' && (
@@ -340,25 +372,6 @@ export const QRCodeManager: React.FC = () => {
                                     />
                                 )}
 
-                                {newSticker.type === 'wifi' && (
-                                    <div className="space-y-4 animate-in slide-in-from-top-2">
-                                        <input
-                                            type="text"
-                                            placeholder="Nome da Rede (SSID)"
-                                            className="w-full px-4 py-3 bg-emerald-50/50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
-                                            value={formValues.wifiSsid}
-                                            onChange={e => setFormValues(prev => ({ ...prev, wifiSsid: e.target.value }))}
-                                        />
-                                        <input
-                                            type="password"
-                                            placeholder="Senha"
-                                            className="w-full px-4 py-3 bg-slate-50 rounded-xl text-sm border-transparent focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
-                                            value={formValues.wifiPass}
-                                            onChange={e => setFormValues(prev => ({ ...prev, wifiPass: e.target.value }))}
-                                        />
-                                    </div>
-                                )}
-
                                 {newSticker.type === 'text' && (
                                     <textarea
                                         placeholder="Texto ou Código Livre"
@@ -372,7 +385,7 @@ export const QRCodeManager: React.FC = () => {
                                     onClick={addCustomSticker}
                                     className="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
                                 >
-                                    Adicionar à Lista
+                                    Gerar Etiqueta
                                 </button>
                             </div>
                         </div>
@@ -381,92 +394,131 @@ export const QRCodeManager: React.FC = () => {
                     {/* Stickers Preview/List */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center justify-between print:hidden">
-                             <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Fila de Impressão ({customStickers.length})</h3>
+                             <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Etiquetas Criadas ({customStickers.length})</h3>
                              {customStickers.length > 0 && (
-                                 <div className="flex gap-2">
-                                     <button onClick={() => setCustomStickers([])} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                                         <Trash2 className="w-5 h-5" />
-                                     </button>
-                                     <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
-                                         <Printer className="w-4 h-4" /> Imprimir Tudo
-                                     </button>
-                                 </div>
+                                 <button onClick={handlePrintAll} className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                     <Printer className="w-4 h-4" /> Imprimir Folha Completa
+                                 </button>
                              )}
                         </div>
 
                         {customStickers.length === 0 ? (
                             <div className="py-20 text-center bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 print:hidden">
-                                <Plus className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                <p className="text-slate-400 font-bold">Crie etiquetas personalizadas para veículos, marketing ou avisos.</p>
+                                <Sparkles className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                                <p className="text-slate-400 font-bold">Crie etiquetas de marketing para seus clientes.</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 print:grid-cols-3">
-                                {customStickers.map(s => (
-                                    <div key={s.id} className="relative bg-white p-8 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 print:border-slate-300 print:p-4 print:break-inside-avoid">
-                                        <button
-                                            onClick={() => removeCustomSticker(s.id)}
-                                            className="absolute top-4 right-4 p-2 text-slate-300 hover:text-red-500 transition-colors print:hidden"
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 print:grid-cols-1">
+                                {customStickers.map(s => {
+                                    // Logic to show only one during individual print
+                                    const isVisible = printingId ? printingId === s.id : true;
+                                    if (!isVisible) return null;
+
+                                    return (
+                                        <div
+                                            key={s.id}
+                                            ref={el => stickerRefs.current[s.id] = el}
+                                            className={`relative bg-white p-8 rounded-[2rem] border-2 border-slate-100 flex flex-col items-center text-center space-y-4 print:border-slate-300 print:p-6 print:break-inside-avoid print:shadow-none ${printingId === s.id ? 'print:block' : ''}`}
                                         >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                            <div className="absolute top-4 right-4 flex gap-1 print:hidden">
+                                                <button
+                                                    onClick={() => downloadPNG(s.id, s.title)}
+                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                    title="Download PNG"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => printIndividual(s.id)}
+                                                    className="p-2 bg-slate-50 text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                                                    title="Imprimir"
+                                                >
+                                                    <Printer className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => removeCustomSticker(s.id)}
+                                                    className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
 
-                                        <div className="w-full">
-                                             <div className="flex items-center justify-center gap-2 mb-1">
-                                                 {s.type === 'whatsapp' && <Smartphone className="w-3 h-3 text-emerald-500" />}
-                                                 {s.type === 'instagram' && <Instagram className="w-3 h-3 text-pink-500" />}
-                                                 {s.type === 'url' && <Globe className="w-3 h-3 text-blue-500" />}
-                                                 {s.type === 'wifi' && <Wifi className="w-3 h-3 text-emerald-500" />}
-                                                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{s.type}</span>
-                                             </div>
-                                             <h4 className="text-lg font-black text-slate-800 leading-tight truncate">{s.title}</h4>
-                                             {s.subtitle && <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{s.subtitle}</p>}
-                                        </div>
+                                            <div className="w-full">
+                                                 <div className="flex items-center justify-center gap-2 mb-1">
+                                                     {s.type === 'whatsapp' && <MessageCircle className="w-3 h-3 text-emerald-500" />}
+                                                     {s.type === 'instagram' && <Instagram className="w-3 h-3 text-pink-500" />}
+                                                     {s.type === 'url' && <Globe className="w-3 h-3 text-blue-500" />}
+                                                     <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{s.type}</span>
+                                                 </div>
+                                                 <h4 className="text-xl font-black text-slate-800 leading-tight">{s.title}</h4>
+                                                 {s.subtitle && <p className="text-[10px] font-bold text-slate-400 truncate mt-0.5">{s.subtitle}</p>}
+                                            </div>
 
-                                        <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 print:bg-white print:p-2">
-                                             <QRCodeSVG
-                                                value={s.value}
-                                                size={150}
-                                                level="H"
-                                                includeMargin={true}
-                                                className="mx-auto"
-                                            />
-                                        </div>
+                                            <div className="bg-white p-2 rounded-3xl group-hover:scale-105 transition-transform">
+                                                 <QRCodeSVG
+                                                    value={s.value}
+                                                    size={160}
+                                                    level="H"
+                                                    includeMargin={true}
+                                                    className="mx-auto"
+                                                />
+                                            </div>
 
-                                        <div className="w-full pt-4 border-t border-dashed border-slate-100 text-center">
-                                             <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest truncate">{s.content}</p>
+                                            {s.footerMessage && (
+                                                <div className="w-full bg-blue-600 py-3 px-4 rounded-2xl shadow-lg shadow-blue-100">
+                                                     <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{s.footerMessage}</p>
+                                                </div>
+                                            )}
+
+                                            <div className="w-full pt-2 text-center opacity-30">
+                                                 <p className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Gerado por Inovar Gestão</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* CSS for printing - Enhanced for grid visibility */}
+            {/* Print CSS - Logic for A4 vs Individual */}
             <style dangerouslySetInnerHTML={{ __html: `
                 @media print {
-                    body { background: white !important; }
+                    body { background: white !important; margin: 0 !important; }
                     #root > div > div { padding: 0 !important; margin: 0 !important; }
                     .print\\:hidden { display: none !important; }
 
-                    /* Grid print layout */
-                    .grid {
-                        display: grid !important;
-                        grid-template-columns: repeat(3, 1fr) !important;
-                        gap: 15mm !important;
-                        visibility: visible !important;
-                    }
-
-                    .grid > div {
-                        visibility: visible !important;
-                        border: 1px solid #eee !important;
-                        break-inside: avoid !important;
-                    }
+                    /* If printing individual, center it */
+                    ${printingId ? `
+                        .grid {
+                            display: flex !important;
+                            justify-content: center !important;
+                            align-items: center !important;
+                            height: 100vh !important;
+                        }
+                        .grid > div {
+                            width: 80mm !important;
+                            border: 2px solid #ccc !important;
+                        }
+                    ` : `
+                        .grid {
+                            display: grid !important;
+                            grid-template-columns: repeat(3, 1fr) !important;
+                            gap: 10mm !important;
+                            visibility: visible !important;
+                        }
+                        .grid > div {
+                            visibility: visible !important;
+                            border: 1px solid #eee !important;
+                            break-inside: avoid !important;
+                        }
+                    `}
 
                     @page {
                         size: A4;
-                        margin: 15mm;
+                        margin: 10mm;
                     }
                 }
             ` }} />
