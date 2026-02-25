@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  inovar:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inovar-app
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=prod-secret-change-me-123456
+      - DATABASE_URL=/app/data/db/inovar.db
+      - UPLOAD_DIR=/app/data/uploads
+      - FRONTEND_DIST=/app/client/dist
+      - CORS_ORIGINS=*
+    volumes:
+      - inovar-data:/app/data
+
+volumes:
+  inovar-data:
