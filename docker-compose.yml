@@ -14,7 +14,6 @@ services:
       - JWT_SECRET=prod-secret-change-me-123456
       - DATABASE_URL=/app/data/db/inovar.db
       - UPLOAD_DIR=/app/data/uploads
-      - FRONTEND_DIST=/app/client/dist
       - CORS_ORIGINS=*
     volumes:
       - inovar-data:/app/data

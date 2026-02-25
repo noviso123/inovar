@@ -238,18 +238,6 @@ func main() {
 	}
 	app.Static("/uploads", uploadDir)
 
-	// Serve static files from React build
-	frontendDist := os.Getenv("FRONTEND_DIST")
-	if frontendDist == "" {
-		frontendDist = "../client/dist"
-	}
-	app.Static("/", frontendDist)
-
-	// Catch-all route to serve React's index.html (SPA fallback)
-	app.Get("/*", func(c *fiber.Ctx) error {
-		return c.SendFile(frontendDist + "/index.html")
-	})
-
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {

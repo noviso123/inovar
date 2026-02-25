@@ -21,7 +21,6 @@ RUN useradd -m inovar
 
 # Copy built artifacts
 COPY --from=backend-builder /app/inovar .
-COPY client/dist ./client/dist
 COPY infra/ ./infra/
 
 # Create data directories
@@ -30,7 +29,6 @@ RUN mkdir -p data/db data/uploads data/certs && \
 
 # Environment variables
 ENV PORT=8080
-ENV FRONTEND_DIST=/app/client/dist
 ENV BRIDGE_SCRIPT_PATH=/app/infra/scripts/bridge.py
 ENV PYTHON_CMD=python3
 ENV DATABASE_URL=/app/data/db/inovar.db
