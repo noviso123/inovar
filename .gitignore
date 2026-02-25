@@ -1,0 +1,95 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Node
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.vercel
+
+# Secrets & Environment
+.env*
+server/.env
+client/.env
+server/config.json
+credentials.json
+*.pem
+*.key
+
+# Local storage & database - IMPORTANT: These are persisted via Docker volumes
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+server/inovar.db
+server/data/
+server/uploads/
+server/storage/
+
+# Docker persistent data (use volumes/bind mounts)
+# These folders are mapped in docker-compose.yml to ./infra/data/
+infra/data/db/*.db
+infra/data/db/*.db-journal
+infra/data/db/*.db-wal
+infra/data/db/*.db-shm
+infra/data/uploads/*
+!infra/data/uploads/.gitkeep
+infra/data/certs/*
+!infra/data/certs/.gitkeep
+
+# Backups
+backups/
+*.backup
+
+# Binaries
+*.exe
+*.test
+bin/
+server/inovar
+server/*.exe
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+venv/
+ENV/
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# IDE
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary utility scripts and keys
+deploy_key.txt
+update_db_locally.py
+update_password.sql
+server/gen_hash.go
