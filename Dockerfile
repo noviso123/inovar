@@ -1,12 +1,4 @@
-# Stage 1: Build Frontend
-FROM node:20-slim AS frontend-builder
-WORKDIR /app/client
-COPY client/package*.json ./
-RUN npm install
-COPY client/ ./
-RUN npm run build
-
-# Stage 2: Build Backend
+# Stage 1: Build Backend
 FROM golang:1.23-alpine AS backend-builder
 WORKDIR /app/server
 COPY server/go.mod server/go.sum ./
@@ -14,7 +6,7 @@ RUN go mod download
 COPY server/ ./
 RUN CGO_ENABLED=0 go build -o ../inovar ./cmd/api/main.go
 
-# Stage 3: Final Image
+# Stage 2: Final Image
 FROM python:3.11-slim
 WORKDIR /app
 
@@ -29,7 +21,7 @@ RUN useradd -m inovar
 
 # Copy built artifacts
 COPY --from=backend-builder /app/inovar .
-COPY --from=frontend-builder /app/client/dist ./client/dist
+COPY client/dist ./client/dist
 COPY infra/ ./infra/
 
 # Create data directories
